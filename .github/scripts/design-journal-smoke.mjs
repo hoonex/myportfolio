@@ -18,23 +18,26 @@ const expect = (condition, message) => {
 };
 
 const count = selector => page.locator(selector).count();
+const waitForExactCount = (selector, expected) => page.waitForFunction(
+  ({ selector, expected }) => document.querySelectorAll(selector).length === expected,
+  { selector, expected }
+);
 
 try {
   await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.post-card--studio');
-  expect(await count('.post-card--studio') === 3, 'home should expose exactly three interactive studio cards');
+  await waitForExactCount('.post-card--studio', 3);
   expect(await count('.studio-index-note') === 1, 'home enhancement should be installed exactly once');
   expect(await count('.reading-progress-v6') === 0, 'home must not retain article reading progress');
 
   await page.locator('#langSwitch [data-lang="en"]').click();
   await page.waitForFunction(() => document.documentElement.lang === 'en');
-  expect(await count('.studio-index-note') === 1, 'language rerender must not duplicate studio enhancement');
+  await waitForExactCount('.studio-index-note', 1);
+  await waitForExactCount('.post-card--studio', 3);
+  expect(await count('.studio-index-note') === 1, 'language rerender must settle with exactly one studio enhancement');
 
   await page.goto(`${baseURL}/#/post/sloar`);
-  await page.waitForSelector('[data-sloar-lab]');
-  await page.waitForSelector('.article-rail-v6');
-  expect(await count('[data-sloar-lab]') === 1, 'Sloar lab should render once');
-  expect(await count('.article-rail-v6') === 1, 'Sloar article should have one navigator');
+  await waitForExactCount('[data-sloar-lab]', 1);
+  await waitForExactCount('.article-rail-v6', 1);
   expect(await count('.reading-progress-v6') === 1, 'Sloar article should have one reading progress bar');
 
   await page.locator('[data-fault="stale"]').check();
@@ -43,9 +46,8 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-mission-status]')?.textContent?.includes('HALTED'));
 
   await page.goto(`${baseURL}/#/post/motion`);
-  await page.waitForSelector('[data-motion-lab]');
-  expect(await count('[data-motion-lab]') === 1, 'Motion lab should render once');
-  expect(await count('.article-rail-v6') === 1, 'Motion article should have one navigator');
+  await waitForExactCount('[data-motion-lab]', 1);
+  await waitForExactCount('.article-rail-v6', 1);
   const motionCard = page.locator('[data-motion-card]');
   const box = await motionCard.boundingBox();
   expect(Boolean(box), 'Motion card should be measurable');
@@ -71,13 +73,13 @@ try {
   }
 
   await page.goto(`${baseURL}/#/`);
-  await page.waitForSelector('.post-card--studio');
-  expect(await count('.studio-index-note') === 1, 'returning home must not duplicate studio enhancement');
+  await waitForExactCount('.post-card--studio', 3);
+  await waitForExactCount('.studio-index-note', 1);
   expect(await count('.reading-progress-v6') === 0, 'article reading progress should be cleaned up after returning home');
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.post-card--studio');
+  await waitForExactCount('.post-card--studio', 3);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
   expect(!overflow, 'mobile viewport has horizontal overflow');
 
