@@ -1,19 +1,24 @@
-# HJ Design Journal
+# Design Journal / Portfolio
 
-A host-agnostic static portfolio / design journal with three editorial posts, an interactive Liquid Glass material lab, dark mode, responsive layouts, reduced-motion support, and local-preview article conversations.
+A static, host-agnostic portfolio and design journal.
 
-## Run locally
+## Current structure
 
-```bash
-python3 -m http.server 4173
-```
+- `index.html`, `styles.css`, `app.js`: base shell and original journal implementation
+- `journal-v2.css`, `journal-v2.js`: multilingual long-form articles, code playgrounds, language switch, expanded Glass Lab controls
+- `journal-v3-refraction.css`, `journal-v3-refraction.js`: real WebGL refraction layer for Glass Lab using `@ybouane/liquidglass@1.0.3`
+- `THIRD_PARTY_NOTICES.md`: MIT attribution for referenced/used third-party work
 
-Open `http://localhost:4173`.
+## Liquid Glass rendering
 
-## Conversation storage
+The primary Glass Lab is no longer a blur-only glassmorphism demo. It captures the DOM scene and processes it with a WebGL fragment shader so background sample coordinates are displaced. The lab exposes refraction, chromatic aberration, specular, Fresnel, edge highlight, bevel depth, corner radius, saturation, brightness, and panel geometry controls.
 
-Comments currently use `localStorage`, intentionally. This makes the prototype fully functional before a hosting/backend choice is made. Replace the storage adapter with Supabase/Firebase/another realtime service for shared public conversations.
+A CSS `backdrop-filter` treatment remains only as a fallback if WebGL/module initialization fails. The article CSS playground is explicitly a fallback-material experiment, not the real refraction renderer.
 
 ## Deployment
 
-No platform-specific files are required. The folder can be hosted as a static site on Netlify, Vercel, Cloudflare Pages, GitHub Pages, or any basic web server.
+The site remains host-agnostic. The current public deployment is published from `gh-pages` at:
+
+https://hoonex.github.io/myportfolio/
+
+The legacy Blazor project remains preserved on `main`.
