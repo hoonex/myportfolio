@@ -1,0 +1,34 @@
+name: Journal v5 labs check
+
+on:
+  push:
+    branches:
+      - feat/design-journal-liquid-glass-20260827
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JavaScript syntax
+        run: node --check site/journal-v5-experiments.js
+      - name: Validate article lab integration
+        run: |
+          grep -q 'journal-v5-experiments.css' site/index.html
+          grep -q 'journal-v5-experiments.js' site/index.html
+          grep -q 'Continuity Control Room' site/journal-v5-experiments.js
+          grep -q 'Motion Dynamics Lab' site/journal-v5-experiments.js
+      - name: Validate Sloar state model
+        run: |
+          grep -q "'RECOVER','IDENTIFY','MATERIALIZE','BRANCH','IMPLEMENT','VERIFY','PUBLISH','REMOTE_VERIFY'" site/journal-v5-experiments.js
+          grep -q "fault('network')" site/journal-v5-experiments.js
+          grep -q "fault('stale')" site/journal-v5-experiments.js
+          grep -q "fault('ci')" site/journal-v5-experiments.js
+      - name: Validate motion physics
+        run: |
+          grep -q 'stiffness' site/journal-v5-experiments.js
+          grep -q 'damping' site/journal-v5-experiments.js
+          grep -q 'projection' site/journal-v5-experiments.js
+          grep -q 'rubber' site/journal-v5-experiments.js
+          grep -q 'pointerdown' site/journal-v5-experiments.js
+          grep -q 'requestAnimationFrame' site/journal-v5-experiments.js
