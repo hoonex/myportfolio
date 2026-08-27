@@ -116,6 +116,10 @@ jobs:
           grep -q 'workflow_dispatch:' .github/workflows/publish-gh-pages.yml
           ! grep -q '^  push:' .github/workflows/publish-gh-pages.yml
           grep -q 'Deploy Design Journal' .github/workflows/design-journal-deploy.yml
+          grep -q 'workflow_run:' .github/workflows/design-journal-deploy.yml
+          grep -q 'Design Journal CI' .github/workflows/design-journal-deploy.yml
+          grep -q "workflow_run.conclusion == 'success'" .github/workflows/design-journal-deploy.yml
+          grep -q 'site/journal-runtime.js' .github/workflows/design-journal-deploy.yml
           grep -q 'git fetch origin gh-pages' .github/workflows/design-journal-deploy.yml
           grep -q 'rsync -a --delete' .github/workflows/design-journal-deploy.yml
           grep -q 'git push origin HEAD:gh-pages' .github/workflows/design-journal-deploy.yml
