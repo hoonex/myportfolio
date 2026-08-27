@@ -213,10 +213,6 @@
     scheduled = requestAnimationFrame(enhanceCurrentRoute);
   }
 
-  const app = document.querySelector('#app');
-  const observer = new MutationObserver(scheduleEnhance);
-  if (app) observer.observe(app, { childList:true, subtree:false });
-  addEventListener('hashchange', scheduleEnhance);
-  new MutationObserver(scheduleEnhance).observe(document.documentElement, { attributes:true, attributeFilter:['lang'] });
-  scheduleEnhance();
+  document.addEventListener('hj:rendered', scheduleEnhance);
+  queueMicrotask(scheduleEnhance);
 })();

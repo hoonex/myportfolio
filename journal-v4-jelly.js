@@ -263,10 +263,6 @@
     });
   }
 
-  const app = document.querySelector('#app');
-  if (app) {
-    new MutationObserver(queueEnhance).observe(app, { childList: true, subtree: true });
-  }
-  window.addEventListener('hashchange', queueEnhance);
-  queueEnhance();
+  document.addEventListener('hj:rendered', queueEnhance);
+  queueMicrotask(queueEnhance);
 })();
