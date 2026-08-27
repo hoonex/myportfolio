@@ -1,0 +1,26 @@
+/* Journal v4 — jelly press/drag dynamics layered on top of WebGL refraction. */
+.real-liquid-glass.jelly-enabled{
+  transform-origin:50% 50%;
+  will-change:transform,scale,rotate;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+.real-liquid-glass.jelly-enabled .glass-content{
+  transform:translate3d(var(--jelly-lag-x,0px),var(--jelly-lag-y,0px),0);
+  will-change:transform;
+}
+.real-liquid-glass.jelly-enabled.is-jelly-pressed .glass-content span{
+  letter-spacing:.25em;
+}
+.real-liquid-glass.jelly-enabled.is-jelly-moving{
+  cursor:grabbing;
+}
+@media(prefers-reduced-motion:reduce){
+  .real-liquid-glass.jelly-enabled{
+    scale:1 1!important;
+    rotate:0deg!important;
+  }
+  .real-liquid-glass.jelly-enabled .glass-content{
+    transform:none!important;
+  }
+}
