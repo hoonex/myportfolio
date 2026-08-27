@@ -1,0 +1,21 @@
+name: Journal v3 refraction check
+
+on:
+  push:
+    branches:
+      - feat/design-journal-liquid-glass-20260827
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JavaScript syntax
+        run: node --check site/journal-v3-refraction.js
+      - name: Validate integration references
+        run: |
+          grep -q 'journal-v3-refraction.css' site/index.html
+          grep -q 'journal-v3-refraction.js' site/index.html
+          grep -q '@ybouane/liquidglass@1.0.3' site/journal-v3-refraction.js
+      - name: Verify pinned renderer is reachable
+        run: curl --fail --location --silent --show-error --output /tmp/liquidglass.js https://cdn.jsdelivr.net/npm/@ybouane/liquidglass@1.0.3/dist/index.js && test -s /tmp/liquidglass.js
