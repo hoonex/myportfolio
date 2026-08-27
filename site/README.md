@@ -16,11 +16,18 @@ The site is intentionally framework-free and layered so experiments can be added
 - `index.html`, `styles.css`, `app.js` — base shell, routing, theme and browser-local conversations.
 - `journal-v2.css`, `journal-v2.js` — authored KO / EN / JP long-form articles, translation UI and sandboxed HTML/CSS playgrounds.
 - `journal-v3-refraction.css`, `journal-v3-refraction.js` — real WebGL refraction Glass Lab using pinned `@ybouane/liquidglass@1.0.3`.
-- `journal-v4-jelly.css`, `journal-v4-jelly.js` — preferred optical defaults plus velocity-driven press/drag/release jelly dynamics.
+- `journal-runtime.js` — the single progressive-enhancement render coordinator. It watches only top-level `#app` replacement and emits `hj:rendered` once on the next animation frame.
+- `journal-v4-jelly.css`, `journal-v4-jelly.js` — preferred optical defaults plus velocity-driven press/drag/release jelly dynamics; subscribes to `hj:rendered` instead of running its own DOM observer.
 - `journal-v5-experiments.css`, `journal-v5-experiments.js` — Sloar Continuity Control Room and Motion Dynamics Lab.
-- `journal-v6-studio.css`, `journal-v6-studio.js` — interactive home previews, reading progress and section navigator.
+- `journal-v6-studio.css`, `journal-v6-studio.js` — interactive home previews, reading progress and section navigator; subscribes to `hj:rendered` instead of inferring render completion independently.
 - `journal-v6-compat.css` — explicit stagger timings for browsers where newer typed CSS arithmetic is unreliable.
 - `THIRD_PARTY_NOTICES.md` — required third-party attribution.
+
+The required script order is:
+
+`app → v2 → v3 → journal-runtime → v4 → v5 → v6`
+
+CI locks this order. v4 and v6 must not reintroduce their own `MutationObserver` or `hashchange` lifecycle listeners; the coordinator exists to prevent duplicate enhancement and cleanup races as the layered site grows.
 
 ## Liquid Glass contract
 
@@ -71,18 +78,21 @@ It supports repository identity changes, clean/dirty working state and failure i
 
 `.github/workflows/design-journal-ci.yml` is permanent PR/main validation and checks:
 
-- JavaScript syntax for `app.js` and journal v2-v6 scripts.
-- every local asset referenced by `site/index.html`.
+- JavaScript syntax for `app.js`, `journal-runtime.js`, journal v2-v6 scripts and the browser smoke script.
+- every local asset referenced by `site/index.html` plus the required runtime load order.
 - the preferred Liquid Glass optical defaults.
 - Sloar / Motion interactive contracts.
-- v6 studio/navigation presence.
+- the single `hj:rendered` lifecycle contract for v4/v6.
 - deployment workflow invariants.
+- a real headless Chromium smoke pass covering home enhancement, KO/EN/JP rerender behavior, Sloar failure injection, Motion direct manipulation, Glass Lab preferred defaults/jelly initialization, route cleanup and 390px mobile horizontal overflow.
 
 The old Blazor Pages workflow is preserved as `Archived Blazor Pages build` and is manual-only. It must not regain a push trigger unless the deployment architecture intentionally changes.
 
 ## Deployment after merge
 
-`.github/workflows/design-journal-deploy.yml` is prepared to sync `site/` into the root of `gh-pages` after future `site/**` changes land on `main`. It preserves `.github/` in the deployment branch while replacing the public site files and retaining `.nojekyll`.
+`.github/workflows/design-journal-deploy.yml` does **not** race the validator on a `main` push. It runs from the completed `Design Journal CI` workflow on `main` and publishes only when that workflow concluded `success` (manual dispatch remains available).
+
+The deploy job checks the runtime scripts again, materializes `gh-pages`, syncs `site/` into the deployment root, preserves `.github/`, retains `.nojekyll`, and pushes only when the deployment tree actually changed.
 
 Until PR #1 is explicitly merged, live review builds can still be materialized directly into `gh-pages` from verified feature-branch blobs.
 
