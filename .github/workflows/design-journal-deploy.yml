@@ -1,12 +1,13 @@
 name: Deploy Design Journal
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Design Journal CI
+    types:
+      - completed
     branches:
       - main
-    paths:
-      - 'site/**'
-      - '.github/workflows/design-journal-deploy.yml'
   workflow_dispatch:
 
 permissions:
@@ -18,19 +19,29 @@ concurrency:
 
 jobs:
   publish:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
+      - name: Checkout validated main
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Validate site before publish
         run: |
-          for file in site/app.js site/journal-v2.js site/journal-v3-refraction.js site/journal-v4-jelly.js site/journal-v5-experiments.js site/journal-v6-studio.js; do
+          for file in \
+            site/app.js \
+            site/journal-v2.js \
+            site/journal-v3-refraction.js \
+            site/journal-runtime.js \
+            site/journal-v4-jelly.js \
+            site/journal-v5-experiments.js \
+            site/journal-v6-studio.js; do
             node --check "$file"
           done
           test -f site/index.html
+          test -f site/journal-v6-compat.css
           test -f site/.nojekyll || touch site/.nojekyll
 
       - name: Materialize gh-pages worktree
