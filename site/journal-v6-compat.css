@@ -1,0 +1,10 @@
+/* Journal v6 compatibility overrides: avoid typed CSS arithmetic for stagger timing. */
+.studio-pipeline i{animation-delay:0s}
+.studio-pipeline i:nth-child(1){animation-delay:0s}
+.studio-pipeline i:nth-child(2){animation-delay:.16s}
+.studio-pipeline i:nth-child(3){animation-delay:.32s}
+.studio-pipeline i:nth-child(4){animation-delay:.48s}
+.studio-pipeline i:nth-child(5){animation-delay:.64s}
+.studio-pipeline i:nth-child(6){animation-delay:.80s}
+.studio-pipeline i:nth-child(7){animation-delay:.96s}
+.studio-pipeline i:nth-child(8){animation-delay:1.12s}
