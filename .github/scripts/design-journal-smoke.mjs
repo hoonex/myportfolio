@@ -40,7 +40,8 @@ try {
   await waitForExactCount('.article-rail-v6', 1);
   expect(await count('.reading-progress-v6') === 1, 'Sloar article should have one reading progress bar');
 
-  await page.locator('[data-fault="stale"]').check();
+  await page.locator('label.fault-switch:has(input[data-fault="stale"])').click();
+  expect(await page.locator('[data-fault="stale"]').isChecked(), 'visible stale-remote switch should toggle its input');
   await page.locator('[data-step-mission]').click();
   await page.locator('[data-step-mission]').click();
   await page.waitForFunction(() => document.querySelector('[data-mission-status]')?.textContent?.includes('HALTED'));
