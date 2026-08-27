@@ -97,10 +97,16 @@
         const rect = card.getBoundingClientRect();
         const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
         const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+        const nx = x * 2 - 1;
+        const ny = y * 2 - 1;
+        const energy = Math.min(1, Math.hypot(nx, ny));
         card.style.setProperty('--studio-x', `${(x * 100).toFixed(1)}%`);
         card.style.setProperty('--studio-y', `${(y * 100).toFixed(1)}%`);
-        card.style.setProperty('--studio-nx', (x * 2 - 1).toFixed(3));
-        card.style.setProperty('--studio-ny', (y * 2 - 1).toFixed(3));
+        card.style.setProperty('--studio-shift', `${(nx * 32).toFixed(2)}%`);
+        card.style.setProperty('--studio-tilt', `${(nx * 5).toFixed(2)}deg`);
+        card.style.setProperty('--studio-glass-tilt', `${(nx * 3).toFixed(2)}deg`);
+        card.style.setProperty('--studio-scale', (1 + energy * .025).toFixed(4));
+        card.style.setProperty('--studio-scale-x', (1 + Math.abs(nx) * .08).toFixed(4));
       };
       const onDown = () => card.classList.add('is-studio-pressed');
       const onUp = () => card.classList.remove('is-studio-pressed');
