@@ -1,0 +1,91 @@
+name: Design Journal CI
+
+on:
+  pull_request:
+    paths:
+      - 'site/**'
+      - '.github/workflows/design-journal-ci.yml'
+      - '.github/workflows/publish-gh-pages.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'site/**'
+      - '.github/workflows/design-journal-ci.yml'
+      - '.github/workflows/publish-gh-pages.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JavaScript syntax
+        run: |
+          for file in \
+            site/app.js \
+            site/journal-v2.js \
+            site/journal-v3-refraction.js \
+            site/journal-v4-jelly.js \
+            site/journal-v5-experiments.js \
+            site/journal-v6-studio.js; do
+            node --check "$file"
+          done
+
+      - name: Validate local asset graph
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path('site')
+          html = (root / 'index.html').read_text()
+          refs = re.findall(r'(?:src|href)="\./([^"?#]+)', html)
+          missing = [ref for ref in refs if not (root / ref).is_file()]
+          if missing:
+              raise SystemExit(f'missing local assets: {missing}')
+          required = {
+              'journal-v2.css','journal-v2.js',
+              'journal-v3-refraction.css','journal-v3-refraction.js',
+              'journal-v4-jelly.css','journal-v4-jelly.js',
+              'journal-v5-experiments.css','journal-v5-experiments.js',
+              'journal-v6-studio.css','journal-v6-studio.js'
+          }
+          absent = sorted(required - set(refs))
+          if absent:
+              raise SystemExit(f'assets not wired in index.html: {absent}')
+          print('asset graph ok')
+          PY
+
+      - name: Lock preferred optical defaults
+        run: |
+          grep -q 'refraction: 1.60' site/journal-v4-jelly.js
+          grep -q 'blurAmount: 0.00' site/journal-v4-jelly.js
+          grep -q 'chromAberration: 0.180' site/journal-v4-jelly.js
+          grep -q 'specular: 0.00' site/journal-v4-jelly.js
+          grep -q 'fresnel: 0.00' site/journal-v4-jelly.js
+          grep -q 'edgeHighlight: 0.00' site/journal-v4-jelly.js
+          grep -q 'zRadius: 50' site/journal-v4-jelly.js
+          grep -q 'cornerRadius: 80' site/journal-v4-jelly.js
+          grep -q 'saturation: 0.02' site/journal-v4-jelly.js
+          grep -q 'brightness: 0.02' site/journal-v4-jelly.js
+
+      - name: Validate interactive systems
+        run: |
+          grep -q 'Continuity Control Room' site/journal-v5-experiments.js
+          grep -q 'Motion Dynamics Lab' site/journal-v5-experiments.js
+          grep -q "fault('network')" site/journal-v5-experiments.js
+          grep -q "fault('stale')" site/journal-v5-experiments.js
+          grep -q "fault('ci')" site/journal-v5-experiments.js
+          grep -q 'IntersectionObserver' site/journal-v6-studio.js
+          grep -q 'studio-preview--glass' site/journal-v6-studio.js
+          grep -q 'studio-preview--sloar' site/journal-v6-studio.js
+          grep -q 'studio-preview--motion' site/journal-v6-studio.js
+
+      - name: Ensure legacy Blazor workflow stays archived
+        run: |
+          grep -q 'Archived Blazor Pages build' .github/workflows/publish-gh-pages.yml
+          grep -q 'workflow_dispatch:' .github/workflows/publish-gh-pages.yml
+          ! grep -q '^  push:' .github/workflows/publish-gh-pages.yml
