@@ -5,6 +5,7 @@ on:
     paths:
       - 'site/**'
       - '.github/workflows/design-journal-ci.yml'
+      - '.github/workflows/design-journal-deploy.yml'
       - '.github/workflows/publish-gh-pages.yml'
   push:
     branches:
@@ -12,6 +13,7 @@ on:
     paths:
       - 'site/**'
       - '.github/workflows/design-journal-ci.yml'
+      - '.github/workflows/design-journal-deploy.yml'
       - '.github/workflows/publish-gh-pages.yml'
 
 permissions:
@@ -84,8 +86,12 @@ jobs:
           grep -q 'studio-preview--sloar' site/journal-v6-studio.js
           grep -q 'studio-preview--motion' site/journal-v6-studio.js
 
-      - name: Ensure legacy Blazor workflow stays archived
+      - name: Validate deployment contract
         run: |
           grep -q 'Archived Blazor Pages build' .github/workflows/publish-gh-pages.yml
           grep -q 'workflow_dispatch:' .github/workflows/publish-gh-pages.yml
           ! grep -q '^  push:' .github/workflows/publish-gh-pages.yml
+          grep -q 'Deploy Design Journal' .github/workflows/design-journal-deploy.yml
+          grep -q 'git fetch origin gh-pages' .github/workflows/design-journal-deploy.yml
+          grep -q 'rsync -a --delete' .github/workflows/design-journal-deploy.yml
+          grep -q 'git push origin HEAD:gh-pages' .github/workflows/design-journal-deploy.yml
