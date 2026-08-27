@@ -31,13 +31,14 @@ jobs:
             site/app.js \
             site/journal-v2.js \
             site/journal-v3-refraction.js \
+            site/journal-runtime.js \
             site/journal-v4-jelly.js \
             site/journal-v5-experiments.js \
             site/journal-v6-studio.js; do
             node --check "$file"
           done
 
-      - name: Validate local asset graph
+      - name: Validate local asset graph and load order
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -51,14 +52,24 @@ jobs:
           required = {
               'journal-v2.css','journal-v2.js',
               'journal-v3-refraction.css','journal-v3-refraction.js',
+              'journal-runtime.js',
               'journal-v4-jelly.css','journal-v4-jelly.js',
               'journal-v5-experiments.css','journal-v5-experiments.js',
-              'journal-v6-studio.css','journal-v6-studio.js'
+              'journal-v6-studio.css','journal-v6-studio.js',
+              'journal-v6-compat.css'
           }
           absent = sorted(required - set(refs))
           if absent:
               raise SystemExit(f'assets not wired in index.html: {absent}')
-          print('asset graph ok')
+          scripts = re.findall(r'<script\s+src="\./([^"?#]+)"', html)
+          expected = [
+              'app.js','journal-v2.js','journal-v3-refraction.js','journal-runtime.js',
+              'journal-v4-jelly.js','journal-v5-experiments.js','journal-v6-studio.js'
+          ]
+          positions = [scripts.index(name) for name in expected]
+          if positions != sorted(positions):
+              raise SystemExit(f'invalid runtime load order: {scripts}')
+          print('asset graph and runtime order ok')
           PY
 
       - name: Lock preferred optical defaults
@@ -85,6 +96,16 @@ jobs:
           grep -q 'studio-preview--glass' site/journal-v6-studio.js
           grep -q 'studio-preview--sloar' site/journal-v6-studio.js
           grep -q 'studio-preview--motion' site/journal-v6-studio.js
+
+      - name: Validate single render lifecycle
+        run: |
+          grep -q "CustomEvent('hj:rendered'" site/journal-runtime.js
+          grep -q "addEventListener('hj:rendered'" site/journal-v4-jelly.js
+          grep -q "addEventListener('hj:rendered'" site/journal-v6-studio.js
+          ! grep -q 'new MutationObserver' site/journal-v4-jelly.js
+          ! grep -q 'new MutationObserver' site/journal-v6-studio.js
+          ! grep -q "addEventListener('hashchange'" site/journal-v4-jelly.js
+          ! grep -q "addEventListener('hashchange'" site/journal-v6-studio.js
 
       - name: Validate deployment contract
         run: |
