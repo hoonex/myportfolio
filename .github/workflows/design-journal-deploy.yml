@@ -1,0 +1,60 @@
+name: Deploy Design Journal
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'site/**'
+      - '.github/workflows/design-journal-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: design-journal-gh-pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate site before publish
+        run: |
+          for file in site/app.js site/journal-v2.js site/journal-v3-refraction.js site/journal-v4-jelly.js site/journal-v5-experiments.js site/journal-v6-studio.js; do
+            node --check "$file"
+          done
+          test -f site/index.html
+          test -f site/.nojekyll || touch site/.nojekyll
+
+      - name: Materialize gh-pages worktree
+        run: |
+          git fetch origin gh-pages
+          git worktree add /tmp/design-journal-pages origin/gh-pages
+
+      - name: Sync site into deployment root
+        run: |
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            site/ /tmp/design-journal-pages/
+          touch /tmp/design-journal-pages/.nojekyll
+
+      - name: Publish gh-pages
+        working-directory: /tmp/design-journal-pages
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No deployment changes.'
+            exit 0
+          fi
+          git commit -m "deploy: sync design journal from ${GITHUB_SHA::12}"
+          git push origin HEAD:gh-pages
