@@ -37,6 +37,7 @@ jobs:
             site/journal-v4-jelly.js \
             site/journal-v5-experiments.js \
             site/journal-v6-studio.js \
+            site/journal-v7-input-continuity.js \
             .github/scripts/design-journal-smoke.mjs; do
             node --check "$file"
           done
@@ -59,7 +60,7 @@ jobs:
               'journal-v4-jelly.css','journal-v4-jelly.js',
               'journal-v5-experiments.css','journal-v5-experiments.js',
               'journal-v6-studio.css','journal-v6-studio.js',
-              'journal-v6-compat.css'
+              'journal-v6-compat.css','journal-v7-input-continuity.js'
           }
           absent = sorted(required - set(refs))
           if absent:
@@ -67,7 +68,8 @@ jobs:
           scripts = re.findall(r'<script\s+src="\./([^"?#]+)"', html)
           expected = [
               'app.js','journal-v2.js','journal-v3-refraction.js','journal-runtime.js',
-              'journal-v4-jelly.js','journal-v5-experiments.js','journal-v6-studio.js'
+              'journal-v4-jelly.js','journal-v5-experiments.js','journal-v6-studio.js',
+              'journal-v7-input-continuity.js'
           ]
           positions = [scripts.index(name) for name in expected]
           if positions != sorted(positions):
@@ -98,6 +100,8 @@ jobs:
           grep -q 'role="slider"' site/journal-v5-experiments.js
           grep -q "ArrowLeft" site/journal-v5-experiments.js
           grep -q "ArrowRight" site/journal-v5-experiments.js
+          grep -q 'focusout' site/journal-v7-input-continuity.js
+          grep -q 'continuityUntil' site/journal-v7-input-continuity.js
           grep -q 'IntersectionObserver' site/journal-v6-studio.js
           grep -q 'studio-preview--glass' site/journal-v6-studio.js
           grep -q 'studio-preview--sloar' site/journal-v6-studio.js
@@ -124,6 +128,7 @@ jobs:
           ! grep -q "addEventListener('hashchange'" site/journal-v4-jelly.js
           ! grep -q "addEventListener('hashchange'" site/journal-v5-experiments.js
           ! grep -q "addEventListener('hashchange'" site/journal-v6-studio.js
+          ! grep -q "addEventListener('hashchange'" site/journal-v7-input-continuity.js
 
       - name: Validate deployment contract
         run: |
