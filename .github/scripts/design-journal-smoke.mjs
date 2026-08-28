@@ -34,6 +34,9 @@ const waitForSettledRefraction = targetPage => targetPage.waitForFunction(() => 
 }, null, { timeout: 15000 });
 
 async function assertA11y(targetPage, label) {
+  // Route rendering intentionally fades from opacity 0 → 1. Audit the stable UI,
+  // not a transient animation frame whose composited contrast is lower by design.
+  await targetPage.waitForTimeout(650);
   const result = await new AxeBuilder({ page: targetPage })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze();
@@ -70,6 +73,7 @@ try {
   expect((await page.title()).endsWith('— HJ'), `article title should be route-aware: ${await page.title()}`);
   expect(await page.locator('[data-nav="home"]').getAttribute('aria-current') === null, 'article routes must not mark Index as current');
   expect(await count('.reading-progress-v6') === 1, 'Sloar article should have one reading progress bar');
+  expect(await page.locator('textarea[data-editor="css"]').getAttribute('aria-label') === 'CSS code editor', 'visible CSS editor needs an accessible name');
   await assertA11y(page, 'Sloar article');
 
   await page.locator('label.fault-switch:has(input[data-fault="stale"])').click();
