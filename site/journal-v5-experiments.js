@@ -247,6 +247,7 @@
     };
     const reset=()=>{ const a=anchors(); x=a[1];target=a[1];v=0;samples=[];setCard();draw(); };
     const onDown=e=>{ if(e.button!==undefined&&e.button!==0)return; if(e.cancelable)e.preventDefault(); clearSelection(); card.focus({preventScroll:true}); dragging=true;card.setPointerCapture?.(e.pointerId);pointerStart=e.clientX;dragStart=x;lastX=e.clientX;lastT=performance.now();card.classList.add('is-held'); };
+    const onMouseDown=e=>{ if(e.button!==0)return; e.preventDefault(); clearSelection(); card.focus({preventScroll:true}); };
     const onMove=e=>{ if(!dragging)return; if(e.cancelable)e.preventDefault(); clearSelection(); const now=performance.now(),dt=Math.max(8,now-lastT)/1000,raw=dragStart+(e.clientX-pointerStart),b=bounds();x=rubber(raw,b.min,b.max,cfg().rubber);const instant=(e.clientX-lastX)/dt;v=v*.35+instant*.65;lastX=e.clientX;lastT=now; };
     const onUp=()=>{ if(!dragging)return; clearSelection();dragging=false;card.classList.remove('is-held'); card.focus({preventScroll:true}); const projected=x+v*cfg().projection;target=nearest(projected); };
     const onSelectStart=e=>{ if(dragging)e.preventDefault(); };
@@ -257,11 +258,11 @@
       if(e.key==='Home')index=0; else if(e.key==='End')index=2; else index=Math.max(0,Math.min(2,index+(e.key==='ArrowRight'?1:-1)));
       target=a[index]; v=0; setCard();
     };
-    card.addEventListener('pointerdown',onDown);card.addEventListener('keydown',onKeyDown);root.addEventListener('selectstart',onSelectStart);window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',onUp);window.addEventListener('pointercancel',onUp);
+    card.addEventListener('pointerdown',onDown);card.addEventListener('mousedown',onMouseDown);card.addEventListener('keydown',onKeyDown);root.addEventListener('selectstart',onSelectStart);window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',onUp);window.addEventListener('pointercancel',onUp);
     Object.entries(controls).forEach(([id,input])=>input.addEventListener('input',()=>{root.querySelector(`[data-motion-output="${id}"]`).textContent=input.value;}));
     root.querySelector('[data-motion-reset]').addEventListener('click',reset);
     const onResize=()=>reset();window.addEventListener('resize',onResize);
-    motionCleanup=()=>{card.removeEventListener('keydown',onKeyDown);root.removeEventListener('selectstart',onSelectStart);window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);window.removeEventListener('pointercancel',onUp);window.removeEventListener('resize',onResize);};
+    motionCleanup=()=>{card.removeEventListener('mousedown',onMouseDown);card.removeEventListener('keydown',onKeyDown);root.removeEventListener('selectstart',onSelectStart);window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);window.removeEventListener('pointercancel',onUp);window.removeEventListener('resize',onResize);};
     reset(); animate();
   }
 
