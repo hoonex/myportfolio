@@ -105,6 +105,18 @@ try {
   expect(await page.locator('[data-nav="home"]').getAttribute('aria-current') === null, 'article routes must not mark Index as current');
   expect(await count('.reading-progress-v6') === 1, 'Sloar article should have one reading progress bar');
   expect(await page.locator('textarea[data-editor="css"]').getAttribute('aria-label') === 'CSS code editor', 'visible CSS editor needs an accessible name');
+  const railBox = await page.locator('.article-rail-v6').boundingBox();
+  const articleHeadingBox = await page.locator('.article > h1').boundingBox();
+  expect(Boolean(railBox && articleHeadingBox), 'article rail and heading should both be measurable');
+  if (railBox && articleHeadingBox) {
+    const overlapsHeading = !(
+      railBox.x + railBox.width <= articleHeadingBox.x ||
+      articleHeadingBox.x + articleHeadingBox.width <= railBox.x ||
+      railBox.y + railBox.height <= articleHeadingBox.y ||
+      articleHeadingBox.y + articleHeadingBox.height <= railBox.y
+    );
+    expect(!overlapsHeading, `article rail must not occlude the heading: rail=${JSON.stringify(railBox)} heading=${JSON.stringify(articleHeadingBox)}`);
+  }
   await assertPlaygroundSecurity(page, 'Sloar article');
   await assertA11y(page, 'Sloar article light');
   await capturePage(page, 'sloar-article-light');
@@ -142,6 +154,9 @@ try {
     await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, { steps: 5 });
     await page.mouse.up();
   }
+  const selectionAfterMotionDrag = await page.evaluate(() => window.getSelection()?.toString() || '');
+  expect(selectionAfterMotionDrag.length === 0, `Motion drag must not select page text: ${JSON.stringify(selectionAfterMotionDrag.slice(0, 120))}`);
+  expect(await motionCard.evaluate(element => document.activeElement === element), 'Motion drag should keep keyboard focus on the direct-manipulation card');
   await assertPlaygroundSecurity(page, 'Motion article');
   await assertA11y(page, 'Motion article');
   await captureElement(page.locator('[data-motion-lab]'), 'motion-lab-light');
@@ -190,8 +205,12 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForExactCount('.post-card--studio', 3);
+  await page.evaluate(() => window.scrollTo(0, 0));
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
   expect(!overflow, 'mobile viewport has horizontal overflow');
+  const writingHeadingBox = await page.locator('#writing-title').boundingBox();
+  expect(Boolean(writingHeadingBox), 'mobile writing heading should be measurable');
+  if (writingHeadingBox) expect(writingHeadingBox.y < 844, `mobile hero should reveal the next section within the first viewport, y=${writingHeadingBox.y}`);
   await assertA11y(page, 'mobile home');
   await capturePage(page, 'home-mobile');
 
