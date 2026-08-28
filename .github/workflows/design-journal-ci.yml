@@ -41,6 +41,7 @@ jobs:
             site/journal-v6-studio.js \
             site/journal-v8-spatial.js \
             site/journal-v9-locale-editorial.js \
+            site/journal-v10-editorial-naturalize.js \
             .github/scripts/design-journal-smoke.mjs \
             .github/scripts/design-journal-locale-audit.mjs; do
             node --check "$file"
@@ -66,7 +67,7 @@ jobs:
               'journal-v6-studio.css','journal-v6-studio.js',
               'journal-v6-compat.css',
               'journal-v8-spatial.css','journal-v8-spatial.js',
-              'journal-v9-locale-editorial.js'
+              'journal-v9-locale-editorial.js','journal-v10-editorial-naturalize.js'
           }
           absent = sorted(required - set(refs))
           if absent:
@@ -75,7 +76,7 @@ jobs:
           expected = [
               'app.js','journal-v2.js','journal-v3-refraction.js','journal-runtime.js',
               'journal-v4-jelly.js','journal-v5-experiments.js','journal-v6-studio.js',
-              'journal-v8-spatial.js','journal-v9-locale-editorial.js'
+              'journal-v8-spatial.js','journal-v9-locale-editorial.js','journal-v10-editorial-naturalize.js'
           ]
           positions = [scripts.index(name) for name in expected]
           if positions != sorted(positions):
@@ -126,6 +127,11 @@ jobs:
           grep -q 'Optical parameters' site/journal-v9-locale-editorial.js
           grep -q '光学パラメータ' site/journal-v9-locale-editorial.js
           grep -q 'DOMシーン' site/journal-v9-locale-editorial.js
+          grep -q 'ガラスらしさは、ぼかしだけでは作れない。' site/journal-v10-editorial-naturalize.js
+          grep -q 'Sloarを作って分かったのは、記憶より「現在の状態」が重要だということ。' site/journal-v10-editorial-naturalize.js
+          grep -q '良いモーションは、演出よりも操作の連続性を守る。' site/journal-v10-editorial-naturalize.js
+          grep -q '会話履歴をリポジトリの代わりにしない。' site/journal-v10-editorial-naturalize.js
+          grep -q '反応はクリック完了ではなく、触れた瞬間から始める。' site/journal-v10-editorial-naturalize.js
 
       - name: Validate document and refraction resilience
         run: |
@@ -145,15 +151,18 @@ jobs:
           grep -q "addEventListener('hj:rendered'" site/journal-v6-studio.js
           grep -q "addEventListener('hj:rendered'" site/journal-v8-spatial.js
           grep -q "addEventListener('hj:rendered'" site/journal-v9-locale-editorial.js
+          grep -q "addEventListener('hj:rendered'" site/journal-v10-editorial-naturalize.js
           ! grep -q 'new MutationObserver' site/journal-v4-jelly.js
           ! grep -q 'new MutationObserver' site/journal-v6-studio.js
           ! grep -q 'new MutationObserver' site/journal-v8-spatial.js
           ! grep -q 'new MutationObserver' site/journal-v9-locale-editorial.js
+          ! grep -q 'new MutationObserver' site/journal-v10-editorial-naturalize.js
           ! grep -q "addEventListener('hashchange'" site/journal-v4-jelly.js
           ! grep -q "addEventListener('hashchange'" site/journal-v5-experiments.js
           ! grep -q "addEventListener('hashchange'" site/journal-v6-studio.js
           ! grep -q "addEventListener('hashchange'" site/journal-v8-spatial.js
           ! grep -q "addEventListener('hashchange'" site/journal-v9-locale-editorial.js
+          ! grep -q "addEventListener('hashchange'" site/journal-v10-editorial-naturalize.js
 
       - name: Validate deployment contract
         run: |
