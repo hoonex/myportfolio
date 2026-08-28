@@ -95,10 +95,24 @@ jobs:
           grep -q "fault('network')" site/journal-v5-experiments.js
           grep -q "fault('stale')" site/journal-v5-experiments.js
           grep -q "fault('ci')" site/journal-v5-experiments.js
+          grep -q 'role="slider"' site/journal-v5-experiments.js
+          grep -q "ArrowLeft" site/journal-v5-experiments.js
+          grep -q "ArrowRight" site/journal-v5-experiments.js
           grep -q 'IntersectionObserver' site/journal-v6-studio.js
           grep -q 'studio-preview--glass' site/journal-v6-studio.js
           grep -q 'studio-preview--sloar' site/journal-v6-studio.js
           grep -q 'studio-preview--motion' site/journal-v6-studio.js
+
+      - name: Validate document and refraction resilience
+        run: |
+          grep -q 'document.title' site/journal-runtime.js
+          grep -q 'aria-current' site/journal-runtime.js
+          grep -q 'theme-color' site/journal-runtime.js
+          grep -q 'INIT_TIMEOUT_MS = 8000' site/journal-v3-refraction.js
+          grep -q 'knownRendererHang' site/journal-v3-refraction.js
+          grep -q 'known-incompatible' site/journal-v3-refraction.js
+          grep -q 'data-refraction-state="loading"' site/journal-v3-refraction.js
+          grep -q 'role="status" aria-live="polite"' site/journal-v3-refraction.js
 
       - name: Validate single render lifecycle
         run: |
@@ -124,9 +138,9 @@ jobs:
           grep -q 'rsync -a --delete' .github/workflows/design-journal-deploy.yml
           grep -q 'git push origin HEAD:gh-pages' .github/workflows/design-journal-deploy.yml
 
-      - name: Browser smoke test
+      - name: Browser and accessibility audit
         run: |
-          npm install --no-save playwright@1.55.0
+          npm install --no-save playwright@1.62.1 @axe-core/playwright@4.13.0
           npx playwright install --with-deps chromium
           python3 -m http.server 4173 --directory site >/tmp/design-journal-http.log 2>&1 &
           server_pid=$!
