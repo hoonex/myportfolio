@@ -248,7 +248,7 @@
     const reset=()=>{ const a=anchors(); x=a[1];target=a[1];v=0;samples=[];setCard();draw(); };
     const onDown=e=>{ if(e.button!==undefined&&e.button!==0)return; if(e.cancelable)e.preventDefault(); clearSelection(); card.focus({preventScroll:true}); dragging=true;card.setPointerCapture?.(e.pointerId);pointerStart=e.clientX;dragStart=x;lastX=e.clientX;lastT=performance.now();card.classList.add('is-held'); };
     const onMove=e=>{ if(!dragging)return; if(e.cancelable)e.preventDefault(); clearSelection(); const now=performance.now(),dt=Math.max(8,now-lastT)/1000,raw=dragStart+(e.clientX-pointerStart),b=bounds();x=rubber(raw,b.min,b.max,cfg().rubber);const instant=(e.clientX-lastX)/dt;v=v*.35+instant*.65;lastX=e.clientX;lastT=now; };
-    const onUp=()=>{ if(!dragging)return; clearSelection();dragging=false;card.classList.remove('is-held'); const projected=x+v*cfg().projection;target=nearest(projected); };
+    const onUp=()=>{ if(!dragging)return; clearSelection();dragging=false;card.classList.remove('is-held'); card.focus({preventScroll:true}); const projected=x+v*cfg().projection;target=nearest(projected); };
     const onSelectStart=e=>{ if(dragging)e.preventDefault(); };
     const onKeyDown=e=>{
       if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
