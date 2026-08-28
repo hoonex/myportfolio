@@ -1,0 +1,31 @@
+name: Motion Focus Diagnostic
+
+on:
+  pull_request:
+    paths:
+      - 'site/**'
+      - '.github/scripts/motion-focus-diagnostic.mjs'
+      - '.github/workflows/motion-focus-diagnostic.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Motion focus trace
+        run: |
+          npm install --no-save playwright@1.62.1
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --directory site >/tmp/design-journal-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then
+              break
+            fi
+            sleep 0.25
+          done
+          JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/motion-focus-diagnostic.mjs
