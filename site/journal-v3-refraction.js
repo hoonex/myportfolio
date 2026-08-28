@@ -6,6 +6,7 @@
       intro: '이번 실험은 blur 중심의 glassmorphism이 아니라 실제 픽셀 왜곡을 만든다. 배경 DOM을 캔버스로 캡처하고 WebGL fragment shader에서 굴절, 색수차, Fresnel 반사, specular highlight, bevel depth를 계산한다.',
       badge: 'WEBGL / REAL REFRACTION',
       fallback: 'WebGL 렌더러를 불러오지 못해 CSS fallback으로 표시 중',
+      knownFallback: 'Chrome 150의 알려진 renderer hang을 피해 CSS fallback으로 표시 중',
       loading: 'WebGL 렌더러 초기화 중…',
       active: 'REFRACTION ACTIVE',
       drag: '유리 패널을 직접 드래그해 보세요. 글자와 격자선이 렌즈 가장자리에서 휘어지는 게 보여야 정상입니다.',
@@ -31,6 +32,7 @@
       intro: 'This experiment is not blur-first glassmorphism. It produces real pixel displacement by capturing the DOM into a canvas and running refraction, chromatic aberration, Fresnel reflection, specular lighting, and bevel depth in a WebGL fragment shader.',
       badge: 'WEBGL / REAL REFRACTION',
       fallback: 'WebGL renderer unavailable — showing CSS fallback',
+      knownFallback: 'CSS fallback active to avoid the known Chrome 150 renderer hang',
       loading: 'Initializing WebGL renderer…',
       active: 'REFRACTION ACTIVE',
       drag: 'Drag the glass panel. Text and grid lines should visibly bend around the lens edge.',
@@ -56,6 +58,7 @@
       intro: 'これは blur 中心の glassmorphism ではありません。DOM を Canvas にキャプチャし、WebGL の fragment shader で屈折、色収差、Fresnel 反射、specular、bevel depth を計算して、実際のピクセル変位を作ります。',
       badge: 'WEBGL / REAL REFRACTION',
       fallback: 'WebGL renderer を読み込めないため CSS fallback を表示中',
+      knownFallback: 'Chrome 150 の既知 renderer hang を避けるため CSS fallback を表示中',
       loading: 'WebGL renderer を初期化中…',
       active: 'REFRACTION ACTIVE',
       drag: 'ガラスパネルをドラッグしてください。文字とグリッド線がレンズの縁で実際に曲がれば正常です。',
@@ -92,6 +95,7 @@
     width: 280,
     height: 176
   };
+  const INIT_TIMEOUT_MS = 8000;
 
   let liquidInstance = null;
   let fpsTimer = null;
@@ -102,6 +106,7 @@
     return l.startsWith('ja') ? 'ja' : l.startsWith('en') ? 'en' : 'ko';
   };
   const t = () => COPY[language()];
+  const knownRendererHang = () => /\b(?:Chrome|Chromium)\/150\./.test(navigator.userAgent);
 
   function slider(id, label, min, max, step, value, suffix='') {
     return `<label class="ref-control">
@@ -158,11 +163,19 @@
     }
   }
 
+  function withTimeout(promise, label) {
+    let timeoutId;
+    const timeout = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${INIT_TIMEOUT_MS}ms`)), INIT_TIMEOUT_MS);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+  }
+
   async function liquidModule() {
     if (!modulePromise) {
       modulePromise = import('https://cdn.jsdelivr.net/npm/@ybouane/liquidglass@1.0.3/dist/index.js');
     }
-    return modulePromise;
+    return withTimeout(modulePromise, 'LiquidGlass module load');
   }
 
   labTemplate = function() {
@@ -177,7 +190,7 @@
       </section>
 
       <section class="refraction-shell">
-        <div class="refraction-root" id="refractionRoot">
+        <div class="refraction-root" id="refractionRoot" data-refraction-state="loading">
           <div class="refraction-backdrop" aria-hidden="true">
             <span class="ref-orb ref-orb-a"></span>
             <span class="ref-orb ref-orb-b"></span>
@@ -204,7 +217,7 @@
 
         <aside class="refraction-controls glass">
           <div class="ref-controls-head">
-            <div><strong>${c.controls}</strong><span id="refStatus">${c.loading}</span></div>
+            <div><strong>${c.controls}</strong><span id="refStatus" role="status" aria-live="polite">${c.loading}</span></div>
             <button id="refReset" type="button">${c.reset}</button>
           </div>
           ${slider('refraction','Refraction',0.15,1.6,0.01,DEFAULTS.refraction)}
@@ -270,6 +283,14 @@
     try { liquidInstance?.markChanged(); } catch {}
   }
 
+  function activateFallback(root, glass, status, message) {
+    root.classList.remove('is-webgl-active');
+    root.classList.add('is-refraction-fallback');
+    root.dataset.refractionState = 'fallback';
+    glass.querySelectorAll('canvas').forEach(canvas => canvas.remove());
+    if (status) status.textContent = message || t().fallback;
+  }
+
   async function bootLiquid() {
     destroyLiquid();
     const root = document.querySelector('#refractionRoot');
@@ -278,10 +299,19 @@
     if (!root || !glass) return;
 
     glass.dataset.config = JSON.stringify(currentConfig());
+    root.dataset.refractionState = 'loading';
+
+    if (knownRendererHang()) {
+      activateFallback(root, glass, status, t().knownFallback);
+      root.dataset.refractionState = 'known-incompatible';
+      return;
+    }
+
+    let initPromise = null;
     try {
       const { LiquidGlass } = await liquidModule();
       if (!document.contains(root) || !document.contains(glass)) return;
-      liquidInstance = await LiquidGlass.init({
+      initPromise = LiquidGlass.init({
         root,
         glassElements: [glass],
         defaults: {
@@ -290,16 +320,30 @@
           zRadius: DEFAULTS.zRadius
         }
       });
+      const instance = await withTimeout(initPromise, 'LiquidGlass init');
+      if (!document.contains(root) || !document.contains(glass)) {
+        try { instance.destroy(); } catch {}
+        return;
+      }
+      liquidInstance = instance;
       if (status) status.textContent = t().active;
+      root.classList.remove('is-refraction-fallback');
       root.classList.add('is-webgl-active');
+      root.dataset.refractionState = 'active';
       fpsTimer = setInterval(() => {
         const target = document.querySelector('#refFps');
         if (target && liquidInstance) target.textContent = String(Math.round(liquidInstance.fps || 0));
       }, 1000);
     } catch (error) {
       console.error('[Liquid Glass] WebGL init failed', error);
-      root.classList.add('is-refraction-fallback');
-      if (status) status.textContent = t().fallback;
+      if (initPromise) {
+        initPromise.then(instance => {
+          if (instance && instance !== liquidInstance) {
+            try { instance.destroy(); } catch {}
+          }
+        }).catch(() => {});
+      }
+      activateFallback(root, glass, status, t().fallback);
     }
   }
 
