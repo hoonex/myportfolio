@@ -135,10 +135,17 @@ try {
   }
 
   await page.goto(`${baseURL}/#/lab`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.lab-copy .small');
-  const labJapanese = (await page.locator('.lab-copy .small').textContent() || '').trim();
-  expect(labJapanese.includes('背後のシーン'), `Japanese lab copy should use natural localized wording: ${labJapanese}`);
-  expect(!labJapanese.includes(' scene '), `Japanese lab copy still contains raw English prose: ${labJapanese}`);
+  await page.waitForSelector('.refraction-header > p');
+  await page.waitForFunction(() => document.querySelector('.refraction-header > p')?.textContent?.includes('ぼかしと屈折を同じものとして扱いません'));
+  const labJapanese = (await page.locator('.refraction-page').innerText()).trim();
+  expect(labJapanese.includes('光学パラメータ'), 'Japanese Refraction Lab should use an authored controls heading');
+  expect(labJapanese.includes('屈折は参照位置を変える'), 'Japanese Refraction Lab should use the authored optical explanation');
+  expect(labJapanese.includes('初期値に戻す'), 'Japanese Refraction Lab reset action should be localized naturally');
+  for (const phrase of ['fragment shader', 'sample 座標', 'browser 間', '背景 texture', 'RGB channel']) {
+    expect(!labJapanese.includes(phrase), `Japanese Refraction Lab still contains translationese: ${phrase}`);
+  }
+  await assertA11y('Refraction Lab ja editorial');
+  await page.screenshot({ path: `${visualDir}/refraction-ja.png`, animations: 'disabled' });
 
   expect(pageErrors.length === 0, `page errors detected: ${pageErrors.join(' | ')}`);
   expect(consoleErrors.length === 0, `console errors detected: ${consoleErrors.join(' | ')}`);
