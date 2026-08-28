@@ -1,4 +1,10 @@
-/* Journal v6 compatibility overrides: avoid typed CSS arithmetic for stagger timing. */
+/* Journal v6 compatibility + quality overrides. */
+:root{--muted:#595c62}
+:root[data-theme="dark"]{--muted:#a6a8ae}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent)!important;outline-offset:3px}
+.reading-progress-v6 span{opacity:1}
+
+/* Avoid typed CSS arithmetic for stagger timing. */
 .studio-pipeline i{animation-delay:0s}
 .studio-pipeline i:nth-child(1){animation-delay:0s}
 .studio-pipeline i:nth-child(2){animation-delay:.16s}
