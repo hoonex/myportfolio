@@ -245,7 +245,7 @@
       samples.push({x}); if(samples.length>120)samples.shift(); setCard(); draw(); motionRAF=requestAnimationFrame(animate);
     };
     const reset=()=>{ const a=anchors(); x=a[1];target=a[1];v=0;samples=[];setCard();draw(); };
-    const onDown=e=>{ if(e.button!==undefined&&e.button!==0)return; dragging=true;card.setPointerCapture?.(e.pointerId);pointerStart=e.clientX;dragStart=x;lastX=e.clientX;lastT=performance.now();card.classList.add('is-held'); };
+    const onDown=e=>{ if(e.button!==undefined&&e.button!==0)return; e.preventDefault(); window.getSelection()?.removeAllRanges(); card.focus({preventScroll:true}); dragging=true;card.setPointerCapture?.(e.pointerId);pointerStart=e.clientX;dragStart=x;lastX=e.clientX;lastT=performance.now();card.classList.add('is-held'); };
     const onMove=e=>{ if(!dragging)return; const now=performance.now(),dt=Math.max(8,now-lastT)/1000,raw=dragStart+(e.clientX-pointerStart),b=bounds();x=rubber(raw,b.min,b.max,cfg().rubber);const instant=(e.clientX-lastX)/dt;v=v*.35+instant*.65;lastX=e.clientX;lastT=now; };
     const onUp=()=>{ if(!dragging)return;dragging=false;card.classList.remove('is-held'); const projected=x+v*cfg().projection;target=nearest(projected); };
     const onKeyDown=e=>{
