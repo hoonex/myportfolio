@@ -213,6 +213,7 @@
     const controls=Object.fromEntries([...root.querySelectorAll('[data-motion-control]')].map(el=>[el.dataset.motionControl,el]));
     const readout=id=>root.querySelector(`[data-readout="${id}"]`);
     let x=0,v=0,target=0,dragging=false,lastX=0,lastT=0,pointerStart=0,dragStart=0,samples=[];
+    const clearSelection=()=>window.getSelection()?.removeAllRanges();
 
     const bounds=()=>{ const sr=stage.getBoundingClientRect(), half=card.offsetWidth/2; return {min:half+24,max:sr.width-half-24,center:sr.width/2,width:sr.width}; };
     const anchors=()=>{ const b=bounds(); return [b.min,b.center,b.max]; };
@@ -245,9 +246,10 @@
       samples.push({x}); if(samples.length>120)samples.shift(); setCard(); draw(); motionRAF=requestAnimationFrame(animate);
     };
     const reset=()=>{ const a=anchors(); x=a[1];target=a[1];v=0;samples=[];setCard();draw(); };
-    const onDown=e=>{ if(e.button!==undefined&&e.button!==0)return; e.preventDefault(); window.getSelection()?.removeAllRanges(); card.focus({preventScroll:true}); dragging=true;card.setPointerCapture?.(e.pointerId);pointerStart=e.clientX;dragStart=x;lastX=e.clientX;lastT=performance.now();card.classList.add('is-held'); };
-    const onMove=e=>{ if(!dragging)return; const now=performance.now(),dt=Math.max(8,now-lastT)/1000,raw=dragStart+(e.clientX-pointerStart),b=bounds();x=rubber(raw,b.min,b.max,cfg().rubber);const instant=(e.clientX-lastX)/dt;v=v*.35+instant*.65;lastX=e.clientX;lastT=now; };
-    const onUp=()=>{ if(!dragging)return;dragging=false;card.classList.remove('is-held'); const projected=x+v*cfg().projection;target=nearest(projected); };
+    const onDown=e=>{ if(e.button!==undefined&&e.button!==0)return; if(e.cancelable)e.preventDefault(); clearSelection(); card.focus({preventScroll:true}); dragging=true;card.setPointerCapture?.(e.pointerId);pointerStart=e.clientX;dragStart=x;lastX=e.clientX;lastT=performance.now();card.classList.add('is-held'); };
+    const onMove=e=>{ if(!dragging)return; if(e.cancelable)e.preventDefault(); clearSelection(); const now=performance.now(),dt=Math.max(8,now-lastT)/1000,raw=dragStart+(e.clientX-pointerStart),b=bounds();x=rubber(raw,b.min,b.max,cfg().rubber);const instant=(e.clientX-lastX)/dt;v=v*.35+instant*.65;lastX=e.clientX;lastT=now; };
+    const onUp=()=>{ if(!dragging)return; clearSelection();dragging=false;card.classList.remove('is-held'); const projected=x+v*cfg().projection;target=nearest(projected); };
+    const onSelectStart=e=>{ if(dragging)e.preventDefault(); };
     const onKeyDown=e=>{
       if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
       e.preventDefault();
@@ -255,11 +257,11 @@
       if(e.key==='Home')index=0; else if(e.key==='End')index=2; else index=Math.max(0,Math.min(2,index+(e.key==='ArrowRight'?1:-1)));
       target=a[index]; v=0; setCard();
     };
-    card.addEventListener('pointerdown',onDown);card.addEventListener('keydown',onKeyDown);window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',onUp);window.addEventListener('pointercancel',onUp);
+    card.addEventListener('pointerdown',onDown);card.addEventListener('keydown',onKeyDown);root.addEventListener('selectstart',onSelectStart);window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',onUp);window.addEventListener('pointercancel',onUp);
     Object.entries(controls).forEach(([id,input])=>input.addEventListener('input',()=>{root.querySelector(`[data-motion-output="${id}"]`).textContent=input.value;}));
     root.querySelector('[data-motion-reset]').addEventListener('click',reset);
     const onResize=()=>reset();window.addEventListener('resize',onResize);
-    motionCleanup=()=>{card.removeEventListener('keydown',onKeyDown);window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);window.removeEventListener('pointercancel',onUp);window.removeEventListener('resize',onResize);};
+    motionCleanup=()=>{card.removeEventListener('keydown',onKeyDown);root.removeEventListener('selectstart',onSelectStart);window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);window.removeEventListener('pointercancel',onUp);window.removeEventListener('resize',onResize);};
     reset(); animate();
   }
 
