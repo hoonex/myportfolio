@@ -1,7 +1,11 @@
+import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
 
 const baseURL = process.env.JOURNAL_BASE_URL || 'http://127.0.0.1:4173';
+const visualDir = process.env.JOURNAL_VISUAL_DIR || '.artifacts/design-journal';
+await mkdir(visualDir, { recursive: true });
+
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
 const page = await context.newPage();
@@ -32,6 +36,14 @@ const waitForSettledRefraction = targetPage => targetPage.waitForFunction(() => 
   const state = document.querySelector('#refractionRoot')?.dataset.refractionState;
   return state && state !== 'loading';
 }, null, { timeout: 15000 });
+const capturePage = (targetPage, name) => targetPage.screenshot({
+  path: `${visualDir}/${name}.png`,
+  animations: 'disabled'
+});
+const captureElement = (locator, name) => locator.screenshot({
+  path: `${visualDir}/${name}.png`,
+  animations: 'disabled'
+});
 
 async function assertA11y(targetPage, label) {
   // Route rendering intentionally fades from opacity 0 → 1. Audit the stable UI,
@@ -68,11 +80,14 @@ try {
   expect(await page.locator('meta[name="theme-color"]').getAttribute('content') === '#f3f1eb', 'light theme browser chrome should use the light theme color');
   expect(await count('.studio-index-note') === 1, 'home enhancement should be installed exactly once');
   expect(await count('.reading-progress-v6') === 0, 'home must not retain article reading progress');
-  await assertA11y(page, 'home');
+  await assertA11y(page, 'home light');
+  await capturePage(page, 'home-light');
 
   await page.locator('#themeToggle').click();
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
   await page.waitForFunction(() => document.querySelector('meta[name="theme-color"]')?.content === '#0b0c0e');
+  await assertA11y(page, 'home dark');
+  await capturePage(page, 'home-dark');
   await page.locator('#themeToggle').click();
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'light');
 
@@ -91,7 +106,16 @@ try {
   expect(await count('.reading-progress-v6') === 1, 'Sloar article should have one reading progress bar');
   expect(await page.locator('textarea[data-editor="css"]').getAttribute('aria-label') === 'CSS code editor', 'visible CSS editor needs an accessible name');
   await assertPlaygroundSecurity(page, 'Sloar article');
-  await assertA11y(page, 'Sloar article');
+  await assertA11y(page, 'Sloar article light');
+  await capturePage(page, 'sloar-article-light');
+  await captureElement(page.locator('[data-sloar-lab]'), 'sloar-lab-light');
+
+  await page.locator('#themeToggle').click();
+  await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
+  await assertA11y(page, 'Sloar article dark');
+  await captureElement(page.locator('[data-sloar-lab]'), 'sloar-lab-dark');
+  await page.locator('#themeToggle').click();
+  await page.waitForFunction(() => document.documentElement.dataset.theme === 'light');
 
   await page.locator('label.fault-switch:has(input[data-fault="stale"])').click();
   expect(await page.locator('[data-fault="stale"]').isChecked(), 'visible stale-remote switch should toggle its input');
@@ -120,6 +144,7 @@ try {
   }
   await assertPlaygroundSecurity(page, 'Motion article');
   await assertA11y(page, 'Motion article');
+  await captureElement(page.locator('[data-motion-lab]'), 'motion-lab-light');
 
   await page.goto(`${baseURL}/#/lab`);
   await page.waitForSelector('#realLiquidGlass');
@@ -141,6 +166,7 @@ try {
     expect(values[key] === value, `preferred optical default drifted: ${key}=${values[key]}`);
   }
   await assertA11y(page, 'Glass Lab');
+  await captureElement(page.locator('.refraction-shell'), 'glass-lab-light');
 
   const chrome150Context = await browser.newContext({
     viewport: { width: 1280, height: 900 },
@@ -167,6 +193,7 @@ try {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
   expect(!overflow, 'mobile viewport has horizontal overflow');
   await assertA11y(page, 'mobile home');
+  await capturePage(page, 'home-mobile');
 
   expect(failedLocal.length === 0, `local asset requests failed: ${failedLocal.join(', ')}`);
   expect(pageErrors.length === 0, `page errors detected: ${pageErrors.join(' | ')}`);
