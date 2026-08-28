@@ -1,7 +1,8 @@
 /* Journal v6 compatibility + quality overrides. */
 :root{--muted:#595c62}
 :root[data-theme="dark"]{--muted:#a6a8ae}
-a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent)!important;outline-offset:3px}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:not(#app):focus-visible{outline:2px solid var(--accent)!important;outline-offset:3px}
+#app:focus{outline:none}
 .reading-progress-v6 span{opacity:1}
 
 /* Keep fixed article navigation relative to the viewport. The base page entrance
