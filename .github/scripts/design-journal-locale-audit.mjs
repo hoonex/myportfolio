@@ -26,12 +26,59 @@ const spatialTitles = {
   en: 'A coherent world matters more than a beautiful mesh.',
   ja: '美しいメッシュより、矛盾しない世界を先につくる。'
 };
+const coreTitles = {
+  ko: {
+    glass: 'Liquid Glass는 단순한 블러가 아니다.',
+    sloar: 'Sloar를 만들며 배운 것은 “기억”보다 “상태”였다.',
+    motion: '좋은 모션은 애니메이션보다 입력의 연속성에 가깝다.'
+  },
+  en: {
+    glass: 'Liquid Glass is a hierarchy problem before it is a blur effect.',
+    sloar: 'Sloar is an argument for state over memory.',
+    motion: 'Good motion preserves intent instead of displaying animation.'
+  },
+  ja: {
+    glass: 'ガラスらしさは、ぼかしだけでは作れない。',
+    sloar: 'Sloarを作って分かったのは、記憶より「現在の状態」が重要だということ。',
+    motion: '良いモーションは、演出よりも操作の連続性を守る。'
+  }
+};
+const japaneseHeadings = {
+  sloar: [
+    '会話履歴をリポジトリの代わりにしない。',
+    '状態遷移は、あえて単純にする。',
+    '同じ失敗をそのまま繰り返さない。',
+    'Gitとホスティング側の障害を分けて考える。',
+    '必要十分な権限だけを使う。',
+    '確認できた事実以上のことを言わない。',
+    'プロトコルにも読みやすい画面が必要だ。',
+    'Sloarが決めないことを、先に決めておく。'
+  ],
+  motion: [
+    '反応はクリック完了ではなく、触れた瞬間から始める。',
+    'ドラッグ中は入力と1対1で動かす。',
+    '途中でつかみ直しても、現在位置から続ける。',
+    '位置だけでなく、速度も状態として扱う。',
+    '放した先を予測して、自然な着地点を選ぶ。',
+    '境界では止めるより、抵抗を返す。',
+    'バウンスは理由がある時だけ使う。',
+    '良いモーションは、会話のように割り込める。'
+  ]
+};
 const japaneseTranslationese = [
   '背後の scene',
   'chat coding',
   'source of truth',
   'working tree',
   'working-tree',
+  'Chat history',
+  'engineering state',
+  'durable state',
+  'durable truth',
+  'State machine',
+  'Agent workflow',
+  'coding agent',
+  'local build',
   'release velocity',
   'interruptibility',
   'mobile GPU',
@@ -45,6 +92,10 @@ async function switchLanguage(lang) {
   await page.waitForFunction(expected => document.documentElement.lang === expected, lang);
   await page.waitForSelector('[data-spatial-card-v8]');
   await page.waitForFunction(() => document.querySelectorAll('.post-card--studio').length === 3);
+  await page.waitForFunction(({ lang, title }) => {
+    return document.querySelector('[data-post="glass"] h3')?.textContent?.trim() === title &&
+      document.documentElement.lang === lang;
+  }, { lang, title: coreTitles[lang].glass });
 }
 
 async function assertA11y(label) {
@@ -64,6 +115,10 @@ try {
     expect(await page.locator('.post-card--studio').count() === 3, `${lang} v6 studio cards should remain exactly three`);
     const countText = (await page.locator('.section-head > span').textContent() || '').trim();
     expect(countText.startsWith('04'), `${lang} home count should be editorially updated to four: ${countText}`);
+    for (const slug of ['glass', 'sloar', 'motion']) {
+      const cardTitle = (await page.locator(`[data-post="${slug}"] h3`).textContent() || '').trim();
+      expect(cardTitle === coreTitles[lang][slug], `${lang} ${slug} home title did not use the locale-native v10 edition: ${cardTitle}`);
+    }
 
     await page.goto(`${baseURL}/#/post/spatial`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector(`[data-spatial-article][data-lang="${lang}"]`);
@@ -124,8 +179,22 @@ try {
   await switchLanguage('ja');
   for (const slug of ['glass', 'sloar', 'motion', 'spatial']) {
     await page.goto(`${baseURL}/#/post/${slug}`, { waitUntil: 'domcontentloaded' });
-    if (slug === 'spatial') await page.waitForSelector('[data-spatial-article][data-lang="ja"]');
-    else await page.waitForSelector('.article-body');
+    if (slug === 'spatial') {
+      await page.waitForSelector('[data-spatial-article][data-lang="ja"]');
+    } else {
+      await page.waitForSelector('.article-body');
+      await page.waitForFunction(({ slug, title }) => {
+        return location.hash === `#/post/${slug}` && document.querySelector('.article > h1')?.textContent?.trim() === title;
+      }, { slug, title: coreTitles.ja[slug] });
+      const renderedTitle = (await page.locator('.article > h1').textContent() || '').trim();
+      expect(renderedTitle === coreTitles.ja[slug], `Japanese ${slug} article title did not use v10 authored copy: ${renderedTitle}`);
+      if (japaneseHeadings[slug]) {
+        const renderedHeadings = await page.locator('.article-body > .essay-section > h2').allTextContents();
+        japaneseHeadings[slug].forEach((expected, index) => {
+          expect(renderedHeadings[index]?.trim() === expected, `Japanese ${slug} section ${index + 1} did not use authored heading: ${renderedHeadings[index]}`);
+        });
+      }
+    }
     await page.waitForTimeout(100);
     const text = (await page.locator('.article-body').innerText()).trim();
     expect(text.length >= 1200, `Japanese ${slug} article unexpectedly short: ${text.length}`);
