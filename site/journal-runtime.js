@@ -36,6 +36,13 @@
       const kind = String(editor.dataset.editor || 'code').toUpperCase();
       if (!editor.getAttribute('aria-label')) editor.setAttribute('aria-label', `${kind} code editor`);
     });
+
+    const configOutput = app.querySelector('#refConfigOutput');
+    if (configOutput) {
+      configOutput.tabIndex = 0;
+      const label = configOutput.closest('.ref-config')?.querySelector('span')?.textContent?.trim();
+      configOutput.setAttribute('aria-label', label || 'Current shader config');
+    }
   };
 
   const syncDocumentChrome = route => {
