@@ -31,10 +31,18 @@
     else document.title = 'Not found — HJ';
   };
 
+  const syncDynamicA11y = () => {
+    app.querySelectorAll('textarea[data-editor]').forEach(editor => {
+      const kind = String(editor.dataset.editor || 'code').toUpperCase();
+      if (!editor.getAttribute('aria-label')) editor.setAttribute('aria-label', `${kind} code editor`);
+    });
+  };
+
   const syncDocumentChrome = route => {
     syncNavigation(route);
     syncTitle(route);
     syncThemeColor();
+    syncDynamicA11y();
   };
 
   const emit = () => {
