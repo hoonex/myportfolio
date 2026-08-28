@@ -5,6 +5,7 @@ on:
     paths:
       - 'site/**'
       - '.github/scripts/design-journal-smoke.mjs'
+      - '.github/scripts/design-journal-locale-audit.mjs'
       - '.github/workflows/design-journal-ci.yml'
       - '.github/workflows/design-journal-deploy.yml'
       - '.github/workflows/publish-gh-pages.yml'
@@ -14,6 +15,7 @@ on:
     paths:
       - 'site/**'
       - '.github/scripts/design-journal-smoke.mjs'
+      - '.github/scripts/design-journal-locale-audit.mjs'
       - '.github/workflows/design-journal-ci.yml'
       - '.github/workflows/design-journal-deploy.yml'
       - '.github/workflows/publish-gh-pages.yml'
@@ -37,7 +39,9 @@ jobs:
             site/journal-v4-jelly.js \
             site/journal-v5-experiments.js \
             site/journal-v6-studio.js \
-            .github/scripts/design-journal-smoke.mjs; do
+            site/journal-v8-spatial.js \
+            .github/scripts/design-journal-smoke.mjs \
+            .github/scripts/design-journal-locale-audit.mjs; do
             node --check "$file"
           done
 
@@ -59,7 +63,8 @@ jobs:
               'journal-v4-jelly.css','journal-v4-jelly.js',
               'journal-v5-experiments.css','journal-v5-experiments.js',
               'journal-v6-studio.css','journal-v6-studio.js',
-              'journal-v6-compat.css'
+              'journal-v6-compat.css',
+              'journal-v8-spatial.css','journal-v8-spatial.js'
           }
           absent = sorted(required - set(refs))
           if absent:
@@ -67,7 +72,8 @@ jobs:
           scripts = re.findall(r'<script\s+src="\./([^"?#]+)"', html)
           expected = [
               'app.js','journal-v2.js','journal-v3-refraction.js','journal-runtime.js',
-              'journal-v4-jelly.js','journal-v5-experiments.js','journal-v6-studio.js'
+              'journal-v4-jelly.js','journal-v5-experiments.js','journal-v6-studio.js',
+              'journal-v8-spatial.js'
           ]
           positions = [scripts.index(name) for name in expected]
           if positions != sorted(positions):
@@ -104,6 +110,11 @@ jobs:
           grep -q 'studio-preview--glass' site/journal-v6-studio.js
           grep -q 'studio-preview--sloar' site/journal-v6-studio.js
           grep -q 'studio-preview--motion' site/journal-v6-studio.js
+          grep -q 'SPATIAL BLOCKOUT' site/journal-v8-spatial.js
+          grep -q 'data-spatial-stage' site/journal-v8-spatial.js
+          grep -q "event.key === 'ArrowLeft'" site/journal-v8-spatial.js
+          grep -q 'Procedural does not mean random.' site/journal-v8-spatial.js
+          grep -q 'プロシージャル生成は乱数ではなく' site/journal-v8-spatial.js
 
       - name: Validate document and refraction resilience
         run: |
@@ -121,11 +132,14 @@ jobs:
           grep -q "CustomEvent('hj:rendered'" site/journal-runtime.js
           grep -q "addEventListener('hj:rendered'" site/journal-v4-jelly.js
           grep -q "addEventListener('hj:rendered'" site/journal-v6-studio.js
+          grep -q "addEventListener('hj:rendered'" site/journal-v8-spatial.js
           ! grep -q 'new MutationObserver' site/journal-v4-jelly.js
           ! grep -q 'new MutationObserver' site/journal-v6-studio.js
+          ! grep -q 'new MutationObserver' site/journal-v8-spatial.js
           ! grep -q "addEventListener('hashchange'" site/journal-v4-jelly.js
           ! grep -q "addEventListener('hashchange'" site/journal-v5-experiments.js
           ! grep -q "addEventListener('hashchange'" site/journal-v6-studio.js
+          ! grep -q "addEventListener('hashchange'" site/journal-v8-spatial.js
 
       - name: Validate deployment contract
         run: |
@@ -141,7 +155,7 @@ jobs:
           grep -q 'rsync -a --delete' .github/workflows/design-journal-deploy.yml
           grep -q 'git push origin HEAD:gh-pages' .github/workflows/design-journal-deploy.yml
 
-      - name: Browser and accessibility audit
+      - name: Browser, accessibility, and locale audit
         run: |
           npm install --no-save playwright@1.62.1 @axe-core/playwright@4.13.0
           npx playwright install --with-deps chromium
@@ -155,6 +169,7 @@ jobs:
             sleep 0.25
           done
           JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-smoke.mjs
+          JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-locale-audit.mjs
 
       - name: Upload visual audit evidence
         if: always()
