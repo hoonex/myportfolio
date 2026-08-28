@@ -34,9 +34,9 @@
 .evidence-panel{background:#080b10}.evidence-stream{height:302px;overflow:auto;padding-right:4px}.evidence-stream p{display:grid!important;grid-template-columns:70px 1fr;gap:10px;padding:7px 0!important;margin:0!important;border-bottom:1px solid rgba(255,255,255,.055);font:500 9.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace!important;color:#a6aebb!important}.evidence-stream time{color:#505866}.evidence-stream p[data-type="ok"] span{color:#a4e8bf}.evidence-stream p[data-type="error"] span{color:#ff9999}
 
 /* Motion dynamics lab */
-.motion-dynamics-lab{background:var(--bg)}
-.motion-workbench{display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:510px;-webkit-user-select:none;user-select:none}
-.motion-workbench *{-webkit-user-select:none;user-select:none}
+.motion-dynamics-lab{background:var(--bg);-webkit-user-select:none;user-select:none}
+.motion-dynamics-lab *{-webkit-user-select:none;user-select:none}
+.motion-workbench{display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:510px}
 .motion-stage{position:relative;overflow:hidden;min-height:510px;background:linear-gradient(180deg,color-mix(in srgb,var(--bg-elevated) 58%,transparent),var(--bg));border-right:1px solid var(--line);touch-action:none}
 .motion-stage:before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:40px 40px;opacity:.35;mask-image:linear-gradient(to bottom,transparent,black 20%,black 80%,transparent)}
 .motion-track{position:absolute;left:24px;right:24px;top:50%;height:1px;background:var(--line)}
