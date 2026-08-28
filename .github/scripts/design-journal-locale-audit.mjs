@@ -86,16 +86,29 @@ try {
     }
 
     const stage = page.locator('[data-spatial-stage]');
+    await stage.scrollIntoViewIfNeeded();
     await stage.focus();
     const before = (await page.locator('[data-spatial-readout]').textContent() || '').trim();
     await page.keyboard.press('ArrowRight');
     const afterKey = (await page.locator('[data-spatial-readout]').textContent() || '').trim();
     expect(before !== afterKey, `${lang} spatial blockout should respond to keyboard orbit`);
+
     const box = await stage.boundingBox();
     expect(Boolean(box), `${lang} spatial stage should be measurable`);
     if (box) {
-      await page.mouse.move(box.x + box.width * .55, box.y + box.height * .5);
+      const localX = box.width * .55;
+      const localY = box.height * .5;
+      await stage.hover({ position: { x: localX, y: localY } });
+      await page.evaluate(() => {
+        window.__spatialAuditPointerTarget = false;
+        document.addEventListener('pointerdown', event => {
+          window.__spatialAuditPointerTarget = Boolean(
+            event.target instanceof Element && event.target.closest('[data-spatial-stage]')
+          );
+        }, { capture: true, once: true });
+      });
       await page.mouse.down();
+      expect(await page.evaluate(() => window.__spatialAuditPointerTarget === true), `${lang} spatial audit pointerdown must hit the interactive stage`);
       await page.mouse.move(box.x + box.width * .68, box.y + box.height * .42, { steps: 5 });
       await page.mouse.up();
     }
