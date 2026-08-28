@@ -1,30 +1,59 @@
 /* Journal v7: preserve direct-manipulation continuity across pointer and keyboard input. */
 (() => {
   let activeMotionCard = null;
+  let continuityUntil = 0;
+  let clearTimer = 0;
 
   const clearSelection = () => window.getSelection()?.removeAllRanges();
-  const restoreMotionFocus = () => {
+  const focusCard = card => {
+    if (!card || !document.contains(card)) return;
+    clearSelection();
+    if (document.activeElement !== card) card.focus({ preventScroll: true });
+  };
+  const beginContinuity = card => {
+    clearTimeout(clearTimer);
+    activeMotionCard = card;
+    continuityUntil = Number.POSITIVE_INFINITY;
+    focusCard(card);
+  };
+  const finishContinuity = () => {
     const card = activeMotionCard;
-    activeMotionCard = null;
     if (!card) return;
-    queueMicrotask(() => {
-      if (!document.contains(card)) return;
-      clearSelection();
-      card.focus({ preventScroll: true });
-    });
+    continuityUntil = performance.now() + 180;
+    focusCard(card);
+    clearTimeout(clearTimer);
+    clearTimer = window.setTimeout(() => {
+      if (activeMotionCard === card) activeMotionCard = null;
+      continuityUntil = 0;
+    }, 180);
   };
 
   document.addEventListener('pointerdown', event => {
     const card = event.target instanceof Element ? event.target.closest('[data-motion-card]') : null;
     if (!card) return;
-    activeMotionCard = card;
+    beginContinuity(card);
+  }, true);
+
+  document.addEventListener('mousedown', event => {
+    const card = event.target instanceof Element ? event.target.closest('[data-motion-card]') : null;
+    if (!card || event.button !== 0) return;
+    if (event.cancelable) event.preventDefault();
+    beginContinuity(card);
+  }, true);
+
+  document.addEventListener('focusout', event => {
+    const card = activeMotionCard;
+    if (!card || event.target !== card) return;
+    if (performance.now() > continuityUntil) return;
+    focusCard(card);
   }, true);
 
   window.addEventListener('mouseup', event => {
     if (!activeMotionCard || event.button !== 0) return;
     if (event.cancelable) event.preventDefault();
-    restoreMotionFocus();
-  });
+    finishContinuity();
+  }, true);
 
-  window.addEventListener('pointercancel', restoreMotionFocus);
+  window.addEventListener('pointerup', finishContinuity, true);
+  window.addEventListener('pointercancel', finishContinuity, true);
 })();
