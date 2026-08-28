@@ -3,7 +3,8 @@ import AxeBuilder from '@axe-core/playwright';
 
 const baseURL = process.env.JOURNAL_BASE_URL || 'http://127.0.0.1:4173';
 const browser = await chromium.launch({ headless: true });
-const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+const page = await context.newPage();
 const pageErrors = [];
 const consoleErrors = [];
 const failedLocal = [];
@@ -118,17 +119,18 @@ try {
   }
   await assertA11y(page, 'Glass Lab');
 
-  const chrome150 = await browser.newPage({
+  const chrome150Context = await browser.newContext({
     viewport: { width: 1280, height: 900 },
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
   });
+  const chrome150 = await chrome150Context.newPage();
   try {
     await chrome150.goto(`${baseURL}/#/lab`, { waitUntil: 'domcontentloaded' });
     await chrome150.waitForSelector('#refractionRoot');
     await chrome150.waitForFunction(() => document.querySelector('#refractionRoot')?.dataset.refractionState === 'known-incompatible');
     expect(await chrome150.locator('#refractionRoot canvas').count() === 0, 'Chrome 150 guard must avoid starting an orphan WebGL renderer');
   } finally {
-    await chrome150.close();
+    await chrome150Context.close();
   }
 
   await page.goto(`${baseURL}/#/`);
@@ -149,5 +151,6 @@ try {
 
   console.log('browser + accessibility audit ok');
 } finally {
+  await context.close();
   await browser.close();
 }
