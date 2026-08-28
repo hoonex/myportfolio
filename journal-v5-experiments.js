@@ -12,7 +12,7 @@
       motionTitle:'Motion Dynamics Lab',
       motionIntro:'카드를 직접 잡아 던져보세요. release velocity가 projected destination을 만들고, 가장 가까운 snap point를 고른 뒤 mass–spring–damper가 위치를 수렴시킵니다. 경계를 넘으면 rubber-band가 손의 이동량을 비선형적으로 줄입니다.',
       stiffness:'Stiffness', damping:'Damping', mass:'Mass', projection:'Projection', rubber:'Rubber band', velocity:'Velocity', projected:'Projected', target:'Target',
-      resetMotion:'Reset motion', hint:'카드를 잡아서 좌우로 빠르게 던져보세요', dynamics:'Live dynamics',
+      resetMotion:'Reset motion', hint:'카드를 좌우로 던지거나 ←/→, Home/End 키를 사용하세요', dynamics:'Live dynamics',
       noteSloar:'이 데모는 Sloar가 “대화를 잘 기억하는 도구”가 아니라, 저장소의 실제 identity와 검증 evidence를 따라가는 continuity protocol이라는 점을 시각화합니다.',
       noteMotion:'숫자를 바꾼 뒤 같은 속도로 던져보면 차이가 명확합니다. stiffness는 복원력, damping은 에너지 소실, mass는 관성, projection은 release velocity가 목적지 선택에 미치는 정도를 바꿉니다.'
     },
@@ -27,7 +27,7 @@
       motionTitle:'Motion Dynamics Lab',
       motionIntro:'Grab the card and throw it. Release velocity produces a projected destination, the nearest snap point becomes the target, and a mass–spring–damper system converges on it. Crossing the boundary applies nonlinear rubber-banding.',
       stiffness:'Stiffness', damping:'Damping', mass:'Mass', projection:'Projection', rubber:'Rubber band', velocity:'Velocity', projected:'Projected', target:'Target',
-      resetMotion:'Reset motion', hint:'Grab the card and throw it left or right', dynamics:'Live dynamics',
+      resetMotion:'Reset motion', hint:'Throw the card or use ←/→ and Home/End', dynamics:'Live dynamics',
       noteSloar:'This model makes the central idea visible: Sloar is not a tool that “remembers the chat better.” It is a continuity protocol that follows repository identity and verification evidence.',
       noteMotion:'Change one value and repeat the same throw. Stiffness controls restoring force, damping removes energy, mass changes inertia, and projection changes how strongly release velocity influences target selection.'
     },
@@ -40,9 +40,9 @@
       run:'Run mission', step:'Step', reset:'Reset', evidence:'Evidence stream', idle:'mission not started',
       halted:'HALTED', verified:'REMOTE VERIFIED', executing:'EXECUTING',
       motionTitle:'Motion Dynamics Lab',
-      motionIntro:'カードを掴んで投げてください。release velocity から projected destination を作り、最も近い snap point を target に選び、mass–spring–damper がそこへ収束します。境界の外では nonlinear rubber-band が働きます。',
+      motionIntro:'カードを掴んで投げてください。release velocity から projected destination を作り、最も近い snap pointを target に選び、mass–spring–damper がそこへ収束します。境界の外では nonlinear rubber-band が働きます。',
       stiffness:'Stiffness', damping:'Damping', mass:'Mass', projection:'Projection', rubber:'Rubber band', velocity:'Velocity', projected:'Projected', target:'Target',
-      resetMotion:'Reset motion', hint:'カードを掴んで左右へ素早く投げてください', dynamics:'Live dynamics',
+      resetMotion:'Reset motion', hint:'カードを投げるか ←/→、Home/End キーを使ってください', dynamics:'Live dynamics',
       noteSloar:'このモデルは、Sloar が「会話をよく覚えるツール」ではなく、repository identity と verification evidence を追跡する continuity protocol であることを可視化します。',
       noteMotion:'値を一つ変えて同じように投げると差が分かります。stiffness は復元力、damping はエネルギー損失、mass は慣性、projection は release velocity が target 選択へ与える強さを変えます。'
     }
@@ -113,7 +113,7 @@
       <div class="motion-workbench">
         <div class="motion-stage" data-motion-stage>
           <div class="motion-track"><i data-anchor="0"></i><i data-anchor="1"></i><i data-anchor="2"></i></div>
-          <div class="motion-card" data-motion-card tabindex="0"><span>DIRECT MANIPULATION</span><strong>THROW ME</strong><small>${c.hint}</small></div>
+          <div class="motion-card" data-motion-card tabindex="0" role="slider" aria-orientation="horizontal" aria-valuemin="0" aria-valuemax="2" aria-valuenow="1" aria-valuetext="CENTER" aria-label="${c.hint}"><span>DIRECT MANIPULATION</span><strong>THROW ME</strong><small>${c.hint}</small></div>
           <div class="motion-projection" data-motion-projection-line></div>
           <div class="motion-target-marker" data-motion-target-marker><span>${c.target}</span></div>
         </div>
@@ -213,8 +213,9 @@
     const controls=Object.fromEntries([...root.querySelectorAll('[data-motion-control]')].map(el=>[el.dataset.motionControl,el]));
     const readout=id=>root.querySelector(`[data-readout="${id}"]`);
     let x=0,v=0,target=0,dragging=false,lastX=0,lastT=0,pointerStart=0,dragStart=0,samples=[];
+    const clearSelection=()=>window.getSelection()?.removeAllRanges();
 
-    const bounds=()=>{ const sr=stage.getBoundingClientRect(), cr=card.getBoundingClientRect(); const half=cr.width/2; return {min:half+24,max:sr.width-half-24,center:sr.width/2,width:sr.width}; };
+    const bounds=()=>{ const sr=stage.getBoundingClientRect(), half=card.offsetWidth/2; return {min:half+24,max:sr.width-half-24,center:sr.width/2,width:sr.width}; };
     const anchors=()=>{ const b=bounds(); return [b.min,b.center,b.max]; };
     const cfg=()=>Object.fromEntries(Object.entries(controls).map(([k,el])=>[k,Number(el.value)]));
     const rubber=(value,min,max,c)=>{
@@ -222,12 +223,15 @@
       const edge=value<min?min:max, over=value-edge, dimension=Math.max(1,max-min);
       return edge+(over*dimension*c)/(dimension+c*Math.abs(over));
     };
-    const nearest=(value)=>anchors().reduce((best,a)=>Math.abs(a-value)<Math.abs(best-value)?a:best,anchors()[0]);
-    const anchorName=value=>{ const a=anchors(),idx=a.indexOf(value); return idx===0?'LEFT':idx===2?'RIGHT':'CENTER'; };
+    const anchorIndex=(value,a=anchors())=>a.reduce((best,point,index)=>Math.abs(point-value)<Math.abs(a[best]-value)?index:best,0);
+    const nearest=(value)=>{ const a=anchors(); return a[anchorIndex(value,a)]; };
+    const anchorName=value=>['LEFT','CENTER','RIGHT'][anchorIndex(value)];
     const setCard=()=>{
       const b=bounds(); card.style.left=`${x}px`; const speed=Math.min(1,Math.abs(v)/1800); card.style.setProperty('scale',`${1+speed*.035} ${1-speed*.022}`); card.style.setProperty('rotate',`${Math.max(-5,Math.min(5,v/400))}deg`);
-      targetMarker.style.left=`${target}px`; targetMarker.querySelector('span').textContent=`${t().target} · ${anchorName(target)}`;
-      readout('velocity').textContent=`${Math.round(v)} px/s`; readout('target').textContent=anchorName(target);
+      const a=anchors(), targetIndex=anchorIndex(target,a), targetName=['LEFT','CENTER','RIGHT'][targetIndex];
+      targetMarker.style.left=`${target}px`; targetMarker.querySelector('span').textContent=`${t().target} · ${targetName}`;
+      card.setAttribute('aria-valuenow',String(targetIndex)); card.setAttribute('aria-valuetext',targetName);
+      readout('velocity').textContent=`${Math.round(v)} px/s`; readout('target').textContent=targetName;
       const projected=x+v*cfg().projection; readout('projected').textContent=`${Math.round(projected-b.center)} px`;
       projectionLine.style.left=`${Math.min(x,projected)}px`; projectionLine.style.width=`${Math.abs(projected-x)}px`;
     };
@@ -242,19 +246,27 @@
       samples.push({x}); if(samples.length>120)samples.shift(); setCard(); draw(); motionRAF=requestAnimationFrame(animate);
     };
     const reset=()=>{ const a=anchors(); x=a[1];target=a[1];v=0;samples=[];setCard();draw(); };
-    const onDown=e=>{ if(e.button!==undefined&&e.button!==0)return; dragging=true;card.setPointerCapture?.(e.pointerId);pointerStart=e.clientX;dragStart=x;lastX=e.clientX;lastT=performance.now();card.classList.add('is-held'); };
-    const onMove=e=>{ if(!dragging)return; const now=performance.now(),dt=Math.max(8,now-lastT)/1000,raw=dragStart+(e.clientX-pointerStart),b=bounds();x=rubber(raw,b.min,b.max,cfg().rubber);const instant=(e.clientX-lastX)/dt;v=v*.35+instant*.65;lastX=e.clientX;lastT=now; };
-    const onUp=()=>{ if(!dragging)return;dragging=false;card.classList.remove('is-held'); const projected=x+v*cfg().projection;target=nearest(projected); };
-    card.addEventListener('pointerdown',onDown);window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',onUp);window.addEventListener('pointercancel',onUp);
+    const onDown=e=>{ if(e.button!==undefined&&e.button!==0)return; if(e.cancelable)e.preventDefault(); clearSelection(); card.focus({preventScroll:true}); dragging=true;card.setPointerCapture?.(e.pointerId);pointerStart=e.clientX;dragStart=x;lastX=e.clientX;lastT=performance.now();card.classList.add('is-held'); };
+    const onMouseDown=e=>{ if(e.button!==0)return; e.preventDefault(); clearSelection(); card.focus({preventScroll:true}); };
+    const onMove=e=>{ if(!dragging)return; if(e.cancelable)e.preventDefault(); clearSelection(); const now=performance.now(),dt=Math.max(8,now-lastT)/1000,raw=dragStart+(e.clientX-pointerStart),b=bounds();x=rubber(raw,b.min,b.max,cfg().rubber);const instant=(e.clientX-lastX)/dt;v=v*.35+instant*.65;lastX=e.clientX;lastT=now; };
+    const onUp=()=>{ if(!dragging)return; clearSelection();dragging=false;card.classList.remove('is-held'); card.focus({preventScroll:true}); const projected=x+v*cfg().projection;target=nearest(projected); };
+    const onSelectStart=e=>{ if(dragging)e.preventDefault(); };
+    const onKeyDown=e=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+      e.preventDefault();
+      const a=anchors(); let index=anchorIndex(target,a);
+      if(e.key==='Home')index=0; else if(e.key==='End')index=2; else index=Math.max(0,Math.min(2,index+(e.key==='ArrowRight'?1:-1)));
+      target=a[index]; v=0; setCard();
+    };
+    card.addEventListener('pointerdown',onDown);card.addEventListener('mousedown',onMouseDown);card.addEventListener('keydown',onKeyDown);root.addEventListener('selectstart',onSelectStart);window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',onUp);window.addEventListener('pointercancel',onUp);
     Object.entries(controls).forEach(([id,input])=>input.addEventListener('input',()=>{root.querySelector(`[data-motion-output="${id}"]`).textContent=input.value;}));
     root.querySelector('[data-motion-reset]').addEventListener('click',reset);
     const onResize=()=>reset();window.addEventListener('resize',onResize);
-    motionCleanup=()=>{window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);window.removeEventListener('pointercancel',onUp);window.removeEventListener('resize',onResize);};
+    motionCleanup=()=>{card.removeEventListener('mousedown',onMouseDown);card.removeEventListener('keydown',onKeyDown);root.removeEventListener('selectstart',onSelectStart);window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp);window.removeEventListener('pointercancel',onUp);window.removeEventListener('resize',onResize);};
     reset(); animate();
   }
 
   const previousInitComments=initComments;
   initComments=function(){ previousInitComments(); stopMotion(); stopMission(); enhanceArticle(); };
-  window.addEventListener('hashchange',()=>{stopMotion();stopMission();});
   queueMicrotask(enhanceArticle);
 })();

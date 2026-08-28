@@ -1,4 +1,26 @@
-/* Journal v6 compatibility overrides: avoid typed CSS arithmetic for stagger timing. */
+/* Journal v6 compatibility + quality overrides. */
+:root{--muted:#595c62}
+:root[data-theme="dark"]{--muted:#a6a8ae}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:not(#app):focus-visible{outline:2px solid var(--accent)!important;outline-offset:3px}
+#app:focus{outline:none}
+.reading-progress-v6 span{opacity:1}
+
+/* Keep fixed article navigation relative to the viewport. The base page entrance
+   animates transform, which otherwise turns the article page into a containing
+   block and shifts the fixed rail into the headline. */
+.article-page{animation-name:articlePageIn}
+@keyframes articlePageIn{from{opacity:0}to{opacity:1}}
+
+/* Dark interactive surfaces need their own contrast tokens. */
+.sloar-stage .pipeline-node>span,
+.sloar-stage .identity-panel label span,
+.sloar-stage .working-tree-toggle span,
+.sloar-stage .identity-fingerprint>span,
+.sloar-stage .evidence-stream time{color:#8b94a3}
+.editor-tabs button{color:#969eaa}
+.terminal-row span:first-child{color:#9099a8}
+
+/* Avoid typed CSS arithmetic for stagger timing. */
 .studio-pipeline i{animation-delay:0s}
 .studio-pipeline i:nth-child(1){animation-delay:0s}
 .studio-pipeline i:nth-child(2){animation-delay:.16s}
@@ -8,3 +30,7 @@
 .studio-pipeline i:nth-child(6){animation-delay:.80s}
 .studio-pipeline i:nth-child(7){animation-delay:.96s}
 .studio-pipeline i:nth-child(8){animation-delay:1.12s}
+
+@media(max-width:480px){
+  .home-page .hero h1{font-size:clamp(3.8rem,16.5vw,4.6rem);line-height:.9;letter-spacing:-.062em;text-wrap:balance}
+}
