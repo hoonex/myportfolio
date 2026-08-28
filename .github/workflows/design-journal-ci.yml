@@ -122,6 +122,7 @@ jobs:
           ! grep -q 'new MutationObserver' site/journal-v4-jelly.js
           ! grep -q 'new MutationObserver' site/journal-v6-studio.js
           ! grep -q "addEventListener('hashchange'" site/journal-v4-jelly.js
+          ! grep -q "addEventListener('hashchange'" site/journal-v5-experiments.js
           ! grep -q "addEventListener('hashchange'" site/journal-v6-studio.js
 
       - name: Validate deployment contract
@@ -152,3 +153,12 @@ jobs:
             sleep 0.25
           done
           JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-smoke.mjs
+
+      - name: Upload visual audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-journal-visual-audit
+          path: .artifacts/design-journal
+          if-no-files-found: warn
+          retention-days: 7
