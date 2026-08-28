@@ -40,7 +40,7 @@
       run:'Run mission', step:'Step', reset:'Reset', evidence:'Evidence stream', idle:'mission not started',
       halted:'HALTED', verified:'REMOTE VERIFIED', executing:'EXECUTING',
       motionTitle:'Motion Dynamics Lab',
-      motionIntro:'カードを掴んで投げてください。release velocity から projected destination を作り、最も近い snap point を target に選び、mass–spring–damper がそこへ収束します。境界の外では nonlinear rubber-band が働きます。',
+      motionIntro:'カードを掴んで投げてください。release velocity から projected destination を作り、最も近い snap pointを target に選び、mass–spring–damper がそこへ収束します。境界の外では nonlinear rubber-band が働きます。',
       stiffness:'Stiffness', damping:'Damping', mass:'Mass', projection:'Projection', rubber:'Rubber band', velocity:'Velocity', projected:'Projected', target:'Target',
       resetMotion:'Reset motion', hint:'カードを投げるか ←/→、Home/End キーを使ってください', dynamics:'Live dynamics',
       noteSloar:'このモデルは、Sloar が「会話をよく覚えるツール」ではなく、repository identity と verification evidence を追跡する continuity protocol であることを可視化します。',
@@ -214,7 +214,7 @@
     const readout=id=>root.querySelector(`[data-readout="${id}"]`);
     let x=0,v=0,target=0,dragging=false,lastX=0,lastT=0,pointerStart=0,dragStart=0,samples=[];
 
-    const bounds=()=>{ const sr=stage.getBoundingClientRect(), cr=card.getBoundingClientRect(); const half=cr.width/2; return {min:half+24,max:sr.width-half-24,center:sr.width/2,width:sr.width}; };
+    const bounds=()=>{ const sr=stage.getBoundingClientRect(), half=card.offsetWidth/2; return {min:half+24,max:sr.width-half-24,center:sr.width/2,width:sr.width}; };
     const anchors=()=>{ const b=bounds(); return [b.min,b.center,b.max]; };
     const cfg=()=>Object.fromEntries(Object.entries(controls).map(([k,el])=>[k,Number(el.value)]));
     const rubber=(value,min,max,c)=>{
@@ -222,12 +222,12 @@
       const edge=value<min?min:max, over=value-edge, dimension=Math.max(1,max-min);
       return edge+(over*dimension*c)/(dimension+c*Math.abs(over));
     };
-    const nearest=(value)=>anchors().reduce((best,a)=>Math.abs(a-value)<Math.abs(best-value)?a:best,anchors()[0]);
-    const anchorName=value=>{ const a=anchors(),idx=a.indexOf(value); return idx===0?'LEFT':idx===2?'RIGHT':'CENTER'; };
-    const anchorIndex=value=>{ const a=anchors(), nearestValue=nearest(value); return Math.max(0,a.indexOf(nearestValue)); };
+    const anchorIndex=(value,a=anchors())=>a.reduce((best,point,index)=>Math.abs(point-value)<Math.abs(a[best]-value)?index:best,0);
+    const nearest=(value)=>{ const a=anchors(); return a[anchorIndex(value,a)]; };
+    const anchorName=value=>['LEFT','CENTER','RIGHT'][anchorIndex(value)];
     const setCard=()=>{
       const b=bounds(); card.style.left=`${x}px`; const speed=Math.min(1,Math.abs(v)/1800); card.style.setProperty('scale',`${1+speed*.035} ${1-speed*.022}`); card.style.setProperty('rotate',`${Math.max(-5,Math.min(5,v/400))}deg`);
-      const targetName=anchorName(target), targetIndex=anchorIndex(target);
+      const a=anchors(), targetIndex=anchorIndex(target,a), targetName=['LEFT','CENTER','RIGHT'][targetIndex];
       targetMarker.style.left=`${target}px`; targetMarker.querySelector('span').textContent=`${t().target} · ${targetName}`;
       card.setAttribute('aria-valuenow',String(targetIndex)); card.setAttribute('aria-valuetext',targetName);
       readout('velocity').textContent=`${Math.round(v)} px/s`; readout('target').textContent=targetName;
@@ -251,7 +251,7 @@
     const onKeyDown=e=>{
       if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
       e.preventDefault();
-      const a=anchors(); let index=anchorIndex(target);
+      const a=anchors(); let index=anchorIndex(target,a);
       if(e.key==='Home')index=0; else if(e.key==='End')index=2; else index=Math.max(0,Math.min(2,index+(e.key==='ArrowRight'?1:-1)));
       target=a[index]; v=0; setCard();
     };
@@ -265,6 +265,5 @@
 
   const previousInitComments=initComments;
   initComments=function(){ previousInitComments(); stopMotion(); stopMission(); enhanceArticle(); };
-  window.addEventListener('hashchange',()=>{stopMotion();stopMission();});
   queueMicrotask(enhanceArticle);
 })();
