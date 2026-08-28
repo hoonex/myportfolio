@@ -54,6 +54,15 @@
     finishContinuity();
   }, true);
 
+  document.addEventListener('click', event => {
+    const card = activeMotionCard;
+    if (!card || performance.now() > continuityUntil) return;
+    const lab = card.closest('[data-motion-lab]');
+    if (!lab || !(event.target instanceof Node) || !lab.contains(event.target)) return;
+    if (event.cancelable) event.preventDefault();
+    focusCard(card);
+  }, true);
+
   window.addEventListener('pointerup', finishContinuity, true);
   window.addEventListener('pointercancel', finishContinuity, true);
 })();
