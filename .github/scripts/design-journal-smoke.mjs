@@ -36,12 +36,28 @@ const waitForSettledRefraction = targetPage => targetPage.waitForFunction(() => 
 async function assertA11y(targetPage, label) {
   // Route rendering intentionally fades from opacity 0 → 1. Audit the stable UI,
   // not a transient animation frame whose composited contrast is lower by design.
+  // The editable code preview is intentionally scriptless and sandboxed; axe cannot
+  // inject its own analyzer into that opaque frame without creating console errors.
   await targetPage.waitForTimeout(650);
   const result = await new AxeBuilder({ page: targetPage })
+    .exclude('.code-preview')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze();
   const blocking = result.violations.filter(v => ['critical', 'serious'].includes(v.impact));
   expect(blocking.length === 0, `${label} serious accessibility violations: ${blocking.map(v => `${v.id} -> ${v.nodes.map(n => n.target.join(' ')).join(', ')}`).join(' | ')}`);
+}
+
+async function assertPlaygroundSecurity(targetPage, label) {
+  const previews = targetPage.locator('.code-preview');
+  const total = await previews.count();
+  expect(total > 0, `${label} should expose at least one sandboxed code preview`);
+  for (let i = 0; i < total; i += 1) {
+    const preview = previews.nth(i);
+    expect(await preview.getAttribute('sandbox') === '', `${label} preview ${i} must keep an empty sandbox token list`);
+    const srcdoc = await preview.getAttribute('srcdoc') || '';
+    expect(srcdoc.includes("default-src 'none'"), `${label} preview ${i} must retain deny-by-default CSP`);
+    expect(!/<script\b/i.test(srcdoc), `${label} preview ${i} preset srcdoc must not contain scripts`);
+  }
 }
 
 try {
@@ -74,6 +90,7 @@ try {
   expect(await page.locator('[data-nav="home"]').getAttribute('aria-current') === null, 'article routes must not mark Index as current');
   expect(await count('.reading-progress-v6') === 1, 'Sloar article should have one reading progress bar');
   expect(await page.locator('textarea[data-editor="css"]').getAttribute('aria-label') === 'CSS code editor', 'visible CSS editor needs an accessible name');
+  await assertPlaygroundSecurity(page, 'Sloar article');
   await assertA11y(page, 'Sloar article');
 
   await page.locator('label.fault-switch:has(input[data-fault="stale"])').click();
@@ -101,6 +118,7 @@ try {
     await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, { steps: 5 });
     await page.mouse.up();
   }
+  await assertPlaygroundSecurity(page, 'Motion article');
   await assertA11y(page, 'Motion article');
 
   await page.goto(`${baseURL}/#/lab`);
@@ -111,6 +129,7 @@ try {
   expect(refractionState === 'active', `current Chromium must prove real WebGL refraction, got state=${refractionState}`);
   expect(await page.locator('[data-nav="lab"]').getAttribute('aria-current') === 'page', 'Glass Lab nav should expose aria-current');
   expect((await page.title()).includes('Refraction Lab'), `lab title should follow rendered heading: ${await page.title()}`);
+  expect(await page.locator('#refConfigOutput').getAttribute('tabindex') === '0', 'scrollable shader config should be keyboard focusable');
   const values = await page.evaluate(() => Object.fromEntries([
     'refraction','blurAmount','chromAberration','specular','fresnel','edgeHighlight','zRadius','cornerRadius','saturation','brightness'
   ].map(id => [id, document.querySelector(`#ref-${id}`)?.value])));
@@ -121,6 +140,7 @@ try {
   for (const [key, value] of Object.entries(expected)) {
     expect(values[key] === value, `preferred optical default drifted: ${key}=${values[key]}`);
   }
+  await assertPlaygroundSecurity(page, 'Glass Lab');
   await assertA11y(page, 'Glass Lab');
 
   const chrome150Context = await browser.newContext({
