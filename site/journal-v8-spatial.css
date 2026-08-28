@@ -29,23 +29,25 @@
 .spatial-stage-hint-v8{position:absolute;left:20px;bottom:18px;z-index:8;color:#8d96a5;font:650 8px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.13em}
 .spatial-world-v8{--spatial-yaw:-28deg;--spatial-pitch:58deg;--spatial-depth:-10px;position:absolute;width:0;height:0;left:50%;top:55%;transform-style:preserve-3d;transform:translate3d(-50%,-50%,var(--spatial-depth)) rotateX(var(--spatial-pitch)) rotateY(var(--spatial-yaw));transition:transform .14s ease-out;will-change:transform}
 .is-held .spatial-world-v8{transition:none}
-.spatial-floor-v8{position:absolute;width:480px;height:480px;left:-240px;top:-240px;transform:rotateX(90deg) translateZ(-72px);transform-style:preserve-3d;background-color:#111721;background-image:linear-gradient(rgba(172,188,220,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(172,188,220,.16) 1px,transparent 1px);background-size:40px 40px;border:1px solid rgba(185,201,234,.2);box-shadow:inset 0 0 90px rgba(68,94,151,.13)}
-.spatial-cube-v8{position:absolute;width:90px;height:90px;left:-45px;top:-45px;transform-style:preserve-3d}
-.spatial-cube-v8 .face{position:absolute;inset:0;border:1px solid rgba(213,224,255,.35);background:linear-gradient(145deg,rgba(125,151,222,.28),rgba(49,63,94,.45));box-shadow:inset 0 0 20px rgba(255,255,255,.035);backface-visibility:visible}
+/* A translucent construction plane sits well behind the block volumes. Keeping it
+   behind the volumes prevents near-top-down orbit angles from flattening the lab. */
+.spatial-floor-v8{position:absolute;width:500px;height:500px;left:-250px;top:-250px;transform:translate3d(0,0,-170px);transform-style:preserve-3d;background-color:rgba(17,23,33,.48);background-image:linear-gradient(rgba(172,188,220,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(172,188,220,.13) 1px,transparent 1px);background-size:40px 40px;border:1px solid rgba(185,201,234,.16);box-shadow:inset 0 0 110px rgba(68,94,151,.18);backface-visibility:hidden;pointer-events:none}
+.spatial-cube-v8{position:absolute;width:90px;height:90px;left:-45px;top:-45px;transform-style:preserve-3d;filter:drop-shadow(0 22px 26px rgba(0,0,0,.24))}
+.spatial-cube-v8 .face{position:absolute;inset:0;border:1px solid rgba(226,233,255,.52);background:linear-gradient(145deg,rgba(112,139,218,.76),rgba(42,55,88,.82));box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 0 22px rgba(255,255,255,.035);backface-visibility:visible}
 .spatial-cube-v8 .front{transform:translateZ(45px)}
 .spatial-cube-v8 .back{transform:rotateY(180deg) translateZ(45px)}
-.spatial-cube-v8 .left{transform:rotateY(-90deg) translateZ(45px)}
-.spatial-cube-v8 .right{transform:rotateY(90deg) translateZ(45px)}
-.spatial-cube-v8 .top{transform:rotateX(90deg) translateZ(45px);background:linear-gradient(145deg,rgba(181,199,255,.42),rgba(77,96,145,.4))}
+.spatial-cube-v8 .left{transform:rotateY(-90deg) translateZ(45px);background:linear-gradient(145deg,rgba(78,101,166,.75),rgba(31,41,67,.86))}
+.spatial-cube-v8 .right{transform:rotateY(90deg) translateZ(45px);background:linear-gradient(145deg,rgba(88,114,184,.78),rgba(35,46,73,.86))}
+.spatial-cube-v8 .top{transform:rotateX(90deg) translateZ(45px);background:linear-gradient(145deg,rgba(190,205,255,.88),rgba(91,115,183,.7))}
 .spatial-cube-v8 .bottom{transform:rotateX(-90deg) translateZ(45px)}
-.spatial-cube-v8.cube-a{transform:translate3d(-104px,-76px,38px) scaleY(1.6)}
-.spatial-cube-v8.cube-b{transform:translate3d(46px,-38px,-70px) scale3d(1.25,2.25,1.25)}
-.spatial-cube-v8.cube-c{transform:translate3d(110px,18px,76px) scale3d(.82,.82,.82)}
-.spatial-axis-v8{position:absolute;left:0;top:0;transform-style:preserve-3d;opacity:.6}
-.spatial-axis-v8 i{position:absolute;display:block;width:88px;height:1px;transform-origin:0 50%}
-.spatial-axis-v8 .axis-x{background:#ff7a7a;transform:translateZ(-71px)}
-.spatial-axis-v8 .axis-y{background:#79dfa3;transform:rotateZ(-90deg) translateZ(-71px)}
-.spatial-axis-v8 .axis-z{background:#79a7ff;transform:rotateY(-90deg) translateZ(-71px)}
+.spatial-cube-v8.cube-a{transform:translate3d(-112px,-70px,45px) scale3d(1,1.65,1)}
+.spatial-cube-v8.cube-b{transform:translate3d(42px,-34px,5px) scale3d(1.3,2.25,1.3)}
+.spatial-cube-v8.cube-c{transform:translate3d(124px,28px,105px) scale3d(.84,.84,.84)}
+.spatial-axis-v8{position:absolute;left:0;top:0;transform-style:preserve-3d;opacity:.7;filter:drop-shadow(0 0 6px rgba(255,255,255,.18))}
+.spatial-axis-v8 i{position:absolute;display:block;width:104px;height:2px;transform-origin:0 50%}
+.spatial-axis-v8 .axis-x{background:#ff7a7a;transform:translateZ(-20px)}
+.spatial-axis-v8 .axis-y{background:#79dfa3;transform:rotateZ(-90deg) translateZ(-20px)}
+.spatial-axis-v8 .axis-z{background:#79a7ff;transform:rotateY(-90deg) translateZ(-20px)}
 
 .spatial-controls-v8{padding:26px;background:color-mix(in srgb,var(--bg-elevated) 88%,transparent);display:flex;flex-direction:column}
 .spatial-control-v8{display:grid;grid-template-columns:90px 1fr 58px;gap:12px;align-items:center;min-height:50px;border-bottom:1px solid var(--line)}
@@ -59,7 +61,7 @@
 
 @media(max-width:980px){
   .spatial-lab-grid-v8{grid-template-columns:1fr}.spatial-stage-v8{border-right:0;border-bottom:1px solid var(--line);min-height:500px}.spatial-controls-v8{min-height:330px}.spatial-coordinate-readout-v8{margin-top:28px}
-  .spatial-mini-world-v8{right:-1%;opacity:.72}
+  .spatial-mini-world-v8{right:-1%;opacity:.8}
 }
 @media(max-width:660px){
   .post-card--spatial-v8{min-height:470px}.spatial-card-copy-v8{padding-top:205px}.spatial-card-preview-v8>span{right:18px;top:62px}.spatial-mini-world-v8{right:-24%;top:16%;transform:scale(.64)}
