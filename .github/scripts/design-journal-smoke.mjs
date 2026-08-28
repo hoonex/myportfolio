@@ -146,17 +146,31 @@ try {
   await page.keyboard.press('Home');
   await page.waitForFunction(() => document.querySelector('[data-motion-card]')?.getAttribute('aria-valuetext') === 'LEFT');
   await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(() => {
+    const card = document.querySelector('[data-motion-card]');
+    const velocity = document.querySelector('[data-readout="velocity"]');
+    return card?.getAttribute('aria-valuetext') === 'CENTER' && velocity?.textContent === '0 px/s';
+  }, null, { timeout: 5000 });
+  await motionCard.hover({ timeout: 5000 });
   const box = await motionCard.boundingBox();
-  expect(Boolean(box), 'Motion card should be measurable');
+  expect(Boolean(box), 'Motion card should be measurable after settling');
+  await page.evaluate(() => {
+    window.__motionAuditPointerTarget = null;
+    document.addEventListener('pointerdown', event => {
+      window.__motionAuditPointerTarget = event.target instanceof Element && event.target.closest('[data-motion-card]') ? 'card' : event.target?.tagName || 'unknown';
+    }, { capture: true, once: true });
+  });
   if (box) {
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, { steps: 5 });
     await page.mouse.up();
   }
+  expect(await page.evaluate(() => window.__motionAuditPointerTarget === 'card'), `Motion audit must begin on the card, got ${await page.evaluate(() => window.__motionAuditPointerTarget)}`);
   const selectionAfterMotionDrag = await page.evaluate(() => window.getSelection()?.toString() || '');
   expect(selectionAfterMotionDrag.length === 0, `Motion drag must not select page text: ${JSON.stringify(selectionAfterMotionDrag.slice(0, 120))}`);
   expect(await motionCard.evaluate(element => document.activeElement === element), 'Motion drag should keep keyboard focus on the direct-manipulation card');
+  await page.keyboard.press('ArrowRight');
+  expect(['CENTER','RIGHT'].includes(await motionCard.getAttribute('aria-valuetext')), 'Motion card should remain keyboard-operable immediately after pointer drag');
   await assertPlaygroundSecurity(page, 'Motion article');
   await assertA11y(page, 'Motion article');
   await captureElement(page.locator('[data-motion-lab]'), 'motion-lab-light');
