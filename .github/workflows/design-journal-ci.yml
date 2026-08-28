@@ -100,8 +100,9 @@ jobs:
           grep -q 'role="slider"' site/journal-v5-experiments.js
           grep -q "ArrowLeft" site/journal-v5-experiments.js
           grep -q "ArrowRight" site/journal-v5-experiments.js
-          grep -q 'focusout' site/journal-v7-input-continuity.js
-          grep -q 'continuityUntil' site/journal-v7-input-continuity.js
+          grep -q 'stabilizeFocus' site/journal-v7-input-continuity.js
+          grep -q "addEventListener('pointermove'" site/journal-v7-input-continuity.js
+          grep -q 'requestAnimationFrame' site/journal-v7-input-continuity.js
           grep -q 'IntersectionObserver' site/journal-v6-studio.js
           grep -q 'studio-preview--glass' site/journal-v6-studio.js
           grep -q 'studio-preview--sloar' site/journal-v6-studio.js
