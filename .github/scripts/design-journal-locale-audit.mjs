@@ -44,6 +44,7 @@ async function switchLanguage(lang) {
   await page.locator(`#langSwitch [data-lang="${lang}"]`).click();
   await page.waitForFunction(expected => document.documentElement.lang === expected, lang);
   await page.waitForSelector('[data-spatial-card-v8]');
+  await page.waitForFunction(() => document.querySelectorAll('.post-card--studio').length === 3);
 }
 
 async function assertA11y(label) {
