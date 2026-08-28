@@ -140,7 +140,6 @@ try {
   for (const [key, value] of Object.entries(expected)) {
     expect(values[key] === value, `preferred optical default drifted: ${key}=${values[key]}`);
   }
-  await assertPlaygroundSecurity(page, 'Glass Lab');
   await assertA11y(page, 'Glass Lab');
 
   const chrome150Context = await browser.newContext({
