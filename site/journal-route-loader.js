@@ -72,6 +72,7 @@
       console.error('[HJ runtime loader]', error);
     } finally {
       runtime?.endRenderBatch?.();
+      window.HJRuntime?.schedule?.();
     }
   }
 
