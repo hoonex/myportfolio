@@ -21,15 +21,19 @@ jobs:
   publish:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    env:
+      SOURCE_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
     steps:
-      - name: Checkout validated main
+      - name: Checkout exact validated source
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ env.SOURCE_SHA }}
           fetch-depth: 0
 
       - name: Validate canonical runtime before publish
         run: |
+          test -n "$SOURCE_SHA"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           python - <<'PY'
           from pathlib import Path
           import json, re, subprocess
@@ -78,5 +82,5 @@ jobs:
             echo 'No deployment changes.'
             exit 0
           fi
-          git commit -m "deploy: sync design journal from ${GITHUB_SHA::12}"
+          git commit -m "deploy: sync design journal from ${SOURCE_SHA::12}"
           git push origin HEAD:gh-pages
