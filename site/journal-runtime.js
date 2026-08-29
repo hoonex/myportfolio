@@ -21,13 +21,14 @@
 
   const syncNavigation = route => {
     document.querySelectorAll('[data-nav]').forEach(link => link.removeAttribute('aria-current'));
-    const key = route === '/' ? 'home' : route.startsWith('/lab') ? 'lab' : '';
+    const key = route === '/' ? 'home' : route === '/lab/vision' ? 'vision' : route === '/lab' ? 'lab' : '';
     if (key) document.querySelector(`[data-nav="${key}"]`)?.setAttribute('aria-current', 'page');
   };
 
   const syncTitle = route => {
     const heading = app.querySelector('h1')?.textContent?.replace(/\s+/g, ' ').trim();
     if (route === '/') document.title = 'HJ — Design Journal';
+    else if (route === '/lab/vision') document.title = `${heading || 'Vision Lab'} — HJ`;
     else if (route === '/lab') document.title = `${heading || 'Glass Lab'} — HJ`;
     else if (route.startsWith('/post/')) document.title = `${heading || 'Journal'} — HJ`;
     else document.title = 'Not found — HJ';
