@@ -160,6 +160,10 @@ if 'frozen gesture command' not in vision: fail('vision freeze/resume command ch
 for forbidden in ['setInterval(() => injectDiagnosticFrame','queueMicrotask(injectDiagnosticFrame','requestAnimationFrame(injectDiagnosticFrame']:
     if forbidden in vision: fail('diagnostic geometry must never auto-run as camera output')
 
+v10 = (ROOT / 'journal-v10-editorial-naturalize.js').read_text()
+if "article.dataset.editorialNaturalized = 'v10';" not in v10:
+    fail('v10 article naturalization lifecycle marker missing')
+
 privacy = (ROOT / 'journal-v12-vision-privacy.js').read_text()
 for phrase in [
     '성능·사용량 측정 정보가 Google에 전송될 수 있습니다.',

@@ -116,6 +116,23 @@ async function assertCanonicalArticleTitleAfterLegacyRerender(slug, title) {
   expect(renderedTitle === title, `Japanese ${slug} article title reverted after forced legacy rerender: ${renderedTitle}`);
 }
 
+async function restoreArticleThroughHashLifecycle(slug, title, expectedHeadings = []) {
+  await page.evaluate(() => { location.hash = '#/'; });
+  await page.waitForFunction(() => location.hash === '#/' && Boolean(document.querySelector('.home-page')));
+
+  await page.evaluate(nextSlug => { location.hash = `#/post/${nextSlug}`; }, slug);
+  await page.waitForFunction(({ slug, title, expectedHeadings }) => {
+    if (location.hash !== `#/post/${slug}`) return false;
+    const groups = (document.documentElement.dataset.runtimeRoute || '').split(/\s+/);
+    if (!groups.includes('article-polish')) return false;
+    const article = document.querySelector('.article');
+    if (!article || article.dataset.editorialNaturalized !== 'v10') return false;
+    if (article.querySelector(':scope > h1')?.textContent?.trim() !== title) return false;
+    const headings = [...article.querySelectorAll('.article-body > .essay-section > h2')].map(node => node.textContent.trim());
+    return expectedHeadings.every((heading, index) => headings[index] === heading);
+  }, { slug, title, expectedHeadings });
+}
+
 try {
   for (const lang of locales) {
     await switchLanguage(lang);
@@ -182,12 +199,8 @@ try {
     } else {
       await page.waitForSelector('.article-body');
       await assertCanonicalArticleTitleAfterLegacyRerender(slug, coreTitles.ja[slug]);
-      if (japaneseHeadings[slug]) {
-        const renderedHeadings = await page.locator('.article-body > .essay-section > h2').allTextContents();
-        japaneseHeadings[slug].forEach((expected,index) => expect(renderedHeadings[index]?.trim() === expected, `Japanese ${slug} section ${index + 1} did not use authored heading: ${renderedHeadings[index]}`));
-      }
+      await restoreArticleThroughHashLifecycle(slug, coreTitles.ja[slug], japaneseHeadings[slug] || []);
     }
-    await page.waitForTimeout(100);
     const text = (await page.locator('.article-body').innerText()).trim();
     expect(text.length >= 1200, `Japanese ${slug} article unexpectedly short: ${text.length}`);
     for (const phrase of japaneseTranslationese) expect(!text.includes(phrase), `Japanese ${slug} still contains translationese/mixed prose: ${phrase}`);
