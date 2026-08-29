@@ -1,0 +1,46 @@
+name: Sync Spatial JA lab copy once
+
+on:
+  push:
+    branches:
+      - feat/design-journal-liquid-glass-20260827
+    paths:
+      - .github/workflows/sync-spatial-ja-lab-copy-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/design-journal-liquid-glass-20260827
+          fetch-depth: 0
+      - name: Canonicalize Spatial Japanese lab description
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('site/journal-v8-spatial.js')
+          text = path.read_text()
+          old = "labDesc: 'これはレンダラーの見本ではなく、空間関係を確認するためのブロックアウトです。ドラッグまたは矢印キーで視点を回し、Perspective と Camera Z を変えて違いを確認できます。'"
+          new = "labDesc: 'これはレンダラーの見本ではなく、空間関係を確認するためのブロックアウトです。ドラッグまたは矢印キーで視点を回し、遠近感とカメラの奥行きを変えながら、配置の見え方がどう変化するか確認できます。'"
+          if text.count(old) != 1:
+              raise SystemExit(f'unexpected legacy Spatial JA lab copy count: {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          node --check site/journal-v8-spatial.js
+          ! grep -q 'Perspective と Camera Z を変えて違いを確認できます。' site/journal-v8-spatial.js
+          grep -q '遠近感とカメラの奥行きを変えながら、配置の見え方がどう変化するか確認できます。' site/journal-v8-spatial.js
+          git diff --check
+      - name: Commit source sync and remove one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/sync-spatial-ja-lab-copy-once.yml
+          git add site/journal-v8-spatial.js
+          git commit -m "fix: canonicalize Spatial Japanese lab copy"
+          git push origin HEAD:feat/design-journal-liquid-glass-20260827
