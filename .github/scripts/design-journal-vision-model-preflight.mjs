@@ -24,7 +24,7 @@ const geometry = await mobile.evaluate(() => ({
   startVisible: !!document.querySelector('[data-start]')?.getClientRects().length
 }));
 expect(geometry.scrollWidth <= geometry.innerWidth + 1, `Vision mobile horizontal overflow: ${JSON.stringify(geometry)}`);
-expect(geometry.title === 'Vision Lab — HJ', `Vision mobile title drift: ${geometry.title}`);
+expect(geometry.title === 'Vision Lab. — HJ', `Vision mobile title drift: ${geometry.title}`);
 expect(geometry.current === 'page', `Vision mobile nav aria-current drift: ${geometry.current}`);
 expect(geometry.startVisible, 'Vision mobile Start camera action is not visible');
 await mkdir('.artifacts/design-journal', { recursive: true });
