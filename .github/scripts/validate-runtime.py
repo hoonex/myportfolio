@@ -99,9 +99,13 @@ editorial_core = (ROOT / 'journal-editorial-core.js').read_text()
 for phrase in ['手触りのある素材', 'WebGL屈折 · ドラッグ変形', '状態復元 · 障害注入', 'この記事の構成', '読書中']:
     if phrase not in editorial_core:
         fail(f'missing authored core locale copy: {phrase}')
+try:
+    ja_core = editorial_core.split("    ja: {", 1)[1].split("\n  };", 1)[0]
+except IndexError:
+    fail('could not isolate Japanese editorial-core copy')
 for debt in ['WebGL 屈折 · jelly drag', 'state recovery · failure injection', 'spring · velocity handoff']:
-    if debt in editorial_core:
-        fail(f'translationese leaked into editorial core: {debt}')
+    if debt in ja_core:
+        fail(f'translationese leaked into Japanese editorial core: {debt}')
 
 required_lazy = {
     'editorial-full': ['journal-v2.js'],
