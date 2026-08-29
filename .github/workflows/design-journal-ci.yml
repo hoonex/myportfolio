@@ -7,6 +7,7 @@ on:
       - '.github/scripts/design-journal-smoke.mjs'
       - '.github/scripts/design-journal-locale-audit.mjs'
       - '.github/scripts/design-journal-loading-audit.mjs'
+      - '.github/scripts/design-journal-vision-model-preflight.mjs'
       - '.github/scripts/validate-runtime.py'
       - '.github/workflows/design-journal-ci.yml'
       - '.github/workflows/design-journal-deploy.yml'
@@ -19,6 +20,7 @@ on:
       - '.github/scripts/design-journal-smoke.mjs'
       - '.github/scripts/design-journal-locale-audit.mjs'
       - '.github/scripts/design-journal-loading-audit.mjs'
+      - '.github/scripts/design-journal-vision-model-preflight.mjs'
       - '.github/scripts/validate-runtime.py'
       - '.github/workflows/design-journal-ci.yml'
       - '.github/workflows/design-journal-deploy.yml'
@@ -39,6 +41,7 @@ jobs:
           node --check .github/scripts/design-journal-smoke.mjs
           node --check .github/scripts/design-journal-locale-audit.mjs
           node --check .github/scripts/design-journal-loading-audit.mjs
+          node --check .github/scripts/design-journal-vision-model-preflight.mjs
 
       - name: Lock preferred optical defaults
         run: |
@@ -70,6 +73,22 @@ jobs:
           grep -q 'SPATIAL BLOCKOUT' site/journal-v8-spatial.js
           grep -q 'data-spatial-stage' site/journal-v8-spatial.js
           grep -q "event.key === 'ArrowLeft'" site/journal-v8-spatial.js
+
+      - name: Validate Vision real-data contract
+        run: |
+          grep -q '@mediapipe/tasks-vision@' site/journal-v11-vision.js
+          grep -q 'GestureRecognizer' site/journal-v11-vision.js
+          grep -q 'FaceLandmarker' site/journal-v11-vision.js
+          grep -q 'recognizeForVideo' site/journal-v11-vision.js
+          grep -q 'detectForVideo' site/journal-v11-vision.js
+          grep -q 'worldLandmarks' site/journal-v11-vision.js
+          grep -q 'getUserMedia' site/journal-v11-vision.js
+          grep -q 'OpenCV' site/journal-v11-vision.js
+          grep -q 'DIAGNOSTIC' site/journal-v11-vision.js
+          grep -q 'gesture_recognizer.task' .github/scripts/design-journal-vision-model-preflight.mjs
+          grep -q 'face_landmarker.task' .github/scripts/design-journal-vision-model-preflight.mjs
+          grep -q 'recognizeForVideo' .github/scripts/design-journal-vision-model-preflight.mjs
+          grep -q 'detectForVideo' .github/scripts/design-journal-vision-model-preflight.mjs
 
       - name: Validate authored locale editions
         run: |
@@ -126,7 +145,7 @@ jobs:
           grep -q 'rsync -a --delete' .github/workflows/design-journal-deploy.yml
           grep -q 'git push origin HEAD:gh-pages' .github/workflows/design-journal-deploy.yml
 
-      - name: Browser, loading, accessibility, and locale audit
+      - name: Browser, loading, accessibility, locale, and Vision model audit
         run: |
           npm install --no-save playwright@1.62.1 @axe-core/playwright@4.13.0
           npx playwright install --with-deps chromium
@@ -140,6 +159,7 @@ jobs:
             sleep 0.25
           done
           JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-loading-audit.mjs
+          JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-vision-model-preflight.mjs
           JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-smoke.mjs
           JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-locale-audit.mjs
 
