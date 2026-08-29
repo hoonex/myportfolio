@@ -67,7 +67,7 @@ for key, value in metrics.items():
 required_core = {'journal-editorial-core.js','journal-runtime.js','journal-spatial-index.js','journal-v6-studio.js','journal-route-loader.js'}
 missing_core = required_core.difference(core.get('scripts', []))
 if missing_core: fail(f'missing required core scripts: {sorted(missing_core)}')
-for forbidden in ['journal-v2.js','journal-v10-editorial-naturalize.js','journal-v11-vision.js']:
+for forbidden in ['journal-v2.js','journal-v10-editorial-naturalize.js','journal-v11-vision.js','journal-v12-authority.js','journal-v12-vision-privacy.js']:
     if forbidden in core.get('scripts', []): fail(f'route-only runtime leaked back into core: {forbidden}')
 
 editorial_core = (ROOT / 'journal-editorial-core.js').read_text()
@@ -85,8 +85,8 @@ required_lazy = {
     'glass':['journal-v3-refraction.js','journal-v4-jelly.js','journal-v9-locale-editorial.js'],
     'article-labs':['journal-v5-experiments.js'],
     'spatial':['journal-v8-spatial.js'],
-    'vision':['journal-v11-vision.js'],
-    'article-polish':['journal-v10-editorial-naturalize.js'],
+    'vision':['journal-v11-vision.js','journal-v12-vision-privacy.js'],
+    'article-polish':['journal-v10-editorial-naturalize.js','journal-v12-authority.js'],
 }
 expected_route_order = ['editorial-full','glass','article-labs','spatial','vision','article-polish']
 actual_route_order = [route['id'] for route in routes]
@@ -114,5 +114,25 @@ for token in ["V='1.0.1'",'GestureRecognizer','FaceLandmarker','recognizeForVide
 if 'frozen gesture command' not in vision: fail('vision freeze/resume command channel contract missing')
 for forbidden in ['setInterval(() => injectDiagnosticFrame','queueMicrotask(injectDiagnosticFrame','requestAnimationFrame(injectDiagnosticFrame']:
     if forbidden in vision: fail('diagnostic geometry must never auto-run as camera output')
+
+privacy = (ROOT / 'journal-v12-vision-privacy.js').read_text()
+for phrase in [
+    '성능·사용량 측정 정보가 Google에 전송될 수 있습니다.',
+    'MediaPipe API performance or utilization metrics may be sent to Google.',
+    '測定情報がGoogleへ送信される場合があります。',
+    "route() !== '/lab/vision'"
+]:
+    if phrase not in privacy: fail(f'vision privacy disclosure contract missing: {phrase}')
+
+authority = (ROOT / 'journal-v12-authority.js').read_text()
+for phrase in [
+    'Liquid Glass는 단순한 블러가 아니다.',
+    'Liquid Glass is a hierarchy problem before it is a blur effect.',
+    'ガラスらしさは、ぼかしだけでは作れない。',
+    'canonicalizeArticleHTML',
+    'articleTemplate = function',
+    "dataset.editorialAuthority = 'v12'"
+]:
+    if phrase not in authority: fail(f'editorial authority contract missing: {phrase}')
 
 print('canonical composable route runtime manifest validated')
