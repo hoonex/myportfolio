@@ -1,4 +1,4 @@
-/* v12: precise Vision Lab privacy disclosure after the v11 camera UI renders. */
+/* v12: precise Vision Lab disclosure for on-device frames, external assets, and possible Google API metrics. */
 (() => {
   const COPY = {
     ko: '카메라 프레임은 이 브라우저에서 MediaPipe로 처리됩니다. 모델과 런타임 파일은 외부에서 내려받으며, MediaPipe API의 성능·사용량 측정 정보가 Google에 전송될 수 있습니다.',
