@@ -130,6 +130,10 @@
         .replace(/([一-龯々ぁ-ゖァ-ヺA-Za-z0-9_)])\s+([はがをにへとでのもやか])(?=[^A-Za-z]|$)/g, '$1$2')
         .replace(/\s+([、。！？）」』】])/g, '$1')
         .replace(/([（「『【])\s+/g, '$1');
+      const previous = node.previousSibling;
+      if (previous && (previous.nodeType === Node.ELEMENT_NODE || /\S/.test(previous.nodeValue || ''))) {
+        value = value.replace(/^\s+([はがをにへとでのもやか、。！？）」』】])/, '$1');
+      }
       node.nodeValue = value;
     });
   }
