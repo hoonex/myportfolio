@@ -31,11 +31,11 @@ jobs:
 
           const original = fs.readFileSync(path, 'utf8');
           const articlesStart = original.indexOf('  const articles = {');
-          const articlesEnd = original.indexOf('\n  function T()', articlesStart);
+          const articlesEnd = original.indexOf('\n  const presets = {', articlesStart);
           if (articlesStart < 0 || articlesEnd < 0) throw new Error('could not isolate articles object');
 
           let section = original.slice(articlesStart, articlesEnd);
-          const top = [...section.matchAll(/^    (glass|sloar|motion): \{$/gm)];
+          const top = [...section.matchAll(/^    (glass|sloar|motion):\s*\{$/gm)];
           const names = top.map(match => match[1]);
           if (JSON.stringify(names) !== JSON.stringify(['glass','sloar','motion'])) {
             throw new Error(`unexpected article block layout: ${JSON.stringify(names)}`);
