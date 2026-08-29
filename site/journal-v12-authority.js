@@ -1,4 +1,4 @@
-/* v12: canonical user-facing editorial metadata + Vision privacy authority. */
+/* v12: canonical user-facing editorial metadata authority. */
 (() => {
   const EDITIONS = {
     ko: {
@@ -63,12 +63,6 @@
     }
   };
 
-  const PRIVACY = {
-    ko: '카메라 프레임은 이 브라우저에서 MediaPipe로 처리됩니다. 모델과 런타임 파일은 외부에서 내려받으며, MediaPipe API의 성능·사용량 측정 정보가 Google에 전송될 수 있습니다.',
-    en: 'Camera frames are processed by MediaPipe in this browser. Model and runtime files are downloaded externally, and MediaPipe API performance or utilization metrics may be sent to Google.',
-    ja: 'カメラ映像はこのブラウザ内でMediaPipeが処理します。モデルとランタイムは外部から取得され、MediaPipe APIの性能・利用状況に関する測定情報がGoogleへ送信される場合があります。'
-  };
-
   const route = () => (location.hash.slice(1) || '/').split('?')[0];
   const language = () => {
     const value = document.documentElement.lang || 'ko';
@@ -88,6 +82,29 @@
         deck: copy.deck
       });
     }
+  }
+
+  function currentArticleCopy() {
+    const slug = route().match(/^\/post\/(glass|sloar|motion)$/)?.[1];
+    if (!slug) return null;
+    const copy = EDITIONS[language()]?.[slug];
+    return copy ? { slug, copy } : null;
+  }
+
+  function applyCanonicalArticleDOM() {
+    const current = currentArticleCopy();
+    if (!current) return;
+    const article = document.querySelector('.article');
+    if (!article) return;
+    const { copy } = current;
+    const kicker = article.querySelectorAll('.article-kicker > span');
+    const title = article.querySelector(':scope > h1');
+    const deck = article.querySelector(':scope > .article-deck');
+    const lede = article.querySelector('.article-body > .lede');
+    if (kicker[2] && kicker[2].textContent !== copy.category) kicker[2].textContent = copy.category;
+    if (title && title.textContent !== copy.title) title.textContent = copy.title;
+    if (deck && deck.textContent !== copy.deck) deck.textContent = copy.deck;
+    if (lede && lede.textContent !== copy.lede) lede.textContent = copy.lede;
   }
 
   function canonicalizeArticleHTML(html, slug) {
@@ -110,9 +127,11 @@
 
   function installEditorialAuthority() {
     if (editorialInstalled) return false;
-    if (typeof articleTemplate !== 'function' || typeof homeTemplate !== 'function' || typeof posts !== 'object') return false;
+    if (typeof articleTemplate !== 'function' || typeof homeTemplate !== 'function' || typeof render !== 'function' || typeof posts !== 'object') return false;
     const previousArticleTemplate = articleTemplate;
     const previousHomeTemplate = homeTemplate;
+    const previousRender = render;
+
     articleTemplate = function(post) {
       syncPostMetadata();
       return canonicalizeArticleHTML(previousArticleTemplate(post), post?.slug);
@@ -121,22 +140,21 @@
       syncPostMetadata();
       return previousHomeTemplate();
     };
+    render = function() {
+      syncPostMetadata();
+      previousRender();
+      applyCanonicalArticleDOM();
+    };
+
     editorialInstalled = true;
     document.documentElement.dataset.editorialAuthority = 'v12';
     syncPostMetadata();
     return true;
   }
 
-  function applyVisionPrivacy() {
-    if (route() !== '/lab/vision') return;
-    const node = document.querySelector('[data-vision-lab] .vision-header-copy-v11 > small');
-    const copy = PRIVACY[language()];
-    if (node && node.textContent !== copy) node.textContent = copy;
-  }
-
   function reconcile({ rerender = false } = {}) {
     const installedNow = installEditorialAuthority();
-    applyVisionPrivacy();
+    applyCanonicalArticleDOM();
     if ((installedNow || rerender) && editorialInstalled && /^\/post\/(glass|sloar|motion)$/.test(route()) && typeof render === 'function') {
       render();
     }
