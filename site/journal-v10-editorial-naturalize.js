@@ -105,7 +105,7 @@
     [/\bworking-tree change\b/gi,'作業ツリーの変更'], [/\bworking tree\b/gi,'作業ツリー'], [/\bworking-tree\b/gi,'作業ツリー'], [/\bworktree\b/gi,'作業ツリー'],
     [/\bengineering state\b/gi,'開発状態'], [/\bdurable state\b/gi,'永続的な状態'], [/\bdurable truth\b/gi,'永続的な事実'], [/\bsource of truth\b/gi,'信頼できる基準'],
     [/\bsource identity\b/gi,'作業対象の識別'], [/\bstate machine\b/gi,'状態遷移'], [/\bworking state\b/gi,'作業状態'], [/\bstate\b/gi,'状態'],
-    [/\bmemory\b/gi,'記憶'], [/\bevidence\b/gi,'검証結果'.replace('검','検')], [/\bverification\b/gi,'検証'], [/\bcompletion report\b/gi,'完了報告'],
+    [/\bmemory\b/gi,'記憶'], [/\bevidence\b/gi,'検証結果'], [/\bverification\b/gi,'検証'], [/\bcompletion report\b/gi,'完了報告'],
     [/\bexit condition\b/gi,'完了条件'], [/\btask\b/gi,'作業'], [/\boperation\b/gi,'操作'], [/\binputs\b/gi,'入力'], [/\binput\b/gi,'入力'],
     [/\bretry\b/gi,'再試行'], [/\bfailing phase\b/gi,'失敗した段階'], [/\bstatus code\b/gi,'ステータスコード'], [/\bnormalized error\b/gi,'正規化したエラー'],
     [/\bfailure fingerprint\b/gi,'失敗の指紋'], [/\bfailure domain\b/gi,'障害領域'], [/\bforge API\b/gi,'ホスティング側API'], [/\bforge\b/gi,'ホスティング側'],
