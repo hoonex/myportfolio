@@ -1,4 +1,4 @@
-/* Journal v10: locale-native editorial voice for the original three essays and general UI. */
+/* Journal v10: locale-native editorial voice for the original essays and technical UI. */
 (() => {
   const EDITIONS = {
     ko: {
@@ -20,6 +20,10 @@
         title:'좋은 모션은 애니메이션보다 입력의 연속성에 가깝다.',
         deck:'눌렀을 때 즉시 반응하고, 드래그 중에는 손을 따라가며, 놓는 순간에는 속도를 이어받아야 한다. 모션의 목적은 장식이 아니라 사용자의 의도를 끊지 않는 것이다.',
         lede:'유려한 인터페이스와 “애니메이션이 많은 화면”은 다르다. 사용자가 다시 잡았을 때 현재 보이는 위치에서 이어지고, 빠르게 던졌다면 그 속도가 다음 움직임에 남아 있으며, 경계에 닿았을 때 저항이 생겨야 한다. 이 연속성이 맞으면 모션 자체는 오히려 덜 눈에 띈다.'
+      },
+      spatialLab: {
+        desc:'이 장면은 렌더러 데모가 아니라 공간 관계를 확인하기 위한 블록아웃입니다. 드래그하거나 방향키로 시점을 돌리고, 원근감과 카메라 깊이를 바꾸면서 형태가 어떻게 달라지는지 확인해 보세요.',
+        note:'CSS 3D 블록아웃 · 인터랙션과 공간 위계 검증용'
       }
     },
     en: {
@@ -41,6 +45,10 @@
         title:'Good motion preserves intent instead of displaying animation.',
         deck:'Contact should respond immediately, dragging should stay attached to the pointer, and release should carry velocity forward. Motion earns its place when it keeps the user’s intent continuous.',
         lede:'A fluid interface is not one with more animation. It is one that can be interrupted without jumping, can inherit velocity without feeling canned, and can answer a boundary with resistance instead of an unrelated flourish. When continuity is right, the animation itself becomes less conspicuous.'
+      },
+      spatialLab: {
+        desc:'This blockout is a spatial diagnostic, not a renderer showcase. Orbit it with the pointer or arrow keys, then change perspective and camera depth to expose relationships that only worked from one view.',
+        note:'CSS 3D blockout · interaction and spatial-hierarchy study'
       }
     },
     ja: {
@@ -82,6 +90,10 @@
           'バウンスは理由がある時だけ使う。',
           '良いモーションは、会話のように割り込める。'
         ]
+      },
+      spatialLab: {
+        desc:'これはレンダラーの見本ではなく、空間関係を確かめるためのブロックアウトです。ドラッグまたは矢印キーで視点を回し、遠近感とカメラの奥行きを変えながら、配置の見え方がどう変化するか確認できます。',
+        note:'CSS 3Dブロックアウト · 操作感と空間の階層を確認する実験'
       }
     }
   };
@@ -105,6 +117,7 @@
     [/\banimation\b/gi,'アニメーション'], [/\bmotion\b/gi,'モーション'], [/\bresponse\b/gi,'反応'], [/\bpressed scale\b/gi,'押下時のスケール'],
     [/\btransition\b/gi,'トランジション'], [/\bshadow\b/gi,'影'], [/\bspring\b/gi,'スプリング'], [/\brelease velocity\b/gi,'リリース時の速度'],
     [/\bvelocity handoff\b/gi,'速度の引き継ぎ'], [/\bpointer\b/gi,'ポインター'], [/\bframe drop\b/gi,'フレーム落ち'], [/\bmobile GPU\b/gi,'モバイルGPU'],
+    [/\bPerspective\b/g,'遠近感'], [/\bCamera Z\b/g,'カメラの奥行き'],
     [/\bscene\b/gi,'シーン'], [/\blayer\b/gi,'レイヤー'], [/\bpanel\b/gi,'パネル'], [/\bmaterialize\b/gi,'実体化'], [/\binterruptibility\b/gi,'途中でつかみ直せること']
   ];
 
@@ -126,6 +139,14 @@
     nodes.forEach(node => {
       let value = node.nodeValue || '';
       JA_TERMS.forEach(([pattern,replacement]) => { value = value.replace(pattern,replacement); });
+      value = value
+        .replace(/([一-龯々ぁ-ゖァ-ヺA-Za-z0-9_)])\s+([はがをにへとでのもやか])(?=[^A-Za-z]|$)/g, '$1$2')
+        .replace(/\s+([、。！？）」』】])/g, '$1')
+        .replace(/([（「『【])\s+/g, '$1');
+      const previous = node.previousSibling;
+      if (previous && (previous.nodeType === Node.ELEMENT_NODE || /\S/.test(previous.nodeValue || ''))) {
+        value = value.replace(/^\s+([はがをにへとでのもやか、。！？）」』】])/, '$1');
+      }
       node.nodeValue = value;
     });
   }
@@ -183,6 +204,18 @@
     }
   }
 
+  function applySpatialArticle() {
+    if (route() !== '/post/spatial') return;
+    const article = document.querySelector('[data-spatial-article]');
+    if (!article) return;
+    naturalizeJapaneseText(article.querySelector('.article-body'));
+    const copy = EDITIONS[language()].spatialLab;
+    const desc = article.querySelector('[data-spatial-lab] .live-lab-heading > p');
+    const note = article.querySelector('[data-spatial-lab] .live-lab-note');
+    if (desc) desc.textContent = copy.desc;
+    if (note) note.textContent = copy.note;
+  }
+
   let raf = 0;
   function schedule() {
     cancelAnimationFrame(raf);
@@ -190,6 +223,7 @@
       raf = requestAnimationFrame(() => {
         applyHome();
         applyArticle();
+        applySpatialArticle();
       });
     });
   }

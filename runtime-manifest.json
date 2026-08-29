@@ -1,0 +1,24 @@
+{
+  "styles": [
+    "styles.css",
+    "journal-v2.css",
+    "journal-v3-refraction.css",
+    "journal-v4-jelly.css",
+    "journal-v5-experiments.css",
+    "journal-v6-studio.css",
+    "journal-v6-compat.css",
+    "journal-v8-spatial.css"
+  ],
+  "scripts": [
+    "app.js",
+    "journal-v2.js",
+    "journal-v3-refraction.js",
+    "journal-runtime.js",
+    "journal-v4-jelly.js",
+    "journal-v5-experiments.js",
+    "journal-v6-studio.js",
+    "journal-v8-spatial.js",
+    "journal-v9-locale-editorial.js",
+    "journal-v10-editorial-naturalize.js"
+  ]
+}
