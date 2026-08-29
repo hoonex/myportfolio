@@ -1,6 +1,7 @@
-/* Route-aware runtime loader: keep article-only JavaScript off the index path. */
+/* Route-aware runtime loader: keep article/lab JavaScript and CSS off unrelated routes. */
 (() => {
-  const loaded = new Map();
+  const loadedScripts = new Map();
+  const loadedStyles = new Map();
   let manifestPromise = null;
   let requestRevision = 0;
   const fullEditorialRoutes = new Set(['/lab', '/post/glass', '/post/sloar', '/post/motion']);
@@ -18,11 +19,29 @@
     return manifestPromise;
   }
 
+  function loadStyle(rel) {
+    const url = assetUrl(rel);
+    const existing = [...document.styleSheets].some(sheet => sheet.href === url)
+      || [...document.querySelectorAll('link[rel="stylesheet"]')].some(node => node.href === url);
+    if (existing) return Promise.resolve();
+    if (loadedStyles.has(url)) return loadedStyles.get(url);
+    const promise = new Promise((resolve, reject) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = url;
+      link.dataset.hjRouteStyle = rel;
+      link.addEventListener('load', resolve, { once: true });
+      link.addEventListener('error', () => reject(new Error(`failed to load ${rel}`)), { once: true });
+      document.head.append(link);
+    });
+    loadedStyles.set(url, promise);
+    return promise;
+  }
+
   function loadScript(rel) {
     const url = assetUrl(rel);
     if ([...document.scripts].some(node => node.src === url)) return Promise.resolve();
-    if (loaded.has(url)) return loaded.get(url);
-
+    if (loadedScripts.has(url)) return loadedScripts.get(url);
     const promise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = url;
@@ -32,7 +51,7 @@
       script.addEventListener('error', () => reject(new Error(`failed to load ${rel}`)), { once: true });
       document.body.append(script);
     });
-    loaded.set(url, promise);
+    loadedScripts.set(url, promise);
     return promise;
   }
 
@@ -43,28 +62,19 @@
       document.documentElement.dataset.runtimeRoute = 'core';
       return;
     }
-
     const runtime = window.HJRuntime;
     runtime?.beginRenderBatch?.();
     document.documentElement.dataset.runtimeRoute = 'loading';
-
     try {
       const config = await manifest();
-      const groups = (config.routes || []).filter(group =>
-        (group.paths || []).some(path => current === path || current.startsWith(`${path}/`))
-      );
-
+      // Exact matching keeps /lab/vision independent from the heavy /lab WebGL stack.
+      const groups = (config.routes || []).filter(group => (group.paths || []).includes(current));
       for (const group of groups) {
+        for (const style of group.styles || []) await loadStyle(style);
         for (const script of group.scripts || []) await loadScript(script);
       }
-
       if (revision !== requestRevision || current !== route()) return;
-
-      // v2/v3/v5 install template/init overrides while loading. Render once only
-      // after every route layer is present so progressive enhancers never bless
-      // an intermediate legacy DOM as the completed article/Lab surface.
       if (fullEditorialRoutes.has(current) && typeof render === 'function') render();
-
       document.documentElement.dataset.runtimeRoute = groups.map(group => group.id).join(' ') || 'core';
     } catch (error) {
       if (revision !== requestRevision) return;
@@ -75,7 +85,6 @@
       window.HJRuntime?.schedule?.();
     }
   }
-
   addEventListener('hashchange', syncRoute);
   queueMicrotask(syncRoute);
 })();
