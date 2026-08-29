@@ -35,7 +35,18 @@ await visit('#/post/spatial','[data-spatial-article]',['journal-v10-editorial-na
 await visit('#/post/glass','.refraction-correction',['journal-v2.js','journal-v10-editorial-naturalize.js','journal-v3-refraction.js','journal-v4-jelly.js','journal-v9-locale-editorial.js'],['journal-v5-experiments.js','journal-v8-spatial.js','journal-v11-vision.js']);
 await visit('#/lab','.refraction-page',['journal-v2.js','journal-v3-refraction.js','journal-v4-jelly.js','journal-v9-locale-editorial.js'],['journal-v10-editorial-naturalize.js','journal-v5-experiments.js','journal-v8-spatial.js','journal-v11-vision.js']);
 await visit('#/lab/vision','[data-vision-lab]',['journal-v11-vision.js','journal-v11-vision.css'],['journal-v2.js','journal-v10-editorial-naturalize.js','journal-v3-refraction.js','journal-v4-jelly.js','journal-v5-experiments.js','journal-v8-spatial.js','journal-v9-locale-editorial.js'],async page=>{
-  expect(await page.locator('[data-start]').isVisible(),'Vision Lab must expose an explicit Start camera action'); const before=await resourceUrls(page); const remote=before.filter(url=>/tasks-vision|mediapipe-models|opencv\.js/i.test(url)); expect(remote.length===0,`Vision Lab downloaded camera runtimes before consent: ${remote.join(', ')}`); const diagnostic=await page.evaluate(()=>window.HJVisionLab?.injectDiagnosticFrame?.()); expect(diagnostic===true,'Vision diagnostic geometry hook failed'); await page.waitForFunction(()=>document.querySelector('[data-vm="points"] strong')?.textContent==='499'); expect((await page.locator('[data-vm="backend"] strong').textContent()||'').trim()==='DIAGNOSTIC','Vision synthetic evidence must be visibly labeled DIAGNOSTIC'); const state=await page.evaluate(()=>window.HJVisionLab?.state?.()); expect(state?.hands&&state?.face&&state?.view,`Vision default state drift: ${JSON.stringify(state)}`); await assertA11y(page,'Vision diagnostic'); await mkdir('.artifacts/design-journal',{recursive:true}); await page.screenshot({path:'.artifacts/design-journal/vision-diagnostic.png',fullPage:true});
+  await page.waitForFunction(()=>document.title.startsWith('Vision Lab.'));
+  expect(await page.locator('[data-nav="vision"]').getAttribute('aria-current')==='page','Vision nav must own aria-current on Vision Lab');
+  expect(await page.locator('[data-nav="lab"]').getAttribute('aria-current')===null,'Glass Lab must not own aria-current on Vision Lab');
+  expect(await page.locator('[data-start]').isVisible(),'Vision Lab must expose an explicit Start camera action');
+  const before=await resourceUrls(page); const remote=before.filter(url=>/tasks-vision|mediapipe-models|opencv\.js/i.test(url)); expect(remote.length===0,`Vision Lab downloaded camera runtimes before consent: ${remote.join(', ')}`);
+  const diagnostic=await page.evaluate(()=>window.HJVisionLab?.injectDiagnosticFrame?.()); expect(diagnostic===true,'Vision diagnostic geometry hook failed');
+  await page.waitForFunction(()=>document.querySelector('[data-vm="points"] strong')?.textContent==='499');
+  expect((await page.locator('[data-vm="backend"] strong').textContent()||'').trim()==='DIAGNOSTIC','Vision synthetic evidence must be visibly labeled DIAGNOSTIC');
+  const state=await page.evaluate(()=>window.HJVisionLab?.state?.()); expect(state?.hands&&state?.face&&state?.view,`Vision default state drift: ${JSON.stringify(state)}`);
+  await assertA11y(page,'Vision diagnostic');
+  await mkdir('.artifacts/design-journal',{recursive:true});
+  await page.screenshot({path:'.artifacts/design-journal/vision-diagnostic.png',fullPage:true});
 });
 await browser.close();
 console.log('composable route runtime loading + locale + Vision Lab audit ok');
