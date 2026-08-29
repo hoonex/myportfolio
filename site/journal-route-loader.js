@@ -3,6 +3,7 @@
   const loaded = new Map();
   let manifestPromise = null;
   let requestRevision = 0;
+  const fullEditorialRoutes = new Set(['/lab', '/post/glass', '/post/sloar', '/post/motion']);
 
   const route = () => (location.hash.slice(1) || '/').split('?')[0];
   const assetUrl = rel => new URL(`./${rel}`, document.baseURI).href;
@@ -43,6 +44,10 @@
       return;
     }
 
+    const runtime = window.HJRuntime;
+    runtime?.beginRenderBatch?.();
+    document.documentElement.dataset.runtimeRoute = 'loading';
+
     try {
       const config = await manifest();
       const groups = (config.routes || []).filter(group =>
@@ -54,12 +59,19 @@
       }
 
       if (revision !== requestRevision || current !== route()) return;
+
+      // v2/v3/v5 install template/init overrides while loading. Render once only
+      // after every route layer is present so progressive enhancers never bless
+      // an intermediate legacy DOM as the completed article/Lab surface.
+      if (fullEditorialRoutes.has(current) && typeof render === 'function') render();
+
       document.documentElement.dataset.runtimeRoute = groups.map(group => group.id).join(' ') || 'core';
-      window.HJRuntime?.schedule?.();
     } catch (error) {
       if (revision !== requestRevision) return;
       document.documentElement.dataset.runtimeRoute = 'error';
       console.error('[HJ runtime loader]', error);
+    } finally {
+      runtime?.endRenderBatch?.();
     }
   }
 
