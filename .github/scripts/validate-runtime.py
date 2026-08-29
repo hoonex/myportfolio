@@ -32,18 +32,18 @@ routes = manifest.get('routes') or []
 budgets = manifest.get('budgets') or fail('runtime manifest missing budgets')
 
 route_ids = set()
-route_paths = {}
 for route in routes:
     route_id = route.get('id')
     if not route_id or route_id in route_ids:
         fail(f'invalid or duplicate route id: {route_id}')
     route_ids.add(route_id)
+    seen_paths = set()
     for path in route.get('paths', []):
         if not isinstance(path, str) or not path.startswith('/'):
             fail(f'invalid route path for {route_id}: {path!r}')
-        if path in route_paths:
-            fail(f'duplicate route path {path}: {route_paths[path]} and {route_id}')
-        route_paths[path] = route_id
+        if path in seen_paths:
+            fail(f'duplicate path inside route group {route_id}: {path}')
+        seen_paths.add(path)
 
 html = (ROOT / 'index.html').read_text()
 html_styles = re.findall(r'<link[^>]+href="\./([^"?#]+\.css)', html)
@@ -84,12 +84,28 @@ for key, value in metrics.items():
     if value > limit:
         fail(f'{key} budget exceeded: {value} > {limit}')
 
-required_core = {'journal-runtime.js', 'journal-spatial-index.js', 'journal-v10-editorial-naturalize.js', 'journal-v6-studio.js', 'journal-route-loader.js'}
+required_core = {
+    'journal-editorial-core.js', 'journal-runtime.js', 'journal-spatial-index.js',
+    'journal-v6-studio.js', 'journal-route-loader.js'
+}
 missing_core = required_core.difference(core.get('scripts', []))
 if missing_core:
     fail(f'missing required core scripts: {sorted(missing_core)}')
+for forbidden in ['journal-v2.js', 'journal-v10-editorial-naturalize.js']:
+    if forbidden in core.get('scripts', []):
+        fail(f'article-only runtime leaked back into core: {forbidden}')
+
+editorial_core = (ROOT / 'journal-editorial-core.js').read_text()
+for phrase in ['手触りのある素材', 'WebGL屈折 · ドラッグ変形', '状態復元 · 障害注入', 'この記事の構成', '読書中']:
+    if phrase not in editorial_core:
+        fail(f'missing authored core locale copy: {phrase}')
+for debt in ['WebGL 屈折 · jelly drag', 'state recovery · failure injection', 'spring · velocity handoff']:
+    if debt in editorial_core:
+        fail(f'translationese leaked into editorial core: {debt}')
 
 required_lazy = {
+    'editorial-full': ['journal-v2.js'],
+    'article-polish': ['journal-v10-editorial-naturalize.js'],
     'glass': ['journal-v3-refraction.js', 'journal-v4-jelly.js', 'journal-v9-locale-editorial.js'],
     'article-labs': ['journal-v5-experiments.js'],
     'spatial': ['journal-v8-spatial.js'],
@@ -99,4 +115,12 @@ for route_id, scripts in required_lazy.items():
     if by_id.get(route_id, {}).get('scripts') != scripts:
         fail(f'lazy route contract drift for {route_id}: {by_id.get(route_id, {}).get("scripts")} != {scripts}')
 
-print('canonical route-aware runtime manifest validated')
+expected_paths = {
+    'editorial-full': ['/lab', '/post/glass', '/post/sloar', '/post/motion'],
+    'article-polish': ['/post/glass', '/post/sloar', '/post/motion', '/post/spatial'],
+}
+for route_id, paths in expected_paths.items():
+    if by_id.get(route_id, {}).get('paths') != paths:
+        fail(f'composable route contract drift for {route_id}: {by_id.get(route_id, {}).get("paths")} != {paths}')
+
+print('canonical composable route runtime manifest validated')
