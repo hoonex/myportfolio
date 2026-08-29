@@ -5,6 +5,8 @@
 
   let raf = 0;
   let revision = 0;
+  let renderBarrier = 0;
+  let barrierDirty = false;
   const systemDark = matchMedia('(prefers-color-scheme: dark)');
   const themeMeta = document.querySelector('meta[name="theme-color"]');
 
@@ -54,6 +56,10 @@
 
   const emit = () => {
     raf = 0;
+    if (renderBarrier > 0) {
+      barrierDirty = true;
+      return;
+    }
     revision += 1;
     const route = currentRoute();
     syncDocumentChrome(route);
@@ -63,8 +69,30 @@
   };
 
   const schedule = () => {
+    if (renderBarrier > 0) {
+      barrierDirty = true;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      return;
+    }
     if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(emit);
+  };
+
+  const beginRenderBatch = () => {
+    renderBarrier += 1;
+    barrierDirty = true;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+  };
+
+  const endRenderBatch = () => {
+    if (renderBarrier <= 0) return;
+    renderBarrier -= 1;
+    if (renderBarrier > 0) return;
+    const shouldEmit = barrierDirty;
+    barrierDirty = false;
+    if (shouldEmit) schedule();
   };
 
   const observer = new MutationObserver(schedule);
@@ -83,6 +111,8 @@
   window.HJRuntime = Object.freeze({
     schedule,
     route: currentRoute,
-    syncDocumentChrome
+    syncDocumentChrome,
+    beginRenderBatch,
+    endRenderBatch
   });
 })();
