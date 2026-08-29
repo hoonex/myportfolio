@@ -21,64 +21,66 @@ jobs:
       - name: Canonicalize legacy article metadata
         shell: bash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'site/journal-v2.js';
+          const authority = fs.readFileSync('site/journal-v12-authority.js', 'utf8');
+          const authorityMatch = authority.match(/const EDITIONS = (\{[\s\S]*?\});\n\n  const route/);
+          if (!authorityMatch) throw new Error('could not read canonical EDITIONS from v12 authority');
+          const editions = Function(`"use strict"; return (${authorityMatch[1]});`)();
 
-          path = Path('site/journal-v2.js')
-          text = path.read_text()
-          editions = {
-              'glass': {
-                  'ko': ('재질 / 광학', 'Liquid Glass는 단순한 블러가 아니다.', '유리처럼 보이게 만드는 핵심은 blur 수치가 아니라 위계, 배경과의 관계, 경계의 빛, 입력에 대한 반응, 그리고 실제 굴절과 시각적 착시를 구분하는 태도다.', '웹에서 유리 효과는 너무 쉽게 blur 한 줄로 요약된다. 하지만 인터페이스가 재질처럼 느껴지려면 “얼마나 흐린가”보다 왜 이 표면이 떠 있는지, 뒤의 정보가 얼마나 남아야 하는지, 손가락과 포인터에 어떤 속도로 반응하는지가 먼저 정리되어야 한다.'),
-                  'en': ('Material / optics', 'Liquid Glass is a hierarchy problem before it is a blur effect.', 'The convincing part is not the blur radius. It is the relationship between surface, background, edge light, input, and the point where an illusion must give way to real refraction.', 'Blur is easy to demo and easy to over-credit. A glass surface becomes useful only when it preserves the right amount of context, separates the right layer, and responds to input like one coherent material. The optical effect is one part of that system, not the definition of it.'),
-                  'ja': ('素材 / 光学', 'ガラスらしさは、ぼかしだけでは作れない。', '重要なのはぼかし量ではなく、情報の階層、背景との距離、縁の光、入力への反応、そして「見せ方」と本当の屈折を区別することだ。', 'Webのガラス表現は、backdrop-filterのぼかしだけで説明されがちだ。しかし素材として成立させるには、背後の情報をどこまで残すのか、どの面を前に出すのか、触れた瞬間にどう反応するのかまで一つのルールとして設計する必要がある。'),
-              },
-              'sloar': {
-                  'ko': ('도구 / 시스템', 'Sloar를 만들며 배운 것은 “기억”보다 “상태”였다.', '채팅은 이어져도 저장소와 실행 환경은 계속 바뀐다. Sloar는 대화의 기억을 믿는 대신 현재 저장소 상태를 다시 식별하고, 확인한 증거만큼만 완료를 말하게 만드는 작업 규칙이다.', '채팅 기반 개발에서 가장 위험한 순간은 대화가 자연스럽게 이어진다는 이유로 개발 환경도 그대로라고 믿을 때다. 브랜치가 움직이고, 샌드박스가 사라지고, 권한과 CI 상태가 달라질 수 있다. 그래서 Sloar는 기억을 복원하는 기술보다 현재 상태를 다시 증명하는 절차에 더 많은 비중을 둔다.'),
-                  'en': ('Tool / system', 'Sloar is an argument for state over memory.', 'A chat can remain continuous while the repository, sandbox, permissions, and CI move underneath it. Sloar re-identifies the working state first and limits every completion claim to evidence collected for that exact state.', 'The dangerous part of chat-based development is not forgetting a sentence; it is mistaking conversational continuity for engineering continuity. Sloar treats the repository as mutable external state that must be resolved again before a meaningful edit, verification, or publication claim.'),
-                  'ja': ('開発プロトコル', 'Sloarを作って分かったのは、記憶より「現在の状態」が重要だということ。', '会話が続いていても、リポジトリ、実行環境、権限、CIは変わり続ける。Sloarは過去の会話を正解扱いせず、今の状態を確認し直してから作業を進めるための手順だ。', 'チャットで開発していると、会話が自然につながるほど「環境も前と同じだ」と思いやすい。実際にはブランチが進み、サンドボックスが消え、権限やCIの条件も変わる。Sloarでは、記憶をうまく補うことより、作業対象をその都度確認し直すことを優先する。'),
-              },
-              'motion': {
-                  'ko': ('인터랙션', '좋은 모션은 애니메이션보다 입력의 연속성에 가깝다.', '눌렀을 때 즉시 반응하고, 드래그 중에는 손을 따라가며, 놓는 순간에는 속도를 이어받아야 한다. 모션의 목적은 장식이 아니라 사용자의 의도를 끊지 않는 것이다.', '유려한 인터페이스와 “애니메이션이 많은 화면”은 다르다. 사용자가 다시 잡았을 때 현재 보이는 위치에서 이어지고, 빠르게 던졌다면 그 속도가 다음 움직임에 남아 있으며, 경계에 닿았을 때 저항이 생겨야 한다. 이 연속성이 맞으면 모션 자체는 오히려 덜 눈에 띈다.'),
-                  'en': ('Interaction', 'Good motion preserves intent instead of displaying animation.', 'Contact should respond immediately, dragging should stay attached to the pointer, and release should carry velocity forward. Motion earns its place when it keeps the user’s intent continuous.', 'A fluid interface is not one with more animation. It is one that can be interrupted without jumping, can inherit velocity without feeling canned, and can answer a boundary with resistance instead of an unrelated flourish. When continuity is right, the animation itself becomes less conspicuous.'),
-                  'ja': ('インタラクション', '良いモーションは、演出よりも操作の連続性を守る。', '押した瞬間に反応し、ドラッグ中は指やポインターから離れず、放した後は速度を引き継ぐ。モーションの役割は目立つことではなく、操作意図を途中で切らないことだ。', '滑らかなUIと、アニメーションの多いUIは同じではない。途中でつかみ直しても現在位置から続き、速く払えばその勢いが残り、端では抵抗が返ってくる。こうした連続性が整うと、モーション自体はむしろ意識されにくくなる。'),
-              },
+          const original = fs.readFileSync(path, 'utf8');
+          const articlesStart = original.indexOf('  const articles = {');
+          const articlesEnd = original.indexOf('\n  function T()', articlesStart);
+          if (articlesStart < 0 || articlesEnd < 0) throw new Error('could not isolate articles object');
+
+          let section = original.slice(articlesStart, articlesEnd);
+          const top = [...section.matchAll(/^    (glass|sloar|motion): \{$/gm)];
+          const names = top.map(match => match[1]);
+          if (JSON.stringify(names) !== JSON.stringify(['glass','sloar','motion'])) {
+            throw new Error(`unexpected article block layout: ${JSON.stringify(names)}`);
           }
 
-          top = list(re.finditer(r'^    (glass|sloar|motion): \{$', text, re.M))
-          if [m.group(1) for m in top] != ['glass', 'sloar', 'motion']:
-              raise SystemExit('unexpected v2 article block layout')
+          const escapeSingle = value => String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          let rebuilt = '';
+          let cursor = 0;
+          for (let index = 0; index < top.length; index += 1) {
+            const match = top[index];
+            const slug = match[1];
+            const start = match.index;
+            const end = index + 1 < top.length ? top[index + 1].index : section.length;
+            let block = section.slice(start, end);
+            for (const lang of ['ko','en','ja']) {
+              const copy = editions[lang]?.[slug];
+              if (!copy) throw new Error(`missing canonical copy for ${slug}/${lang}`);
+              const pattern = new RegExp(`^      ${lang}:\\{category:'[^\\n]*\\},$`, 'm');
+              const old = block.match(pattern);
+              if (!old) throw new Error(`missing v2 metadata line for ${slug}/${lang}`);
+              const date = old[0].match(/date:'([^']*)'/)?.[1];
+              const reading = old[0].match(/reading:'([^']*)'/)?.[1];
+              if (date == null || reading == null) throw new Error(`missing date/reading for ${slug}/${lang}`);
+              const line = `      ${lang}:{category:'${escapeSingle(copy.category)}',date:'${escapeSingle(date)}',reading:'${escapeSingle(reading)}',title:'${escapeSingle(copy.title)}',deck:'${escapeSingle(copy.deck)}',lede:'${escapeSingle(copy.lede)}'},`;
+              block = block.replace(pattern, line);
+            }
+            rebuilt += section.slice(cursor, start) + block;
+            cursor = end;
+          }
+          rebuilt += section.slice(cursor);
+          const updated = original.slice(0, articlesStart) + rebuilt + original.slice(articlesEnd);
+          fs.writeFileSync(path, updated);
 
-          chunks = []
-          cursor = 0
-          for index, match in enumerate(top):
-              slug = match.group(1)
-              start = match.start()
-              end = top[index + 1].start() if index + 1 < len(top) else text.index('\n  function T()', start)
-              block = text[start:end]
-              for lang in ('ko', 'en', 'ja'):
-                  category, title, deck, lede = editions[slug][lang]
-                  pattern = re.compile(rf"^      {lang}:\{{category:'[^\n]*\}},$", re.M)
-                  old = pattern.findall(block)
-                  if len(old) != 1:
-                      raise SystemExit(f'{slug}/{lang}: expected one metadata line, got {len(old)}')
-                  date = re.search(r"date:'([^']*)'", old[0]).group(1)
-                  reading = re.search(r"reading:'([^']*)'", old[0]).group(1)
-                  new = f"      {lang}:{{category:'{category}',date:'{date}',reading:'{reading}',title:'{title}',deck:'{deck}',lede:'{lede}'}},"
-                  block = pattern.sub(lambda _: new, block, count=1)
-              chunks.append(text[cursor:start])
-              chunks.append(block)
-              cursor = end
-          chunks.append(text[cursor:])
-          updated = ''.join(chunks)
-          path.write_text(updated)
-
-          for slug, languages in editions.items():
-              for lang, (_, title, deck, lede) in languages.items():
-                  for value in (title, deck, lede):
-                      if updated.count(value) < 1:
-                          raise SystemExit(f'{slug}/{lang}: canonical copy missing after rewrite')
-          PY
+          for (const lang of ['ko','en','ja']) {
+            for (const slug of ['glass','sloar','motion']) {
+              const copy = editions[lang][slug];
+              for (const field of ['category','title','deck','lede']) {
+                if (!updated.includes(copy[field])) throw new Error(`canonical ${slug}/${lang}/${field} missing after rewrite`);
+              }
+            }
+          }
+          if (updated.includes("title:'Liquid Glass は frosted glass ではない。'")) {
+            throw new Error('legacy Japanese Glass title remains in v2 metadata');
+          }
+          NODE
           node --check site/journal-v2.js
           git diff --check
           git diff -- site/journal-v2.js
