@@ -63,7 +63,7 @@
       back: '← Index',
       labBadge: 'LIVE / SPATIAL BLOCKOUT',
       labTitle: 'カメラを動かすと、設計の無理が見えてくる。',
-      labDesc: 'これはレンダラーの見本ではなく、空間関係を確認するためのブロックアウトです。ドラッグまたは矢印キーで視点を回し、Perspective と Camera Z を変えて違いを確認できます。',
+      labDesc: 'これはレンダラーの見本ではなく、空間関係を確認するためのブロックアウトです。ドラッグまたは矢印キーで視点を回し、遠近感とカメラの奥行きを変えながら、配置の見え方がどう変化するか確認できます。',
       yaw: 'Yaw', pitch: 'Pitch', perspective: 'Perspective', depth: 'Camera Z', reset: '視点をリセット',
       stageLabel: 'ドラッグまたは矢印キーで回転できる3Dブロックアウト',
       rail: 'この記事の構成', progress: '進捗', comments: 'コメント', local: 'このブラウザに保存',
