@@ -57,7 +57,7 @@
   const CONTROL_LABELS = {
     ko: { refraction:'굴절', blurAmount:'Blur', chromAberration:'색수차', specular:'Specular', fresnel:'Fresnel', edgeHighlight:'경계광', zRadius:'Bevel 깊이', cornerRadius:'모서리', saturation:'채도', brightness:'밝기', width:'너비', height:'높이' },
     en: { refraction:'Refraction', blurAmount:'Blur', chromAberration:'Chromatic', specular:'Specular', fresnel:'Fresnel', edgeHighlight:'Edge light', zRadius:'Bevel depth', cornerRadius:'Corner', saturation:'Saturation', brightness:'Brightness', width:'Width', height:'Height' },
-    ja: { refraction:'屈折', blurAmount:'ぼかし', chromAberration:'色収差', specular:'鏡面反射', fresnel:'Fresnel', edgeHighlight:'縁の光', zRadius:'ベベル深度', cornerRadius:'角丸', saturation:'彩度', brightness:'明るさ', width:'幅', height:'高さ' }
+    ja: { refraction:'屈折', blurAmount:'ぼかし', chromAberration:'色収差', specular:'鏡面反射', fresnel:'フレネル', edgeHighlight:'縁の光', zRadius:'ベベル深度', cornerRadius:'角丸', saturation:'彩度', brightness:'明るさ', width:'幅', height:'高さ' }
   };
 
   const language = () => {
