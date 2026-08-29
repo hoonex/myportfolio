@@ -1,0 +1,121 @@
+name: Fix locale lifecycle audit once
+
+on:
+  push:
+    branches:
+      - feat/design-journal-liquid-glass-20260827
+    paths:
+      - .github/workflows/fix-locale-lifecycle-audit-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/design-journal-liquid-glass-20260827
+          fetch-depth: 0
+      - name: Separate metadata stress from enhancement lifecycle
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          v10_path = Path('site/journal-v10-editorial-naturalize.js')
+          v10 = v10_path.read_text()
+          old = "    naturalizeJapaneseText(article.querySelector('.article-body'));\n\n    if (language() === 'ja') {"
+          new = "    naturalizeJapaneseText(article.querySelector('.article-body'));\n    article.dataset.editorialNaturalized = 'v10';\n\n    if (language() === 'ja') {"
+          if v10.count(old) != 1:
+              raise SystemExit(f'unexpected v10 naturalization anchor count: {v10.count(old)}')
+          v10_path.write_text(v10.replace(old, new, 1))
+
+          audit_path = Path('.github/scripts/design-journal-locale-audit.mjs')
+          audit = audit_path.read_text()
+          anchor = """async function assertCanonicalArticleTitleAfterLegacyRerender(slug, title) {
+  await page.waitForFunction(({ slug, title }) => {
+    const groups = (document.documentElement.dataset.runtimeRoute || '').split(/\\s+/);
+    return groups.includes('article-polish')
+      && location.hash === `#/post/${slug}`
+      && document.querySelector('.article > h1')?.textContent?.trim() === title;
+  }, { slug, title });
+
+  await page.evaluate(() => {
+    if (typeof render !== 'function') throw new Error('legacy render() is unavailable');
+    render();
+    render();
+  });
+
+  const renderedTitle = (await page.locator('.article > h1').textContent() || '').trim();
+  expect(renderedTitle === title, `Japanese ${slug} article title reverted after forced legacy rerender: ${renderedTitle}`);
+}
+"""
+          helper = anchor + """
+async function restoreArticleThroughHashLifecycle(slug, title, expectedHeadings = []) {
+  await page.evaluate(() => { location.hash = '#/'; });
+  await page.waitForFunction(() => location.hash === '#/' && Boolean(document.querySelector('.home-page')));
+
+  await page.evaluate(nextSlug => { location.hash = `#/post/${nextSlug}`; }, slug);
+  await page.waitForFunction(({ slug, title, expectedHeadings }) => {
+    if (location.hash !== `#/post/${slug}`) return false;
+    const groups = (document.documentElement.dataset.runtimeRoute || '').split(/\\s+/);
+    if (!groups.includes('article-polish')) return false;
+    const article = document.querySelector('.article');
+    if (!article || article.dataset.editorialNaturalized !== 'v10') return false;
+    if (article.querySelector(':scope > h1')?.textContent?.trim() !== title) return false;
+    const headings = [...article.querySelectorAll('.article-body > .essay-section > h2')].map(node => node.textContent.trim());
+    return expectedHeadings.every((heading, index) => headings[index] === heading);
+  }, { slug, title, expectedHeadings });
+}
+"""
+          if audit.count(anchor) != 1:
+              raise SystemExit(f'unexpected locale helper anchor count: {audit.count(anchor)}')
+          audit = audit.replace(anchor, helper, 1)
+
+          old_block = """      await page.waitForSelector('.article-body');
+      await assertCanonicalArticleTitleAfterLegacyRerender(slug, coreTitles.ja[slug]);
+      if (japaneseHeadings[slug]) {
+        const renderedHeadings = await page.locator('.article-body > .essay-section > h2').allTextContents();
+        japaneseHeadings[slug].forEach((expected,index) => expect(renderedHeadings[index]?.trim() === expected, `Japanese ${slug} section ${index + 1} did not use authored heading: ${renderedHeadings[index]}`));
+      }
+    }
+    await page.waitForTimeout(100);
+    const text = (await page.locator('.article-body').innerText()).trim();
+"""
+          new_block = """      await page.waitForSelector('.article-body');
+      await assertCanonicalArticleTitleAfterLegacyRerender(slug, coreTitles.ja[slug]);
+      await restoreArticleThroughHashLifecycle(slug, coreTitles.ja[slug], japaneseHeadings[slug] || []);
+    }
+    const text = (await page.locator('.article-body').innerText()).trim();
+"""
+          if audit.count(old_block) != 1:
+              raise SystemExit(f'unexpected locale assertion block count: {audit.count(old_block)}')
+          audit_path.write_text(audit.replace(old_block, new_block, 1))
+
+          validator_path = Path('.github/scripts/validate-runtime.py')
+          validator = validator_path.read_text()
+          old_validator = "privacy = (ROOT / 'journal-v12-vision-privacy.js').read_text()"
+          new_validator = """v10 = (ROOT / 'journal-v10-editorial-naturalize.js').read_text()
+if \"article.dataset.editorialNaturalized = 'v10';\" not in v10:
+    fail('v10 article naturalization lifecycle marker missing')
+
+privacy = (ROOT / 'journal-v12-vision-privacy.js').read_text()"""
+          if validator.count(old_validator) != 1:
+              raise SystemExit(f'unexpected validator anchor count: {validator.count(old_validator)}')
+          validator_path.write_text(validator.replace(old_validator, new_validator, 1))
+          PY
+          node --check site/journal-v10-editorial-naturalize.js
+          node --check .github/scripts/design-journal-locale-audit.mjs
+          python .github/scripts/validate-runtime.py
+          git diff --check
+      - name: Commit lifecycle audit fix and remove one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-locale-lifecycle-audit-once.yml
+          git add site/journal-v10-editorial-naturalize.js .github/scripts/design-journal-locale-audit.mjs .github/scripts/validate-runtime.py
+          git commit -m "test: separate metadata stress from editorial lifecycle"
+          git push origin HEAD:feat/design-journal-liquid-glass-20260827
