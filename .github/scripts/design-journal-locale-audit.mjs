@@ -66,23 +66,10 @@ const japaneseHeadings = {
   ]
 };
 const japaneseTranslationese = [
-  '背後の scene',
-  'chat coding',
-  'source of truth',
-  'working tree',
-  'working-tree',
-  'Chat history',
-  'engineering state',
-  'durable state',
-  'durable truth',
-  'State machine',
-  'Agent workflow',
-  'coding agent',
-  'local build',
-  'release velocity',
-  'interruptibility',
-  'mobile GPU',
-  'frame drop'
+  '背後の scene', 'chat coding', 'source of truth', 'working tree', 'working-tree',
+  'Chat history', 'engineering state', 'durable state', 'durable truth', 'State machine',
+  'Agent workflow', 'coding agent', 'local build', 'release velocity', 'interruptibility',
+  'mobile GPU', 'frame drop'
 ];
 const japaneseSpacingDebt = /[一-龯々ぁ-ゖァ-ヺA-Za-z0-9_)]\s+(?:は|が|を|に|へ|と|で|の|も|や|か)(?=[^A-Za-z]|$)|\s+[、。！？）」』】]/g;
 
@@ -94,19 +81,21 @@ async function switchLanguage(lang) {
   await page.waitForSelector('[data-spatial-card-v8]');
   await page.waitForFunction(() => document.querySelectorAll('.post-card--studio').length === 3);
   await page.waitForFunction(({ lang, title }) => {
-    return document.querySelector('[data-post="glass"] h3')?.textContent?.trim() === title &&
-      document.documentElement.lang === lang;
+    return document.querySelector('[data-post="glass"] h3')?.textContent?.trim() === title && document.documentElement.lang === lang;
   }, { lang, title: coreTitles[lang].glass });
 }
 
 async function assertA11y(label) {
   await page.waitForTimeout(450);
-  const result = await new AxeBuilder({ page })
-    .exclude('.code-preview')
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze();
-  const blocking = result.violations.filter(v => ['critical', 'serious'].includes(v.impact));
+  const result = await new AxeBuilder({ page }).exclude('.code-preview').withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();
+  const blocking = result.violations.filter(v => ['critical','serious'].includes(v.impact));
   expect(blocking.length === 0, `${label} serious accessibility violations: ${blocking.map(v => v.id).join(', ')}`);
+}
+
+function spacingContext(text, match) {
+  const index = match?.index ?? -1;
+  if (index < 0) return match?.[0] || '';
+  return text.slice(Math.max(0, index - 70), Math.min(text.length, index + match[0].length + 70)).replace(/\s+/g, ' ');
 }
 
 try {
@@ -116,7 +105,7 @@ try {
     expect(await page.locator('.post-card--studio').count() === 3, `${lang} v6 studio cards should remain exactly three`);
     const countText = (await page.locator('.section-head > span').textContent() || '').trim();
     expect(countText.startsWith('04'), `${lang} home count should be editorially updated to four: ${countText}`);
-    for (const slug of ['glass', 'sloar', 'motion']) {
+    for (const slug of ['glass','sloar','motion']) {
       const cardTitle = (await page.locator(`[data-post="${slug}"] h3`).textContent() || '').trim();
       expect(cardTitle === coreTitles[lang][slug], `${lang} ${slug} home title did not use the locale-native v10 edition: ${cardTitle}`);
     }
@@ -125,7 +114,6 @@ try {
     await page.waitForSelector(`[data-spatial-article][data-lang="${lang}"]`);
     await page.waitForSelector('[data-spatial-lab]');
     await page.waitForSelector('.article-rail-v6');
-
     const title = (await page.locator('.article > h1').textContent() || '').trim();
     expect(title === spatialTitles[lang], `${lang} spatial title drifted: ${title}`);
     const sections = page.locator('.article-body > .essay-section');
@@ -134,12 +122,8 @@ try {
     expect(firstHeading === editorialHeadings[lang], `${lang} first heading lost its authored edition: ${firstHeading}`);
     const bodyText = (await page.locator('.article-body').innerText()).trim();
     expect(bodyText.length >= 1800, `${lang} spatial article is too short for long-form editorial content: ${bodyText.length}`);
-    if (lang === 'en') {
-      expect(!/[\u3131-\u318E\uAC00-\uD7A3\u3040-\u30FF]/.test(bodyText), 'English spatial article contains Korean/Japanese prose');
-    }
-    if (lang === 'ja') {
-      expect(!/[\u3131-\u318E\uAC00-\uD7A3]/.test(bodyText), 'Japanese spatial article contains Korean prose');
-    }
+    if (lang === 'en') expect(!/[\u3131-\u318E\uAC00-\uD7A3\u3040-\u30FF]/.test(bodyText), 'English spatial article contains Korean/Japanese prose');
+    if (lang === 'ja') expect(!/[\u3131-\u318E\uAC00-\uD7A3]/.test(bodyText), 'Japanese spatial article contains Korean prose');
 
     const stage = page.locator('[data-spatial-stage]');
     await stage.scrollIntoViewIfNeeded();
@@ -148,19 +132,15 @@ try {
     await page.keyboard.press('ArrowRight');
     const afterKey = (await page.locator('[data-spatial-readout]').textContent() || '').trim();
     expect(before !== afterKey, `${lang} spatial blockout should respond to keyboard orbit`);
-
     const box = await stage.boundingBox();
     expect(Boolean(box), `${lang} spatial stage should be measurable`);
     if (box) {
-      const localX = box.width * .55;
-      const localY = box.height * .5;
+      const localX = box.width * .55, localY = box.height * .5;
       await stage.hover({ position: { x: localX, y: localY } });
       await page.evaluate(() => {
         window.__spatialAuditPointerTarget = false;
         document.addEventListener('pointerdown', event => {
-          window.__spatialAuditPointerTarget = Boolean(
-            event.target instanceof Element && event.target.closest('[data-spatial-stage]')
-          );
+          window.__spatialAuditPointerTarget = Boolean(event.target instanceof Element && event.target.closest('[data-spatial-stage]'));
         }, { capture: true, once: true });
       });
       await page.mouse.down();
@@ -172,39 +152,32 @@ try {
     expect(afterDrag !== afterKey, `${lang} spatial blockout should respond to pointer orbit`);
     expect(await stage.evaluate(node => document.activeElement === node), `${lang} spatial drag should preserve keyboard focus`);
     expect((await page.evaluate(() => window.getSelection()?.toString() || '')) === '', `${lang} spatial drag should not select prose`);
-
     await assertA11y(`spatial ${lang}`);
     await page.screenshot({ path: `${visualDir}/spatial-${lang}.png`, animations: 'disabled' });
   }
 
   await switchLanguage('ja');
-  for (const slug of ['glass', 'sloar', 'motion', 'spatial']) {
+  for (const slug of ['glass','sloar','motion','spatial']) {
     await page.goto(`${baseURL}/#/post/${slug}`, { waitUntil: 'domcontentloaded' });
     if (slug === 'spatial') {
       await page.waitForSelector('[data-spatial-article][data-lang="ja"]');
     } else {
       await page.waitForSelector('.article-body');
-      await page.waitForFunction(({ slug, title }) => {
-        return location.hash === `#/post/${slug}` && document.querySelector('.article > h1')?.textContent?.trim() === title;
-      }, { slug, title: coreTitles.ja[slug] });
+      await page.waitForFunction(({ slug, title }) => location.hash === `#/post/${slug}` && document.querySelector('.article > h1')?.textContent?.trim() === title, { slug, title: coreTitles.ja[slug] });
       const renderedTitle = (await page.locator('.article > h1').textContent() || '').trim();
       expect(renderedTitle === coreTitles.ja[slug], `Japanese ${slug} article title did not use v10 authored copy: ${renderedTitle}`);
       if (japaneseHeadings[slug]) {
         const renderedHeadings = await page.locator('.article-body > .essay-section > h2').allTextContents();
-        japaneseHeadings[slug].forEach((expected, index) => {
-          expect(renderedHeadings[index]?.trim() === expected, `Japanese ${slug} section ${index + 1} did not use authored heading: ${renderedHeadings[index]}`);
-        });
+        japaneseHeadings[slug].forEach((expected,index) => expect(renderedHeadings[index]?.trim() === expected, `Japanese ${slug} section ${index + 1} did not use authored heading: ${renderedHeadings[index]}`));
       }
     }
     await page.waitForTimeout(100);
     const text = (await page.locator('.article-body').innerText()).trim();
     expect(text.length >= 1200, `Japanese ${slug} article unexpectedly short: ${text.length}`);
-    for (const phrase of japaneseTranslationese) {
-      expect(!text.includes(phrase), `Japanese ${slug} still contains translationese/mixed prose: ${phrase}`);
-    }
+    for (const phrase of japaneseTranslationese) expect(!text.includes(phrase), `Japanese ${slug} still contains translationese/mixed prose: ${phrase}`);
     japaneseSpacingDebt.lastIndex = 0;
     const spacingMatch = japaneseSpacingDebt.exec(text);
-    expect(!spacingMatch, `Japanese ${slug} still contains translation-derived spacing: ${spacingMatch?.[0] || ''}`);
+    expect(!spacingMatch, `Japanese ${slug} still contains translation-derived spacing near: ${spacingContext(text, spacingMatch)}`);
   }
 
   await page.goto(`${baseURL}/#/lab`, { waitUntil: 'domcontentloaded' });
@@ -214,9 +187,7 @@ try {
   expect(labJapanese.includes('光学パラメータ'), 'Japanese Refraction Lab should use an authored controls heading');
   expect(labJapanese.includes('屈折は参照位置を変える'), 'Japanese Refraction Lab should use the authored optical explanation');
   expect(labJapanese.includes('初期値に戻す'), 'Japanese Refraction Lab reset action should be localized naturally');
-  for (const phrase of ['fragment shader', 'sample 座標', 'browser 間', '背景 texture', 'RGB channel']) {
-    expect(!labJapanese.includes(phrase), `Japanese Refraction Lab still contains translationese: ${phrase}`);
-  }
+  for (const phrase of ['fragment shader','sample 座標','browser 間','背景 texture','RGB channel']) expect(!labJapanese.includes(phrase), `Japanese Refraction Lab still contains translationese: ${phrase}`);
   await assertA11y('Refraction Lab ja editorial');
   await page.screenshot({ path: `${visualDir}/refraction-ja.png`, animations: 'disabled' });
 
