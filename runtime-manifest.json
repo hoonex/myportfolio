@@ -1,24 +1,53 @@
 {
-  "styles": [
-    "styles.css",
-    "journal-v2.css",
-    "journal-v3-refraction.css",
-    "journal-v4-jelly.css",
-    "journal-v5-experiments.css",
-    "journal-v6-studio.css",
-    "journal-v6-compat.css",
-    "journal-v8-spatial.css"
-  ],
-  "scripts": [
-    "app.js",
-    "journal-v2.js",
-    "journal-v3-refraction.js",
-    "journal-runtime.js",
-    "journal-v4-jelly.js",
-    "journal-v5-experiments.js",
-    "journal-v6-studio.js",
-    "journal-v8-spatial.js",
-    "journal-v9-locale-editorial.js",
-    "journal-v10-editorial-naturalize.js"
+  "budgets": {
+    "core_js": 145000,
+    "total_js": 250000,
+    "core_css": 75000,
+    "total_css": 85000
+  },
+  "core": {
+    "styles": [
+      "styles.css",
+      "journal-v2.css",
+      "journal-v3-refraction.css",
+      "journal-v4-jelly.css",
+      "journal-v5-experiments.css",
+      "journal-v6-studio.css",
+      "journal-v6-compat.css",
+      "journal-v8-spatial.css"
+    ],
+    "scripts": [
+      "app.js",
+      "journal-v2.js",
+      "journal-runtime.js",
+      "journal-spatial-index.js",
+      "journal-v10-editorial-naturalize.js",
+      "journal-v6-studio.js",
+      "journal-route-loader.js"
+    ]
+  },
+  "routes": [
+    {
+      "id": "glass",
+      "paths": ["/lab", "/post/glass"],
+      "styles": [],
+      "scripts": [
+        "journal-v3-refraction.js",
+        "journal-v4-jelly.js",
+        "journal-v9-locale-editorial.js"
+      ]
+    },
+    {
+      "id": "article-labs",
+      "paths": ["/post/sloar", "/post/motion"],
+      "styles": [],
+      "scripts": ["journal-v5-experiments.js"]
+    },
+    {
+      "id": "spatial",
+      "paths": ["/post/spatial"],
+      "styles": [],
+      "scripts": ["journal-v8-spatial.js"]
+    }
   ]
 }
