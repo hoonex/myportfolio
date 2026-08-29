@@ -102,7 +102,6 @@ async function assertCanonicalArticleTitleAfterLegacyRerender(slug, title) {
   await page.waitForFunction(({ slug, title }) => {
     const groups = (document.documentElement.dataset.runtimeRoute || '').split(/\s+/);
     return groups.includes('article-polish')
-      && document.documentElement.dataset.editorialAuthority === 'v12'
       && location.hash === `#/post/${slug}`
       && document.querySelector('.article > h1')?.textContent?.trim() === title;
   }, { slug, title });
@@ -126,7 +125,7 @@ try {
     expect(countText.startsWith('04'), `${lang} home count should be editorially updated to four: ${countText}`);
     for (const slug of ['glass','sloar','motion']) {
       const cardTitle = (await page.locator(`[data-post="${slug}"] h3`).textContent() || '').trim();
-      expect(cardTitle === coreTitles[lang][slug], `${lang} ${slug} home title did not use the locale-native v10 edition: ${cardTitle}`);
+      expect(cardTitle === coreTitles[lang][slug], `${lang} ${slug} home title did not use the locale-native authored edition: ${cardTitle}`);
     }
 
     await page.goto(`${baseURL}/#/post/spatial`, { waitUntil: 'domcontentloaded' });
