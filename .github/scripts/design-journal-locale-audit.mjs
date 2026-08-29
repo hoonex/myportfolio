@@ -98,6 +98,16 @@ function spacingContext(text, match) {
   return text.slice(Math.max(0, index - 70), Math.min(text.length, index + match[0].length + 70)).replace(/\s+/g, ' ');
 }
 
+async function waitForStableArticleTitle(slug, title) {
+  await page.waitForFunction(({ slug, title }) => {
+    const ready = (document.documentElement.dataset.runtimeRoute || '').split(/\s+/).includes('article-polish');
+    return ready && location.hash === `#/post/${slug}` && document.querySelector('.article > h1')?.textContent?.trim() === title;
+  }, { slug, title });
+  await page.waitForTimeout(180);
+  const renderedTitle = (await page.locator('.article > h1').textContent() || '').trim();
+  expect(renderedTitle === title, `Japanese ${slug} article title did not remain on the stable v10 authored copy: ${renderedTitle}`);
+}
+
 try {
   for (const lang of locales) {
     await switchLanguage(lang);
@@ -163,9 +173,7 @@ try {
       await page.waitForSelector('[data-spatial-article][data-lang="ja"]');
     } else {
       await page.waitForSelector('.article-body');
-      await page.waitForFunction(({ slug, title }) => location.hash === `#/post/${slug}` && document.querySelector('.article > h1')?.textContent?.trim() === title, { slug, title: coreTitles.ja[slug] });
-      const renderedTitle = (await page.locator('.article > h1').textContent() || '').trim();
-      expect(renderedTitle === coreTitles.ja[slug], `Japanese ${slug} article title did not use v10 authored copy: ${renderedTitle}`);
+      await waitForStableArticleTitle(slug, coreTitles.ja[slug]);
       if (japaneseHeadings[slug]) {
         const renderedHeadings = await page.locator('.article-body > .essay-section > h2').allTextContents();
         japaneseHeadings[slug].forEach((expected,index) => expect(renderedHeadings[index]?.trim() === expected, `Japanese ${slug} section ${index + 1} did not use authored heading: ${renderedHeadings[index]}`));
