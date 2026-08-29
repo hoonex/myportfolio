@@ -114,6 +114,11 @@ required_lazy = {
     'article-labs': ['journal-v5-experiments.js'],
     'spatial': ['journal-v8-spatial.js'],
 }
+expected_route_order = ['editorial-full', 'glass', 'article-labs', 'spatial', 'article-polish']
+actual_route_order = [route['id'] for route in routes]
+if actual_route_order != expected_route_order:
+    fail(f'route load order drift: {actual_route_order} != {expected_route_order}')
+
 by_id = {route['id']: route for route in routes}
 for route_id, scripts in required_lazy.items():
     if by_id.get(route_id, {}).get('scripts') != scripts:
