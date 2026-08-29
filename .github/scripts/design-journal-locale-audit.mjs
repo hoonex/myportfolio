@@ -84,6 +84,7 @@ const japaneseTranslationese = [
   'mobile GPU',
   'frame drop'
 ];
+const japaneseSpacingDebt = /[一-龯々ぁ-ゖァ-ヺA-Za-z0-9_)]\s+(?:は|が|を|に|へ|と|で|の|も|や|か)(?=[^A-Za-z]|$)|\s+[、。！？）」』】]/g;
 
 async function switchLanguage(lang) {
   await page.goto(`${baseURL}/#/`, { waitUntil: 'domcontentloaded' });
@@ -201,6 +202,9 @@ try {
     for (const phrase of japaneseTranslationese) {
       expect(!text.includes(phrase), `Japanese ${slug} still contains translationese/mixed prose: ${phrase}`);
     }
+    japaneseSpacingDebt.lastIndex = 0;
+    const spacingMatch = japaneseSpacingDebt.exec(text);
+    expect(!spacingMatch, `Japanese ${slug} still contains translation-derived spacing: ${spacingMatch?.[0] || ''}`);
   }
 
   await page.goto(`${baseURL}/#/lab`, { waitUntil: 'domcontentloaded' });
