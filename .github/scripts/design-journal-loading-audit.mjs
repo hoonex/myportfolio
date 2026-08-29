@@ -10,7 +10,22 @@ async function resourceUrls(page) { return page.evaluate(() => performance.getEn
 async function assets(page) { return (await resourceUrls(page)).map(name => { try { return new URL(name).pathname.split('/').pop(); } catch { return name; } }); }
 async function assertAssets(page,label,required=[],forbidden=[]) { const loaded=await assets(page); required.forEach(name=>expect(loaded.includes(name),`${label} did not load ${name}: ${loaded.join(', ')}`)); forbidden.forEach(name=>expect(!loaded.includes(name),`${label} unexpectedly loaded ${name}: ${loaded.join(', ')}`)); return loaded; }
 async function assertA11y(page,label) { await page.waitForTimeout(650); const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze(); const serious=results.violations.filter(v=>['serious','critical'].includes(v.impact)); expect(serious.length===0,`${label} accessibility violations: ${serious.map(v=>`${v.id}:${v.nodes.map(n=>n.target.join(' ')).join(',')}`).join(' | ')}`); }
-async function visit(hash,selector,required=[],forbidden=[],inspect=null) { const page=await browser.newPage({viewport:{width:1280,height:900}}); const errors=[]; page.on('pageerror',e=>errors.push(e.message)); await page.goto(`${baseURL}/${hash}`,{waitUntil:'domcontentloaded'}); await page.waitForSelector(selector,{timeout:12000}); await page.waitForTimeout(350); await assertAssets(page,hash||'home',required,forbidden); if(inspect)await inspect(page); expect(errors.length===0,`${hash||'home'} page errors: ${errors.join(' | ')}`); await page.close(); }
+async function visit(hash,selector,required=[],forbidden=[],inspect=null) {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror',e=>errors.push(e.message));
+  try {
+    await page.goto(`${baseURL}/${hash}`,{waitUntil:'domcontentloaded'});
+    await page.waitForSelector(selector,{timeout:12000});
+    await page.waitForTimeout(350);
+    await assertAssets(page,hash||'home',required,forbidden);
+    if(inspect) await inspect(page);
+    expect(errors.length===0,`${hash||'home'} page errors: ${errors.join(' | ')}`);
+  } finally {
+    await context.close();
+  }
+}
 
 await visit('', '[data-spatial-card-v8]', ['journal-editorial-core.js','journal-spatial-index.js','journal-v6-studio.js','journal-route-loader.js'], lazy, async page=>{
   await page.waitForSelector('#langSwitch[data-owner="editorial-core"]'); await page.locator('#langSwitch [data-lang="ja"]').click(); await page.waitForFunction(()=>document.documentElement.lang==='ja'); await page.waitForFunction(()=>document.querySelector('.post-card--glass .studio-preview-label span')?.textContent?.trim()==='WebGL屈折 · ドラッグ変形'); expect((await page.locator('.post-card--sloar .studio-preview-label span').textContent()||'').trim()==='状態復元 · 障害注入','Japanese home Sloar preview should be authored Japanese'); expect((await page.locator('.post-card--motion .studio-preview-label span').textContent()||'').trim()==='スプリング · 速度の引き継ぎ','Japanese home Motion preview should be authored Japanese'); await assertAssets(page,'home after Japanese switch',[],['journal-v2.js','journal-v10-editorial-naturalize.js','journal-v11-vision.js','journal-v11-vision.css']);
