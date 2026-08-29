@@ -67,7 +67,7 @@ for key, value in metrics.items():
 required_core = {'journal-editorial-core.js','journal-runtime.js','journal-spatial-index.js','journal-v6-studio.js','journal-route-loader.js'}
 missing_core = required_core.difference(core.get('scripts', []))
 if missing_core: fail(f'missing required core scripts: {sorted(missing_core)}')
-for forbidden in ['journal-v2.js','journal-v10-editorial-naturalize.js','journal-v11-vision.js','journal-v12-authority.js','journal-v12-vision-privacy.js']:
+for forbidden in ['journal-v2.js','journal-v10-editorial-naturalize.js','journal-v11-vision.js','journal-v12-vision-privacy.js']:
     if forbidden in core.get('scripts', []): fail(f'route-only runtime leaked back into core: {forbidden}')
 
 editorial_core = (ROOT / 'journal-editorial-core.js').read_text()
@@ -80,13 +80,58 @@ except IndexError:
 for debt in ['WebGL 屈折 · jelly drag','state recovery · failure injection','spring · velocity handoff']:
     if debt in ja_core: fail(f'translationese leaked into Japanese editorial core: {debt}')
 
+v2 = (ROOT / 'journal-v2.js').read_text()
+canonical_v2_metadata = {
+    'glass': {
+        'ko': ('재질 / 광학', 'Liquid Glass는 단순한 블러가 아니다.'),
+        'en': ('Material / optics', 'Liquid Glass is a hierarchy problem before it is a blur effect.'),
+        'ja': ('素材 / 光学', 'ガラスらしさは、ぼかしだけでは作れない。'),
+    },
+    'sloar': {
+        'ko': ('도구 / 시스템', 'Sloar를 만들며 배운 것은 “기억”보다 “상태”였다.'),
+        'en': ('Tool / system', 'Sloar is an argument for state over memory.'),
+        'ja': ('開発プロトコル', 'Sloarを作って分かったのは、記憶より「現在の状態」が重要だということ。'),
+    },
+    'motion': {
+        'ko': ('인터랙션', '좋은 모션은 애니메이션보다 입력의 연속성에 가깝다.'),
+        'en': ('Interaction', 'Good motion preserves intent instead of displaying animation.'),
+        'ja': ('インタラクション', '良いモーションは、演出よりも操作の連続性を守る。'),
+    },
+}
+for slug, languages in canonical_v2_metadata.items():
+    block_match = re.search(rf'^    {slug}:\s*\{{(?P<body>[\s\S]*?)(?=^    (?:glass|sloar|motion):\s*\{{|^  const presets = \{{)', v2, re.M)
+    if not block_match:
+        fail(f'could not isolate v2 article metadata for {slug}')
+    block = block_match.group('body')
+    for lang, (category, title) in languages.items():
+        metadata = re.search(rf"^      {lang}:\{{category:'([^']*)'[^\n]*title:'([^']*)'[^\n]*deck:'([^']*)'[^\n]*lede:'([^']*)'\}},$", block, re.M)
+        if not metadata:
+            fail(f'missing v2 metadata line for {slug}/{lang}')
+        actual_category, actual_title, deck, lede = metadata.groups()
+        if actual_category != category or actual_title != title:
+            fail(f'v2 metadata drift for {slug}/{lang}: category={actual_category!r} title={actual_title!r}')
+        if len(deck.strip()) < 30 or len(lede.strip()) < 50:
+            fail(f'v2 authored metadata became too thin for {slug}/{lang}')
+for legacy in [
+    "title:'Liquid Glass는 frosted glass가 아니다.'",
+    "title:'Liquid Glass is not frosted glass.'",
+    "title:'Liquid Glass は frosted glass ではない。'",
+    "title:'Sloar Chat Coder를 설계하며 배운 것.'",
+    "title:'What I learned designing Sloar Chat Coder.'",
+    "title:'Sloar Chat Coder を設計して学んだこと。'",
+    "title:'모션은 손 아래에서 시작해야 한다.'",
+    "title:'Motion should begin under your hand.'",
+    "title:'モーションは手の下から始まるべきだ。'",
+]:
+    if legacy in v2: fail(f'legacy article metadata source reintroduced: {legacy}')
+
 required_lazy = {
     'editorial-full':['journal-v2.js'],
     'glass':['journal-v3-refraction.js','journal-v4-jelly.js','journal-v9-locale-editorial.js'],
     'article-labs':['journal-v5-experiments.js'],
     'spatial':['journal-v8-spatial.js'],
     'vision':['journal-v11-vision.js','journal-v12-vision-privacy.js'],
-    'article-polish':['journal-v10-editorial-naturalize.js','journal-v12-authority.js'],
+    'article-polish':['journal-v10-editorial-naturalize.js'],
 }
 expected_route_order = ['editorial-full','glass','article-labs','spatial','vision','article-polish']
 actual_route_order = [route['id'] for route in routes]
@@ -123,16 +168,5 @@ for phrase in [
     "route() !== '/lab/vision'"
 ]:
     if phrase not in privacy: fail(f'vision privacy disclosure contract missing: {phrase}')
-
-authority = (ROOT / 'journal-v12-authority.js').read_text()
-for phrase in [
-    'Liquid Glass는 단순한 블러가 아니다.',
-    'Liquid Glass is a hierarchy problem before it is a blur effect.',
-    'ガラスらしさは、ぼかしだけでは作れない。',
-    'canonicalizeArticleHTML',
-    'articleTemplate = function',
-    "dataset.editorialAuthority = 'v12'"
-]:
-    if phrase not in authority: fail(f'editorial authority contract missing: {phrase}')
 
 print('canonical composable route runtime manifest validated')
