@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import json
+import re
+import subprocess
+
+ROOT = Path('site')
+MANIFEST = ROOT / 'runtime-manifest.json'
+
+
+def fail(message: str) -> None:
+    raise SystemExit(message)
+
+
+def unique_assets(core, routes, key):
+    ordered = []
+    owners = {}
+    for owner, assets in [('core', core.get(key, []))] + [
+        (f"route:{route['id']}", route.get(key, [])) for route in routes
+    ]:
+        for rel in assets:
+            if rel in owners:
+                fail(f'duplicate runtime asset {rel}: {owners[rel]} and {owner}')
+            owners[rel] = owner
+            ordered.append(rel)
+    return ordered
+
+
+manifest = json.loads(MANIFEST.read_text())
+core = manifest.get('core') or fail('runtime manifest missing core')
+routes = manifest.get('routes') or []
+budgets = manifest.get('budgets') or fail('runtime manifest missing budgets')
+
+route_ids = set()
+route_paths = {}
+for route in routes:
+    route_id = route.get('id')
+    if not route_id or route_id in route_ids:
+        fail(f'invalid or duplicate route id: {route_id}')
+    route_ids.add(route_id)
+    for path in route.get('paths', []):
+        if not isinstance(path, str) or not path.startswith('/'):
+            fail(f'invalid route path for {route_id}: {path!r}')
+        if path in route_paths:
+            fail(f'duplicate route path {path}: {route_paths[path]} and {route_id}')
+        route_paths[path] = route_id
+
+html = (ROOT / 'index.html').read_text()
+html_styles = re.findall(r'<link[^>]+href="\./([^"?#]+\.css)', html)
+html_scripts = re.findall(r'<script\s+src="\./([^"?#]+\.js)"', html)
+
+if html_styles != core.get('styles', []):
+    fail(f'core style order drift: html={html_styles} manifest={core.get("styles", [])}')
+if html_scripts != core.get('scripts', []):
+    fail(f'core script order drift: html={html_scripts} manifest={core.get("scripts", [])}')
+
+all_styles = unique_assets(core, routes, 'styles')
+all_scripts = unique_assets(core, routes, 'scripts')
+for rel in all_styles + all_scripts:
+    path = ROOT / rel
+    if not path.is_file():
+        fail(f'missing runtime asset: {rel}')
+
+for rel in all_scripts:
+    subprocess.run(['node', '--check', str(ROOT / rel)], check=True)
+
+core_js = sum((ROOT / rel).stat().st_size for rel in core.get('scripts', []))
+total_js = sum((ROOT / rel).stat().st_size for rel in all_scripts)
+core_css = sum((ROOT / rel).stat().st_size for rel in core.get('styles', []))
+total_css = sum((ROOT / rel).stat().st_size for rel in all_styles)
+
+metrics = {
+    'core_js': core_js,
+    'total_js': total_js,
+    'core_css': core_css,
+    'total_css': total_css,
+}
+print('runtime payload: ' + ' '.join(f'{key}={value}' for key, value in metrics.items()))
+
+for key, value in metrics.items():
+    limit = budgets.get(key)
+    if not isinstance(limit, int):
+        fail(f'missing integer budget: {key}')
+    if value > limit:
+        fail(f'{key} budget exceeded: {value} > {limit}')
+
+required_core = {'journal-runtime.js', 'journal-spatial-index.js', 'journal-v10-editorial-naturalize.js', 'journal-v6-studio.js', 'journal-route-loader.js'}
+missing_core = required_core.difference(core.get('scripts', []))
+if missing_core:
+    fail(f'missing required core scripts: {sorted(missing_core)}')
+
+required_lazy = {
+    'glass': ['journal-v3-refraction.js', 'journal-v4-jelly.js', 'journal-v9-locale-editorial.js'],
+    'article-labs': ['journal-v5-experiments.js'],
+    'spatial': ['journal-v8-spatial.js'],
+}
+by_id = {route['id']: route for route in routes}
+for route_id, scripts in required_lazy.items():
+    if by_id.get(route_id, {}).get('scripts') != scripts:
+        fail(f'lazy route contract drift for {route_id}: {by_id.get(route_id, {}).get("scripts")} != {scripts}')
+
+print('canonical route-aware runtime manifest validated')

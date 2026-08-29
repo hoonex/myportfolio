@@ -6,6 +6,8 @@ on:
       - 'site/**'
       - '.github/scripts/design-journal-smoke.mjs'
       - '.github/scripts/design-journal-locale-audit.mjs'
+      - '.github/scripts/design-journal-loading-audit.mjs'
+      - '.github/scripts/validate-runtime.py'
       - '.github/workflows/design-journal-ci.yml'
       - '.github/workflows/design-journal-deploy.yml'
       - '.github/workflows/publish-gh-pages.yml'
@@ -16,6 +18,8 @@ on:
       - 'site/**'
       - '.github/scripts/design-journal-smoke.mjs'
       - '.github/scripts/design-journal-locale-audit.mjs'
+      - '.github/scripts/design-journal-loading-audit.mjs'
+      - '.github/scripts/validate-runtime.py'
       - '.github/workflows/design-journal-ci.yml'
       - '.github/workflows/design-journal-deploy.yml'
       - '.github/workflows/publish-gh-pages.yml'
@@ -29,40 +33,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate canonical runtime manifest
+      - name: Validate canonical route-aware runtime
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          import json, re, subprocess
-
-          root = Path('site')
-          manifest_path = root / 'runtime-manifest.json'
-          manifest = json.loads(manifest_path.read_text())
-          html = (root / 'index.html').read_text()
-          styles = re.findall(r'<link[^>]+href="\./([^"?#]+\.css)', html)
-          scripts = re.findall(r'<script\s+src="\./([^"?#]+\.js)"', html)
-
-          if styles != manifest['styles']:
-              raise SystemExit(f'style order drift: html={styles} manifest={manifest["styles"]}')
-          if scripts != manifest['scripts']:
-              raise SystemExit(f'script order drift: html={scripts} manifest={manifest["scripts"]}')
-
-          for rel in manifest['styles'] + manifest['scripts']:
-              if not (root / rel).is_file():
-                  raise SystemExit(f'missing runtime asset: {rel}')
-          for rel in manifest['scripts']:
-              subprocess.run(['node', '--check', str(root / rel)], check=True)
-          for rel in ['.github/scripts/design-journal-smoke.mjs', '.github/scripts/design-journal-locale-audit.mjs']:
-              subprocess.run(['node', '--check', rel], check=True)
-
-          js_bytes = sum((root / rel).stat().st_size for rel in manifest['scripts'])
-          css_bytes = sum((root / rel).stat().st_size for rel in manifest['styles'])
-          print(f'runtime payload: JS={js_bytes} bytes CSS={css_bytes} bytes')
-          if js_bytes > 250_000:
-              raise SystemExit(f'JS runtime budget exceeded: {js_bytes} > 250000')
-          if css_bytes > 85_000:
-              raise SystemExit(f'CSS runtime budget exceeded: {css_bytes} > 85000')
-          PY
+          python .github/scripts/validate-runtime.py
+          node --check .github/scripts/design-journal-smoke.mjs
+          node --check .github/scripts/design-journal-locale-audit.mjs
+          node --check .github/scripts/design-journal-loading-audit.mjs
 
       - name: Lock preferred optical defaults
         run: |
@@ -90,6 +66,7 @@ jobs:
           grep -q 'motionCard.hover' .github/scripts/design-journal-smoke.mjs
           grep -q '__motionAuditPointerTarget' .github/scripts/design-journal-smoke.mjs
           grep -q 'IntersectionObserver' site/journal-v6-studio.js
+          grep -q 'navigatorSignatureV6' site/journal-v6-studio.js
           grep -q 'SPATIAL BLOCKOUT' site/journal-v8-spatial.js
           grep -q 'data-spatial-stage' site/journal-v8-spatial.js
           grep -q "event.key === 'ArrowLeft'" site/journal-v8-spatial.js
@@ -106,6 +83,7 @@ jobs:
           grep -q '良いモーションは、演出よりも操作の連続性を守る。' site/journal-v10-editorial-naturalize.js
           grep -q '会話履歴をリポジトリの代わりにしない。' site/journal-v10-editorial-naturalize.js
           grep -q '反応はクリック完了ではなく、触れた瞬間から始める。' site/journal-v10-editorial-naturalize.js
+          grep -q 'カメラ · スケール · ブロックアウト' site/journal-spatial-index.js
 
       - name: Validate document and refraction resilience
         run: |
@@ -118,9 +96,12 @@ jobs:
           grep -q 'data-refraction-state="loading"' site/journal-v3-refraction.js
           grep -q 'role="status" aria-live="polite"' site/journal-v3-refraction.js
 
-      - name: Validate single render lifecycle
+      - name: Validate single render lifecycle and lazy handoff
         run: |
           grep -q "CustomEvent('hj:rendered'" site/journal-runtime.js
+          grep -q 'HJRuntime?.schedule' site/journal-route-loader.js
+          ! grep -q "CustomEvent('hj:rendered'" site/journal-route-loader.js
+          grep -q "addEventListener('hashchange'" site/journal-route-loader.js
           for file in site/journal-v4-jelly.js site/journal-v6-studio.js site/journal-v8-spatial.js site/journal-v9-locale-editorial.js site/journal-v10-editorial-naturalize.js; do
             grep -q "addEventListener('hj:rendered'" "$file"
             ! grep -q 'new MutationObserver' "$file"
@@ -140,13 +121,12 @@ jobs:
           grep -q 'workflow_run.head_sha' .github/workflows/design-journal-deploy.yml
           grep -q 'SOURCE_SHA:' .github/workflows/design-journal-deploy.yml
           grep -q 'git rev-parse HEAD' .github/workflows/design-journal-deploy.yml
-          grep -q 'runtime-manifest.json' .github/workflows/design-journal-deploy.yml
-          grep -q 'canonical runtime manifest validated' .github/workflows/design-journal-deploy.yml
+          grep -q 'validate-runtime.py' .github/workflows/design-journal-deploy.yml
           grep -q 'git fetch origin gh-pages' .github/workflows/design-journal-deploy.yml
           grep -q 'rsync -a --delete' .github/workflows/design-journal-deploy.yml
           grep -q 'git push origin HEAD:gh-pages' .github/workflows/design-journal-deploy.yml
 
-      - name: Browser, accessibility, and locale audit
+      - name: Browser, loading, accessibility, and locale audit
         run: |
           npm install --no-save playwright@1.62.1 @axe-core/playwright@4.13.0
           npx playwright install --with-deps chromium
@@ -159,6 +139,7 @@ jobs:
             fi
             sleep 0.25
           done
+          JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-loading-audit.mjs
           JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-smoke.mjs
           JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-locale-audit.mjs
 

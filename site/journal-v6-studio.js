@@ -44,6 +44,7 @@
 
   let routeCleanup = () => {};
   let scheduled = 0;
+  let activeSurface = null;
 
   function previewMarkup(slug) {
     if (slug === 'glass') {
@@ -93,7 +94,7 @@
       footer.innerHTML = `<span>${slug === 'glass' ? t().glass : slug === 'sloar' ? t().sloar : t().motion}</span><b>${t().open} ↗</b>`;
       card.append(footer);
 
-      const onMove = (event) => {
+      const onMove = event => {
         const rect = card.getBoundingClientRect();
         const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
         const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
@@ -141,11 +142,19 @@
     const page = document.querySelector('.article-page');
     const article = page?.querySelector('.article');
     const body = article?.querySelector('.article-body');
-    if (!page || !article || !body || page.dataset.navigatorV6 === 'true') return;
-    page.dataset.navigatorV6 = 'true';
+    if (!page || !article || !body) return;
 
     const items = articleTargets(body);
     if (items.length < 2) return;
+    const signature = items.map(item => `${item.node.id}:${item.label}`).join('|');
+    const currentRail = article.querySelector('.article-rail-v6');
+    if (page.dataset.navigatorSignatureV6 === signature && currentRail) return;
+
+    if (page.dataset.navigatorSignatureV6) {
+      routeCleanup();
+      routeCleanup = () => {};
+    }
+    page.dataset.navigatorSignatureV6 = signature;
 
     const progress = document.createElement('div');
     progress.className = 'reading-progress-v6';
@@ -160,7 +169,7 @@
     article.append(rail);
 
     const buttons = [...rail.querySelectorAll('[data-v6-target]')];
-    const onClick = (event) => {
+    const onClick = event => {
       const button = event.target.closest('[data-v6-target]');
       if (!button) return;
       document.getElementById(button.dataset.v6Target)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
@@ -198,12 +207,18 @@
       removeEventListener('resize', onScroll);
       cancelAnimationFrame(raf);
       progress.remove();
+      rail.remove();
     };
   }
 
   function enhanceCurrentRoute() {
-    routeCleanup();
-    routeCleanup = () => {};
+    const surface = document.querySelector('.home-page, .article-page');
+    if (surface !== activeSurface) {
+      routeCleanup();
+      routeCleanup = () => {};
+      activeSurface = surface;
+    }
+
     if (location.hash === '' || location.hash === '#/' || location.hash === '#') enhanceHome();
     else if (location.hash.startsWith('#/post/')) enhanceArticle();
   }

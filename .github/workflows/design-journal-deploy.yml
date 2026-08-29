@@ -34,29 +34,7 @@ jobs:
         run: |
           test -n "$SOURCE_SHA"
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          python - <<'PY'
-          from pathlib import Path
-          import json, re, subprocess
-
-          root = Path('site')
-          manifest = json.loads((root / 'runtime-manifest.json').read_text())
-          html = (root / 'index.html').read_text()
-          styles = re.findall(r'<link[^>]+href="\./([^"?#]+\.css)', html)
-          scripts = re.findall(r'<script\s+src="\./([^"?#]+\.js)"', html)
-
-          if styles != manifest['styles']:
-              raise SystemExit(f'style order drift: html={styles} manifest={manifest["styles"]}')
-          if scripts != manifest['scripts']:
-              raise SystemExit(f'script order drift: html={scripts} manifest={manifest["scripts"]}')
-
-          for rel in manifest['styles'] + manifest['scripts']:
-              if not (root / rel).is_file():
-                  raise SystemExit(f'missing runtime asset: {rel}')
-          for rel in manifest['scripts']:
-              subprocess.run(['node', '--check', str(root / rel)], check=True)
-
-          print('canonical runtime manifest validated')
-          PY
+          python .github/scripts/validate-runtime.py
           test -f site/.nojekyll || touch site/.nojekyll
 
       - name: Materialize gh-pages worktree
