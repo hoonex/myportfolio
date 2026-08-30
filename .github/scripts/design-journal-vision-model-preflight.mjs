@@ -157,9 +157,36 @@ expect(preflight.meshInkPixels > 1000, `Real-person production mesh rendered too
 const productSource = await page.evaluate(() => fetch('./journal-v11-vision.js', { cache: 'no-store' }).then(r => r.text()));
 expect(productSource.includes('FACE_LANDMARKS_TESSELATION'), 'Vision product overlay must use MediaPipe face tessellation');
 expect(productSource.includes('function framePoint('), 'Vision product overlay must include object-fit/mirror projection correction');
+expect(productSource.includes('requestVideoFrameCallback'), 'Vision realtime loop must follow decoded video frames when supported');
+expect(productSource.includes('liveStats'), 'Vision realtime loop must expose CI telemetry');
 expect(pageErrors.length === 0, `Vision model preflight page errors: ${pageErrors.join(' | ')}`);
 await page.waitForTimeout(450);
 await page.locator('.vision-camera-card-v11').screenshot({ path: '.artifacts/design-journal/vision-real-face-mesh.png' });
+
+const streamStarted = await page.evaluate(async REAL_FACE_IMAGE => {
+  const response = await fetch(REAL_FACE_IMAGE, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`stream portrait download failed: ${response.status}`);
+  const bitmap = await createImageBitmap(await response.blob());
+  const canvas = document.createElement('canvas'); canvas.width = 480; canvas.height = 640;
+  const ctx = canvas.getContext('2d'); let phase = 0;
+  const paint = () => { phase += .22; ctx.fillStyle = '#090c12'; ctx.fillRect(0,0,canvas.width,canvas.height); const scale = Math.max(canvas.width/bitmap.width, canvas.height/bitmap.height) * 1.12; const w=bitmap.width*scale,h=bitmap.height*scale; const dx=(canvas.width-w)/2 + Math.sin(phase)*22, dy=(canvas.height-h)/2; ctx.drawImage(bitmap,dx,dy,w,h); };
+  paint(); const stream = canvas.captureStream(24); const timer = setInterval(paint, 1000/24);
+  window.__visionRealtimeFixture = { bitmap, stream, timer };
+  return await window.HJVisionLab.startStreamForTest(stream);
+}, REAL_FACE_IMAGE);
+expect(streamStarted, 'Vision production stream harness did not start');
+await page.waitForFunction(() => { const s=window.HJVisionLab?.liveStats?.(); return s?.liveFrames >= 18 && s?.faceRuns >= 5 && s?.facePoints > 400; }, { timeout: 12000 });
+const liveSamples = [];
+for (let i=0;i<6;i++) { await page.waitForTimeout(180); liveSamples.push(await page.evaluate(() => window.HJVisionLab.liveStats())); }
+const liveLast = liveSamples.at(-1);
+const centers = liveSamples.map(s => s.faceCenterX).filter(Number.isFinite);
+const centerTravel = centers.length ? Math.max(...centers) - Math.min(...centers) : 0;
+expect(liveLast.liveFrames >= 24, `Realtime stream did not deliver enough decoded frames: ${JSON.stringify(liveSamples)}`);
+expect(liveLast.faceRuns >= 8, `Realtime FaceLandmarker did not repeat across the stream: ${JSON.stringify(liveSamples)}`);
+expect(liveLast.facePoints > 400, `Realtime stream lost the detected human face: ${JSON.stringify(liveSamples)}`);
+expect(centerTravel > .008, `Realtime face landmarks did not move with the moving human stream: ${JSON.stringify({centerTravel,liveSamples})}`);
+await page.locator('.vision-camera-card-v11').screenshot({ path: '.artifacts/design-journal/vision-realtime-stream.png' });
+await page.evaluate(() => { const f=window.__visionRealtimeFixture; if(f){clearInterval(f.timer);f.stream?.getTracks?.().forEach(t=>t.stop());f.bitmap?.close?.();delete window.__visionRealtimeFixture} window.HJVisionLab?.stopStreamForTest?.(); });
 
 const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
 expect(resources.some(url => url.includes('@mediapipe/tasks-vision') || url.includes('vision_bundle')), `MediaPipe runtime was not fetched: ${resources.join(', ')}`);
