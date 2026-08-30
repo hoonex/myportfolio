@@ -67,7 +67,7 @@ for key, value in metrics.items():
 required_core = {'journal-editorial-core.js','journal-runtime.js','journal-spatial-index.js','journal-v6-studio.js','journal-route-loader.js'}
 missing_core = required_core.difference(core.get('scripts', []))
 if missing_core: fail(f'missing required core scripts: {sorted(missing_core)}')
-for forbidden in ['journal-v2.js','journal-v10-editorial-naturalize.js','journal-v11-vision.js','journal-v12-vision-privacy.js']:
+for forbidden in ['journal-v2.js','journal-v10-editorial-naturalize.js','journal-v11-vision.js','journal-v12-vision-privacy.js','journal-v12-vision-f5.js']:
     if forbidden in core.get('scripts', []): fail(f'route-only runtime leaked back into core: {forbidden}')
 
 editorial_core = (ROOT / 'journal-editorial-core.js').read_text()
@@ -130,7 +130,7 @@ required_lazy = {
     'glass':['journal-v3-refraction.js','journal-v4-jelly.js','journal-v9-locale-editorial.js'],
     'article-labs':['journal-v5-experiments.js'],
     'spatial':['journal-v8-spatial.js'],
-    'vision':['journal-v11-vision.js','journal-v12-vision-privacy.js'],
+    'vision':['journal-v11-vision.js','journal-v12-vision-privacy.js','journal-v12-vision-f5.js'],
     'article-polish':['journal-v10-editorial-naturalize.js'],
 }
 expected_route_order = ['editorial-full','glass','article-labs','spatial','vision','article-polish']
@@ -163,6 +163,10 @@ for forbidden in ['setInterval(() => injectDiagnosticFrame','queueMicrotask(inje
 v10 = (ROOT / 'journal-v10-editorial-naturalize.js').read_text()
 if "article.dataset.editorialNaturalized = 'v10';" not in v10:
     fail('v10 article naturalization lifecycle marker missing')
+
+f5 = (ROOT / 'journal-v12-vision-f5.js').read_text()
+for token in ["REV='F5-20260830-2041'",'sourceSurface','DrawingUtils','FACE_LANDMARKS_TESSELATION',"mode:'source-space-single-canvas'"]:
+    if token not in f5: fail(f'vision F5 source-space contract missing: {token}')
 
 privacy = (ROOT / 'journal-v12-vision-privacy.js').read_text()
 for phrase in [
