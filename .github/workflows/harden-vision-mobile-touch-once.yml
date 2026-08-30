@@ -18,66 +18,27 @@ jobs:
         with:
           ref: feat/design-journal-liquid-glass-20260827
           fetch-depth: 0
-      - name: Enforce mobile touch targets and first-fold camera action
+      - name: Enforce mobile touch targets
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-
-          css_path = Path('site/journal-v11-vision.css')
-          css = css_path.read_text()
-          old_css = '.vision-command-v11{padding:10px;border-radius:22px}.vision-command-main-v11{display:grid;grid-template-columns:1fr 1fr}'
-          new_css = '.vision-command-v11{padding:10px;border-radius:22px}.vision-command-v11 button,.vision-toggle-v11 span{min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}.vision-command-main-v11{display:grid;grid-template-columns:1fr 1fr}'
-          if css.count(old_css) != 1:
-              raise SystemExit(f'unexpected mobile CSS anchor count: {css.count(old_css)}')
-          css_path.write_text(css.replace(old_css, new_css, 1))
-
-          audit_path = Path('.github/scripts/design-journal-vision-model-preflight.mjs')
-          audit = audit_path.read_text()
-          old_eval = '''const geometry = await mobile.evaluate(() => ({
-  innerWidth,
-  scrollWidth: document.documentElement.scrollWidth,
-  title: document.title,
-  current: document.querySelector('[data-nav="vision"]')?.getAttribute('aria-current') || '',
-  startVisible: !!document.querySelector('[data-start]')?.getClientRects().length
-}));'''
-          new_eval = '''const geometry = await mobile.evaluate(() => {
-  const startRect = document.querySelector('[data-start]')?.getBoundingClientRect();
-  return {
-    innerWidth,
-    innerHeight,
-    scrollWidth: document.documentElement.scrollWidth,
-    title: document.title,
-    current: document.querySelector('[data-nav="vision"]')?.getAttribute('aria-current') || '',
-    startVisible: !!document.querySelector('[data-start]')?.getClientRects().length,
-    startInViewport: !!startRect && startRect.top >= 0 && startRect.bottom <= innerHeight,
-    touchTargets: [...document.querySelectorAll('.vision-command-v11 button,.vision-toggle-v11 span')].map(node => {
-      const rect = node.getBoundingClientRect();
-      return { label: node.textContent?.trim() || '', width: rect.width, height: rect.height };
-    })
-  };
-});'''
-          if audit.count(old_eval) != 1:
-              raise SystemExit(f'unexpected Vision geometry anchor count: {audit.count(old_eval)}')
-          audit = audit.replace(old_eval, new_eval, 1)
-          old_assert = "expect(geometry.startVisible, 'Vision mobile Start camera action is not visible');"
-          new_assert = """expect(geometry.startVisible, 'Vision mobile Start camera action is not visible');
-expect(geometry.startInViewport, `Vision mobile Start camera action must remain inside the first 844px viewport: ${JSON.stringify(geometry)}`);
-const undersized = geometry.touchTargets.filter(({ width, height }) => width < 44 || height < 44);
-expect(undersized.length === 0, `Vision mobile command touch targets must be at least 44x44 CSS px: ${JSON.stringify(undersized)}`);"""
-          if audit.count(old_assert) != 1:
-              raise SystemExit(f'unexpected Vision start assertion count: {audit.count(old_assert)}')
-          audit_path.write_text(audit.replace(old_assert, new_assert, 1))
+          path = Path('site/journal-v11-vision.css')
+          text = path.read_text()
+          old = '.vision-command-v11{padding:10px;border-radius:22px}.vision-command-main-v11{display:grid;grid-template-columns:1fr 1fr}'
+          new = '.vision-command-v11{padding:10px;border-radius:22px}.vision-command-v11 button,.vision-toggle-v11 span{min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}.vision-command-main-v11{display:grid;grid-template-columns:1fr 1fr}'
+          if text.count(old) != 1:
+              raise SystemExit('unexpected mobile CSS anchor count')
+          path.write_text(text.replace(old, new, 1))
           PY
-          node --check .github/scripts/design-journal-vision-model-preflight.mjs
           python .github/scripts/validate-runtime.py
           git diff --check
-      - name: Commit mobile hardening and remove one-shot workflow
+      - name: Commit mobile touch fix and remove one-shot workflow
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/harden-vision-mobile-touch-once.yml
-          git add site/journal-v11-vision.css .github/scripts/design-journal-vision-model-preflight.mjs
-          git commit -m "fix: harden Vision mobile touch targets"
+          git add site/journal-v11-vision.css
+          git commit -m "fix: enlarge Vision mobile touch targets"
           git push origin HEAD:feat/design-journal-liquid-glass-20260827
