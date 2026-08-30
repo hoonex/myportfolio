@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Vision Physical Camera Probe</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;background:#050607;color:#f5f7fa;font-family:system-ui,-apple-system,sans-serif}body{min-height:100dvh;padding:16px}.wrap{max-width:560px;margin:auto}.head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.tag{font:700 12px/1 ui-monospace,monospace;color:#69ffb0;border:1px solid #2a8f60;padding:8px 10px;border-radius:999px}.stage{position:relative;width:100%;aspect-ratio:3/4;background:#111;border-radius:24px;overflow:hidden;border:1px solid #30343a}canvas{width:100%;height:100%;display:block;background:#111}.hud{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.box{background:#111418;border:1px solid #292f36;border-radius:14px;padding:10px;min-height:62px}.k{font:600 10px/1.2 ui-monospace,monospace;color:#9ba5af}.v{font:700 16px/1.3 ui-monospace,monospace;margin-top:6px;word-break:break-all}.wide{grid-column:1/-1}button{width:100%;height:52px;border:0;border-radius:16px;font-weight:800;font-size:16px;margin-top:12px;background:#e9fff4;color:#07130d}button:disabled{opacity:.45}.err{color:#ff7777}.ok{color:#69ffb0}video{display:none}</style>
+</head>
+<body><div class="wrap">
+<div class="head"><div><b>Physical Camera Probe</b><div style="font-size:12px;color:#8f99a3;margin-top:4px">실제 getUserMedia만 사용</div></div><div class="tag">PROBE P1</div></div>
+<div class="stage"><canvas id="out"></canvas></div>
+<button id="start" disabled>모델 준비 중…</button>
+<div class="hud">
+<div class="box"><div class="k">STATE</div><div class="v" id="state">boot</div></div>
+<div class="box"><div class="k">CAMERA</div><div class="v" id="cam">--</div></div>
+<div class="box"><div class="k">FACE</div><div class="v" id="face">--</div></div>
+<div class="box"><div class="k">RUNS</div><div class="v" id="runs">0</div></div>
+<div class="box wide"><div class="k">LANDMARK #1 / BOX</div><div class="v" id="coord">--</div></div>
+<div class="box wide"><div class="k">ERROR</div><div class="v" id="error">none</div></div>
+</div>
+<video id="video" autoplay playsinline muted></video>
+</div>
+<script type="module">
+const VERSION='1.0.1';
+const MOD=`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VERSION}/vision_bundle.mjs`;
+const WASM=`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VERSION}/wasm`;
+const MODEL='https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+const $=id=>document.getElementById(id),video=$('video'),canvas=$('out'),ctx=canvas.getContext('2d',{alpha:false}),start=$('start');
+let vision,faceTask,stream,running=false,last=-1,runs=0,delegate='GPU';
+const set=(id,v,cls='')=>{const n=$(id);n.textContent=v;n.className='v '+cls};
+function fail(e){set('error',`${e?.name||'Error'}: ${e?.message||e}`,'err');set('state','ERROR','err');console.error(e)}
+function size(){const r=canvas.getBoundingClientRect();const w=Math.max(2,Math.round(r.width)),h=Math.max(2,Math.round(r.height));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}return{w,h}}
+function cover(vw,vh,w,h){const z=Math.max(w/vw,h/vh),rw=vw*z,rh=vh*z;return{z,rw,rh,dx:(w-rw)/2,dy:(h-rh)/2}}
+function point(p,t,w,mirror=true){let x=t.dx+p.x*t.rw,y=t.dy+p.y*t.rh;if(mirror)x=w-x;return{x,y}}
+function path(links,P,color,width){ctx.beginPath();let count=0;for(const e of links||[]){const a=P[e.start??e[0]],b=P[e.end??e[1]];if(!a||!b)continue;ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);count++}if(count){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke()}return count}
+function render(result){const {w,h}=size(),vw=video.videoWidth,vh=video.videoHeight;if(!vw||!vh)return;const t=cover(vw,vh,w,h);ctx.fillStyle='#080a0d';ctx.fillRect(0,0,w,h);ctx.save();ctx.translate(w,0);ctx.scale(-1,1);ctx.drawImage(video,t.dx,t.dy,t.rw,t.rh);ctx.restore();
+const lm=result?.faceLandmarks?.[0];if(!lm){set('face','0');set('coord','no face');return}const P=lm.map(p=>point(p,t,w,true)),F=vision.FaceLandmarker;
+ctx.save();ctx.shadowColor='#00ff77';ctx.shadowBlur=5;const edges=path(F.FACE_LANDMARKS_TESSELATION,P,'#00ff77',2.3);ctx.shadowBlur=0;path(F.FACE_LANDMARKS_FACE_OVAL,P,'#ffffff',3.2);path(F.FACE_LANDMARKS_LEFT_EYE,P,'#25d9ff',3);path(F.FACE_LANDMARKS_RIGHT_EYE,P,'#25d9ff',3);path(F.FACE_LANDMARKS_LIPS,P,'#ff4db8',3);ctx.restore();
+let minX=1e9,minY=1e9,maxX=-1,maxY=-1;for(const p of P){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)}ctx.strokeStyle='#ffea49';ctx.lineWidth=3;ctx.strokeRect(minX,minY,maxX-minX,maxY-minY);
+const refs=[[1,'#ff3030',7],[33,'#00d5ff',6],[263,'#00d5ff',6],[61,'#ff4db8',6],[291,'#ff4db8',6],[152,'#fff54d',6]];for(const [i,c,r] of refs){const p=P[i];ctx.fillStyle=c;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#000';ctx.lineWidth=1.5;ctx.stroke()}
+const p=P[1];set('face',`${lm.length} pts / ${edges} edges`,'ok');set('coord',`#1 ${p.x.toFixed(1)},${p.y.toFixed(1)} | box ${minX.toFixed(0)},${minY.toFixed(0)} → ${maxX.toFixed(0)},${maxY.toFixed(0)}`);
+ctx.font='800 14px ui-monospace,monospace';ctx.fillStyle='rgba(0,0,0,.78)';ctx.fillRect(8,8,184,30);ctx.fillStyle='#8cffc7';ctx.fillText(`REAL CAM · ${lm.length} · ${edges}`,16,28)}
+function schedule(){if(!running)return;if(video.requestVideoFrameCallback)video.requestVideoFrameCallback(loop);else requestAnimationFrame(loop)}
+function loop(){if(!running)return;try{if(video.readyState>=2&&video.currentTime!==last){last=video.currentTime;const t=performance.now();const r=faceTask.detectForVideo(video,t);runs++;set('runs',String(runs));set('cam',`${video.videoWidth}×${video.videoHeight} rs=${video.readyState}`);render(r)}}catch(e){fail(e)}schedule()}
+async function init(){try{set('state','loading model');vision=await import(MOD);const fs=await vision.FilesetResolver.forVisionTasks(WASM);try{faceTask=await vision.FaceLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:MODEL,delegate:'GPU'},runningMode:'VIDEO',numFaces:1,minFaceDetectionConfidence:.45,minFacePresenceConfidence:.45,minTrackingConfidence:.45});delegate='GPU'}catch(e){faceTask=await vision.FaceLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:MODEL},runningMode:'VIDEO',numFaces:1,minFaceDetectionConfidence:.45,minFacePresenceConfidence:.45,minTrackingConfidence:.45});delegate='CPU/default'}set('state',`model ready · ${delegate}`,'ok');start.disabled=false;start.textContent='실제 전면카메라 시작'}catch(e){fail(e)}}
+start.addEventListener('click',async()=>{try{start.disabled=true;set('state','requesting camera');stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'user'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30}}});video.srcObject=stream;await video.play();set('cam',`${video.videoWidth}×${video.videoHeight} rs=${video.readyState}`);set('state','LIVE PHYSICAL CAMERA','ok');running=true;schedule();start.textContent='실행 중'}catch(e){start.disabled=false;fail(e)}});
+addEventListener('beforeunload',()=>stream?.getTracks().forEach(t=>t.stop()));
+init();
+</script></body></html>
