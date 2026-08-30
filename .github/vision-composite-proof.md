@@ -1,0 +1,1 @@
+Vision CI #155 proves the visible camera frame and the 478-point face mesh are painted into one canvas surface. The separate video element is kept as an invisible inference source only. This specifically guards the Android failure where face detection reported 478 points while the overlay canvas was not visible above the hardware video layer.
