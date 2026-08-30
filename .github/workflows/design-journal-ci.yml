@@ -1,0 +1,173 @@
+name: Design Journal CI
+
+on:
+  pull_request:
+    paths:
+      - 'site/**'
+      - '.github/scripts/design-journal-smoke.mjs'
+      - '.github/scripts/design-journal-locale-audit.mjs'
+      - '.github/scripts/design-journal-loading-audit.mjs'
+      - '.github/scripts/design-journal-vision-model-preflight.mjs'
+      - '.github/scripts/validate-runtime.py'
+      - '.github/workflows/design-journal-ci.yml'
+      - '.github/workflows/design-journal-deploy.yml'
+      - '.github/workflows/publish-gh-pages.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'site/**'
+      - '.github/scripts/design-journal-smoke.mjs'
+      - '.github/scripts/design-journal-locale-audit.mjs'
+      - '.github/scripts/design-journal-loading-audit.mjs'
+      - '.github/scripts/design-journal-vision-model-preflight.mjs'
+      - '.github/scripts/validate-runtime.py'
+      - '.github/workflows/design-journal-ci.yml'
+      - '.github/workflows/design-journal-deploy.yml'
+      - '.github/workflows/publish-gh-pages.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate canonical route-aware runtime
+        run: |
+          python .github/scripts/validate-runtime.py
+          node --check .github/scripts/design-journal-smoke.mjs
+          node --check .github/scripts/design-journal-locale-audit.mjs
+          node --check .github/scripts/design-journal-loading-audit.mjs
+          node --check .github/scripts/design-journal-vision-model-preflight.mjs
+
+      - name: Lock preferred optical defaults
+        run: |
+          grep -q 'refraction: 1.60' site/journal-v4-jelly.js
+          grep -q 'blurAmount: 0.00' site/journal-v4-jelly.js
+          grep -q 'chromAberration: 0.180' site/journal-v4-jelly.js
+          grep -q 'specular: 0.00' site/journal-v4-jelly.js
+          grep -q 'fresnel: 0.00' site/journal-v4-jelly.js
+          grep -q 'edgeHighlight: 0.00' site/journal-v4-jelly.js
+          grep -q 'zRadius: 50' site/journal-v4-jelly.js
+          grep -q 'cornerRadius: 80' site/journal-v4-jelly.js
+          grep -q 'saturation: 0.02' site/journal-v4-jelly.js
+          grep -q 'brightness: 0.02' site/journal-v4-jelly.js
+
+      - name: Validate interactive systems
+        run: |
+          grep -q 'Continuity Control Room' site/journal-v5-experiments.js
+          grep -q 'Motion Dynamics Lab' site/journal-v5-experiments.js
+          grep -q "fault('network')" site/journal-v5-experiments.js
+          grep -q "fault('stale')" site/journal-v5-experiments.js
+          grep -q "fault('ci')" site/journal-v5-experiments.js
+          grep -q 'role="slider"' site/journal-v5-experiments.js
+          grep -q "ArrowLeft" site/journal-v5-experiments.js
+          grep -q "ArrowRight" site/journal-v5-experiments.js
+          grep -q 'motionCard.hover' .github/scripts/design-journal-smoke.mjs
+          grep -q '__motionAuditPointerTarget' .github/scripts/design-journal-smoke.mjs
+          grep -q 'IntersectionObserver' site/journal-v6-studio.js
+          grep -q 'navigatorSignatureV6' site/journal-v6-studio.js
+          grep -q 'SPATIAL BLOCKOUT' site/journal-v8-spatial.js
+          grep -q 'data-spatial-stage' site/journal-v8-spatial.js
+          grep -q "event.key === 'ArrowLeft'" site/journal-v8-spatial.js
+
+      - name: Validate Vision real-data contract
+        run: |
+          grep -q '@mediapipe/tasks-vision@' site/journal-v11-vision.js
+          grep -q 'GestureRecognizer' site/journal-v11-vision.js
+          grep -q 'FaceLandmarker' site/journal-v11-vision.js
+          grep -q 'recognizeForVideo' site/journal-v11-vision.js
+          grep -q 'detectForVideo' site/journal-v11-vision.js
+          grep -q 'worldLandmarks' site/journal-v11-vision.js
+          grep -q 'getUserMedia' site/journal-v11-vision.js
+          grep -q 'OpenCV' site/journal-v11-vision.js
+          grep -q 'DIAGNOSTIC' site/journal-v11-vision.js
+          grep -q 'gesture_recognizer.task' .github/scripts/design-journal-vision-model-preflight.mjs
+          grep -q 'face_landmarker.task' .github/scripts/design-journal-vision-model-preflight.mjs
+          grep -q 'recognizeForVideo' .github/scripts/design-journal-vision-model-preflight.mjs
+          grep -q 'detectForVideo' .github/scripts/design-journal-vision-model-preflight.mjs
+
+      - name: Validate authored locale editions
+        run: |
+          grep -q 'ぼかしと屈折を同じものとして扱いません' site/journal-v9-locale-editorial.js
+          grep -q '屈折は参照位置を変える' site/journal-v9-locale-editorial.js
+          grep -q '광학 파라미터' site/journal-v9-locale-editorial.js
+          grep -q 'Optical parameters' site/journal-v9-locale-editorial.js
+          grep -q '光学パラメータ' site/journal-v9-locale-editorial.js
+          grep -q 'ガラスらしさは、ぼかしだけでは作れない。' site/journal-v10-editorial-naturalize.js
+          grep -q 'Sloarを作って分かったのは、記憶より「現在の状態」が重要だということ。' site/journal-v10-editorial-naturalize.js
+          grep -q '良いモーションは、演出よりも操作の連続性を守る。' site/journal-v10-editorial-naturalize.js
+          grep -q '会話履歴をリポジトリの代わりにしない。' site/journal-v10-editorial-naturalize.js
+          grep -q '反応はクリック完了ではなく、触れた瞬間から始める。' site/journal-v10-editorial-naturalize.js
+          grep -q 'カメラ · スケール · ブロックアウト' site/journal-spatial-index.js
+
+      - name: Validate document and refraction resilience
+        run: |
+          grep -q 'document.title' site/journal-runtime.js
+          grep -q 'aria-current' site/journal-runtime.js
+          grep -q 'theme-color' site/journal-runtime.js
+          grep -q 'INIT_TIMEOUT_MS = 8000' site/journal-v3-refraction.js
+          grep -q 'knownRendererHang' site/journal-v3-refraction.js
+          grep -q 'known-incompatible' site/journal-v3-refraction.js
+          grep -q 'data-refraction-state="loading"' site/journal-v3-refraction.js
+          grep -q 'role="status" aria-live="polite"' site/journal-v3-refraction.js
+
+      - name: Validate single render lifecycle and lazy handoff
+        run: |
+          grep -q "CustomEvent('hj:rendered'" site/journal-runtime.js
+          grep -q 'HJRuntime?.schedule' site/journal-route-loader.js
+          ! grep -q "CustomEvent('hj:rendered'" site/journal-route-loader.js
+          grep -q "addEventListener('hashchange'" site/journal-route-loader.js
+          for file in site/journal-v4-jelly.js site/journal-v6-studio.js site/journal-v8-spatial.js site/journal-v9-locale-editorial.js site/journal-v10-editorial-naturalize.js; do
+            grep -q "addEventListener('hj:rendered'" "$file"
+            ! grep -q 'new MutationObserver' "$file"
+            ! grep -q "addEventListener('hashchange'" "$file"
+          done
+          ! grep -q "addEventListener('hashchange'" site/journal-v5-experiments.js
+
+      - name: Validate deployment contract
+        run: |
+          grep -q 'Archived Blazor Pages build' .github/workflows/publish-gh-pages.yml
+          grep -q 'workflow_dispatch:' .github/workflows/publish-gh-pages.yml
+          ! grep -q '^  push:' .github/workflows/publish-gh-pages.yml
+          grep -q 'Deploy Design Journal' .github/workflows/design-journal-deploy.yml
+          grep -q 'workflow_run:' .github/workflows/design-journal-deploy.yml
+          grep -q 'Design Journal CI' .github/workflows/design-journal-deploy.yml
+          grep -q "workflow_run.conclusion == 'success'" .github/workflows/design-journal-deploy.yml
+          grep -q 'workflow_run.head_sha' .github/workflows/design-journal-deploy.yml
+          grep -q 'SOURCE_SHA:' .github/workflows/design-journal-deploy.yml
+          grep -q 'git rev-parse HEAD' .github/workflows/design-journal-deploy.yml
+          grep -q 'validate-runtime.py' .github/workflows/design-journal-deploy.yml
+          grep -q 'git fetch origin gh-pages' .github/workflows/design-journal-deploy.yml
+          grep -q 'rsync -a --delete' .github/workflows/design-journal-deploy.yml
+          grep -q 'git push origin HEAD:gh-pages' .github/workflows/design-journal-deploy.yml
+
+      - name: Browser, loading, accessibility, locale, and Vision model audit
+        run: |
+          npm install --no-save playwright@1.62.1 @axe-core/playwright@4.13.0
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --directory site >/tmp/design-journal-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then
+              break
+            fi
+            sleep 0.25
+          done
+          JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-loading-audit.mjs
+          JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-vision-model-preflight.mjs
+          JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-smoke.mjs
+          JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/design-journal-locale-audit.mjs
+
+      - name: Upload visual audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-journal-visual-audit
+          path: .artifacts/design-journal
+          if-no-files-found: warn
+          retention-days: 7

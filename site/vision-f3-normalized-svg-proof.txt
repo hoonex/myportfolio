@@ -1,0 +1,1 @@
+Vision F3 contract: direct visible video + source-space SVG face mesh using the MediaPipe 478-point tessellation, xMidYMid slice projection, front-camera source-space mirroring, and versioned route assets to defeat stale mobile cache.
