@@ -1,0 +1,37 @@
+name: Expose face mesh diagnostic once
+on:
+  push:
+    branches: [feat/design-journal-liquid-glass-20260827]
+    paths: [.github/workflows/expose-face-mesh-diagnostic-once.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/design-journal-liquid-glass-20260827
+      - name: Expose the production face-mesh renderer to CI diagnostics
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('site/journal-v11-vision.js')
+          s=p.read_text()
+          old="window.HJVisionLab={version:'11',route:R,injectDiagnosticFrame,projectFramePoint:(p,sw,sh,dw,dh,mirror=true)=>framePoint(p,sw,sh,dw,dh,mirror),state:()=>({...state,mode,zoom}),sources:{mediaPipe:V,opencv:'5.0.0'}};"
+          new="window.HJVisionLab={version:'11',route:R,injectDiagnosticFrame,projectFramePoint:(p,sw,sh,dw,dh,mirror=true)=>framePoint(p,sw,sh,dw,dh,mirror),prepareFaceMeshDiagnostic:async()=>{if(!mp)mp=await import(MOD);return !!mp?.FaceLandmarker},renderFaceMeshDiagnostic:(landmarks,sw,sh)=>{let c=E().overlay;if(!c||!Array.isArray(landmarks))return false;let x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);return faceMesh(x,landmarks,c.width,c.height,sw,sh)>0},state:()=>({...state,mode,zoom}),sources:{mediaPipe:V,opencv:'5.0.0'}};"
+          if s.count(old)!=1: raise SystemExit(f'expected one diagnostic API marker, got {s.count(old)}')
+          p.write_text(s.replace(old,new,1))
+          PY
+          node --check site/journal-v11-vision.js
+          git diff --check
+      - name: Commit product change and remove one-shot workflow
+        shell: bash
+        run: |
+          rm .github/workflows/expose-face-mesh-diagnostic-once.yml
+          git config user.name hoonex
+          git config user.email 163626004+hoonex@users.noreply.github.com
+          git add site/journal-v11-vision.js .github/workflows/expose-face-mesh-diagnostic-once.yml
+          git commit -m "test: expose production face mesh diagnostic"
+          git push origin HEAD:feat/design-journal-liquid-glass-20260827
