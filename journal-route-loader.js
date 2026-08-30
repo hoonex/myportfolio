@@ -7,7 +7,12 @@
   const fullEditorialRoutes = new Set(['/lab', '/post/glass', '/post/sloar', '/post/motion']);
 
   const route = () => (location.hash.slice(1) || '/').split('?')[0];
-  const assetUrl = rel => new URL(`./${rel}`, document.baseURI).href;
+  const VISION_REV = 'F3-20260830-2000';
+  const assetUrl = rel => {
+    const url = new URL(`./${rel}`, document.baseURI);
+    if (/^journal-v1[12]-vision/.test(rel)) url.searchParams.set('v', VISION_REV);
+    return url.href;
+  };
 
   function manifest() {
     if (!manifestPromise) {
