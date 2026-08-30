@@ -1,3 +1,4 @@
+// Face-mesh UX + projection audit; direct user commit keeps PR CI runnable.
 import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright';
 
