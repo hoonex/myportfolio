@@ -1,0 +1,69 @@
+name: Vision cache-bust once
+on:
+  push:
+    branches: [feat/design-journal-liquid-glass-20260827]
+    paths: ['.github/workflows/vision-cache-bust-once.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/design-journal-liquid-glass-20260827
+      - name: Create cache-immune Vision R4 assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp site/journal-v11-vision.js site/journal-v11-vision-r4.js
+          cp site/journal-v11-vision.css site/journal-v11-vision-r4.css
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          stamp='20260830-1958-r4'
+
+          # Give the new payload an unmistakable visible build marker.
+          js=Path('site/journal-v11-vision-r4.js')
+          s=js.read_text()
+          s=s.replace('CAMERA / FACE MESH</span><b>LIVE', 'CAMERA / FACE MESH · R4</span><b>LIVE')
+          s=s.replace('MediaPipe / aligned mesh overlay', 'MediaPipe / dual mesh R4')
+          js.write_text(s)
+
+          # New file names mean even a stale browser asset cache cannot reuse R3.
+          mf=Path('site/runtime-manifest.json')
+          data=json.loads(mf.read_text())
+          data['revision']=stamp
+          for group in data.get('routes',[]):
+              if group.get('id')=='vision':
+                  group['styles']=['journal-v11-vision-r4.css']
+                  group['scripts']=['journal-v11-vision-r4.js','journal-v12-vision-privacy.js']
+          mf.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+
+          # Route-loaded files also get a revision query from the manifest.
+          rl=Path('site/journal-route-loader.js')
+          s=rl.read_text()
+          s=s.replace("  let requestRevision = 0;", "  let requestRevision = 0;\n  let assetRevision = 'bootstrap';")
+          s=s.replace("  const assetUrl = rel => new URL(`./${rel}`, document.baseURI).href;", "  const assetUrl = rel => { const url = new URL(`./${rel}`, document.baseURI); url.searchParams.set('v', assetRevision); return url.href; };")
+          s=s.replace("manifestPromise = fetch('./runtime-manifest.json', { cache: 'no-cache' }).then(response => {", "manifestPromise = fetch(`./runtime-manifest.json?v=${Date.now()}`, { cache: 'no-store' }).then(response => {")
+          s=s.replace("        return response.json();", "        return response.json().then(config => { assetRevision = config.revision || assetRevision; return config; });")
+          rl.write_text(s)
+
+          # Cache-bust bootstrap assets too, especially the route loader itself.
+          idx=Path('site/index.html')
+          s=idx.read_text()
+          for name in ['styles.css','journal-v2.css','journal-v3-refraction.css','journal-v4-jelly.css','journal-v5-experiments.css','journal-v6-studio.css','journal-v6-compat.css','journal-v8-spatial.css','app.js','journal-editorial-core.js','journal-runtime.js','journal-spatial-index.js','journal-v6-studio.js','journal-route-loader.js']:
+              s=s.replace(f'./{name}"', f'./{name}?v={stamp}"')
+          idx.write_text(s)
+          PY
+          rm .github/workflows/vision-cache-bust-once.yml
+      - name: Commit patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name hoonex
+          git config user.email '163626004+hoonex@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: ship cache-immune Vision R4 payload'
+          git push origin HEAD:feat/design-journal-liquid-glass-20260827
