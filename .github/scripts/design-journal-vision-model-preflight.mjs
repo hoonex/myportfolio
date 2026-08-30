@@ -16,17 +16,29 @@ const mobile = await mobileContext.newPage();
 await mobile.goto(`${baseURL}/#/lab/vision`, { waitUntil: 'domcontentloaded' });
 await mobile.waitForSelector('[data-vision-lab]', { timeout: 12000 });
 await mobile.waitForTimeout(700);
-const geometry = await mobile.evaluate(() => ({
-  innerWidth,
-  scrollWidth: document.documentElement.scrollWidth,
-  title: document.title,
-  current: document.querySelector('[data-nav="vision"]')?.getAttribute('aria-current') || '',
-  startVisible: !!document.querySelector('[data-start]')?.getClientRects().length
-}));
+const geometry = await mobile.evaluate(() => {
+  const startRect = document.querySelector('[data-start]')?.getBoundingClientRect();
+  return {
+    innerWidth,
+    innerHeight,
+    scrollWidth: document.documentElement.scrollWidth,
+    title: document.title,
+    current: document.querySelector('[data-nav="vision"]')?.getAttribute('aria-current') || '',
+    startVisible: !!document.querySelector('[data-start]')?.getClientRects().length,
+    startInViewport: !!startRect && startRect.top >= 0 && startRect.bottom <= innerHeight,
+    touchTargets: [...document.querySelectorAll('.vision-command-v11 button,.vision-toggle-v11 span')].map(node => {
+      const rect = node.getBoundingClientRect();
+      return { label: node.textContent?.trim() || '', width: rect.width, height: rect.height };
+    })
+  };
+});
 expect(geometry.scrollWidth <= geometry.innerWidth + 1, `Vision mobile horizontal overflow: ${JSON.stringify(geometry)}`);
 expect(geometry.title === 'Vision Lab. — HJ', `Vision mobile title drift: ${geometry.title}`);
 expect(geometry.current === 'page', `Vision mobile nav aria-current drift: ${geometry.current}`);
 expect(geometry.startVisible, 'Vision mobile Start camera action is not visible');
+expect(geometry.startInViewport, `Vision mobile Start camera action must remain inside the first 844px viewport: ${JSON.stringify(geometry)}`);
+const undersized = geometry.touchTargets.filter(({ width, height }) => width < 44 || height < 44);
+expect(undersized.length === 0, `Vision mobile command touch targets must be at least 44x44 CSS px: ${JSON.stringify(undersized)}`);
 await mkdir('.artifacts/design-journal', { recursive: true });
 await mobile.screenshot({ path: '.artifacts/design-journal/vision-mobile.png', fullPage: true });
 await mobileContext.close();
