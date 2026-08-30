@@ -195,6 +195,7 @@
       });
     }
     naturalizeJapaneseText(article.querySelector('.article-body'));
+    article.dataset.editorialNaturalized = 'v10';
 
     if (language() === 'ja') {
       article.querySelectorAll('[data-run-code]').forEach(node => { node.textContent = '実行'; });
