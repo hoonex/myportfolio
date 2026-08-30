@@ -1,0 +1,1 @@
+Vision F2 forces unique fingerprinted route asset names and shows BUILD F2-20260830-1957 inside the live stage so a physical device can prove which runtime it actually loaded.
