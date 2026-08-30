@@ -1,1 +1,2 @@
 Vision Android fallback contract: camera is canvas-composited and MediaPipe face tessellation is also rendered as a high-contrast SVG overlay in CSS pixel coordinates.
+Validated by CI #161 at source 41092f197c8401506e5b435de5745f8c806579ff.
