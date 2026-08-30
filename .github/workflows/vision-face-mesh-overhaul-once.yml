@@ -1,0 +1,150 @@
+name: Vision face mesh overhaul once
+on:
+  push:
+    branches: [feat/design-journal-liquid-glass-20260827]
+    paths: [.github/workflows/vision-face-mesh-overhaul-once.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/design-journal-liquid-glass-20260827
+      - name: Patch Vision UX, projection, mesh and audit
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def rep(s, old, new, n=1, label='replacement'):
+              c=s.count(old)
+              if c != n:
+                  raise SystemExit(f'{label}: expected {n} matches, got {c}')
+              return s.replace(old, new, n)
+
+          p=Path('site/journal-v11-vision.js')
+          s=p.read_text()
+          s=rep(s,"live:'실시간 추적 중',fail:","live:'실시간 추적 중',mesh:'FACE MESH',noFace:'얼굴을 찾는 중',fail:",label='ko mesh copy')
+          s=rep(s,"face:'얼굴',view:'3D',edge:","face:'얼굴',view:'진단 3D',edge:",label='ko view copy')
+          s=rep(s,"scene:'실제 landmark 3D',note:'손은 worldLandmarks를 우선 사용합니다. 얼굴 z는 상대 깊이이며 실제 절대 깊이 3D 스캔이라고 부르지 않습니다.'","scene:'진단 3D · 보조 보기',note:'기본 화면은 카메라 위 FACE MESH입니다. 이 패널은 좌표 구조를 확인하는 보조 진단 보기입니다.'",label='ko scene copy')
+          s=rep(s,"live:'Live tracking',fail:","live:'Live tracking',mesh:'FACE MESH',noFace:'Looking for a face',fail:",label='en mesh copy')
+          s=rep(s,"face:'Face',view:'3D',edge:","face:'Face',view:'Diagnostic 3D',edge:",label='en view copy')
+          s=rep(s,"scene:'Real landmark 3D',note:'Hands prefer worldLandmarks. Face z is relative depth and is not presented as an absolute-depth 3D scan.'","scene:'Diagnostic 3D · secondary',note:'The primary view is the FACE MESH aligned over your camera. This panel is a secondary coordinate diagnostic.'",label='en scene copy')
+          s=rep(s,"live:'リアルタイム追跡中',fail:","live:'リアルタイム追跡中',mesh:'FACE MESH',noFace:'顔を探しています',fail:",label='ja mesh copy')
+          s=rep(s,"face:'顔',view:'3D',edge:","face:'顔',view:'診断3D',edge:",label='ja view copy')
+          s=rep(s,"scene:'実ランドマーク3D',note:'手はworldLandmarksを優先します。顔のzは相対的な奥行きであり、絶対深度の3Dスキャンとは表現しません。'","scene:'診断3D · 補助表示',note:'メイン表示はカメラ映像に重ねたFACE MESHです。このパネルは座標構造を確認するための補助診断です。'",label='ja scene copy')
+          s=rep(s,"view:true,edge:false","view:false,edge:false",label='diagnostic default off')
+          s=rep(s,'<section class="vision-grid-v11"><div class="vision-camera-card-v11"><div class="vision-stage-v11">','<section class="vision-grid-v11"><div class="vision-camera-card-v11"><div class="vision-card-head-v11 vision-camera-head-v11"><span>CAMERA / FACE MESH</span><b>LIVE</b></div><div class="vision-stage-v11">',label='camera head')
+          s=rep(s,'<div class="vision-stage-watermark-v11"><span>LIVE</span><b>MediaPipe / camera frame</b></div></div></div><aside class="vision-side-v11">','<div class="vision-stage-watermark-v11"><span>LIVE</span><b>MediaPipe / aligned mesh overlay</b></div><div class="vision-face-state-v11" data-face-state>${c.noFace}</div></div></div><aside class="vision-side-v11">',label='face state markup')
+          old="function sync(){qs('[data-vt]').forEach(i=>i.checked=!!state[i.dataset.vt]);let r=E();q('[data-start]')?.toggleAttribute('disabled',state.running);q('[data-stop]')?.toggleAttribute('disabled',!state.running);r.root?.classList.toggle('is-frozen',state.frozen);r.root?.classList.toggle('is-hud-hidden',!state.hud);r.root?.classList.toggle('is-edge-active',state.edge)}"
+          new="function sync(){qs('[data-vt]').forEach(i=>i.checked=!!state[i.dataset.vt]);let r=E();q('[data-start]')?.toggleAttribute('disabled',state.running);q('[data-stop]')?.toggleAttribute('disabled',!state.running);r.root?.classList.toggle('is-frozen',state.frozen);r.root?.classList.toggle('is-hud-hidden',!state.hud);r.root?.classList.toggle('is-edge-active',state.edge);r.root?.classList.toggle('is-3d-open',state.view);r.root?.classList.toggle('is-mirrored',facing==='user');q('.vision-3d-card-v11')?.toggleAttribute('hidden',!state.view)}"
+          s=rep(s,old,new,label='sync classes')
+          s=rep(s,"sync();if(!state.edge)clearEdge()","sync();if(k==='view')requestAnimationFrame(resize);if(!state.edge)clearEdge()",label='3d resize')
+          s=rep(s,"pointer={x:1-h[8].x,y:h[8].y,pinch:1}","pointer={x:h[8].x,y:h[8].y,pinch:1}",label='pinch pointer source')
+          s=rep(s,"pointer={x:1-h[8].x,y:h[8].y}","pointer={x:h[8].x,y:h[8].y}",label='point pointer source')
+          old="function draw(){draw2();draw3();let n=E().ptr;if(n){if(!pointer)n.classList.remove('is-visible','is-pinch');else{n.classList.add('is-visible');n.classList.toggle('is-pinch',!!pointer.pinch);n.style.left=`${pointer.x*100}%`;n.style.top=`${pointer.y*100}%`}}}"
+          new="function draw(){draw2();draw3();let n=E().ptr;if(n){if(!pointer)n.classList.remove('is-visible','is-pinch');else{let v=E().video,r=n.parentElement?.getBoundingClientRect(),P=framePoint(pointer,v?.videoWidth||1,v?.videoHeight||1,r?.width||1,r?.height||1,facing==='user');n.classList.add('is-visible');n.classList.toggle('is-pinch',!!pointer.pinch);n.style.left=`${P.x}px`;n.style.top=`${P.y}px`}}}"
+          s=rep(s,old,new,label='pointer projection')
+          start=s.index('function draw2(){')
+          end=s.index('\nfunction proj(',start)
+          if start<0 or end<0: raise SystemExit('draw2 boundaries not found')
+          mesh=r'''function framePoint(p,sw,sh,dw,dh,mirror=facing==='user'){if(!sw||!sh||!dw||!dh)return{x:(mirror?1-p.x:p.x)*dw,y:p.y*dh};let z=Math.max(dw/sw,dh/sh),rw=sw*z,rh=sh*z,ox=(dw-rw)/2,oy=(dh-rh)/2,px=ox+p.x*rw;return{x:mirror?dw-px:px,y:oy+p.y*rh}}
+          function wire(ctx,links,P,col,width){if(!links?.length)return;ctx.strokeStyle=col;ctx.lineWidth=width;ctx.lineCap='round';for(let e of links){let i=e.start??e[0],j=e.end??e[1],A=P[i],B=P[j];if(!A||!B)continue;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke()}}
+          function faceMesh(ctx,a,w,h,sw,sh){let F=mp?.FaceLandmarker,M=F?.FACE_LANDMARKS_TESSELATION||[],P=a.map(v=>framePoint(v,sw,sh,w,h,facing==='user'));if(!M.length){ctx.fillStyle='rgba(181,255,230,.82)';for(let i=0;i<a.length;i+=4){ctx.beginPath();ctx.arc(P[i].x,P[i].y,Math.max(1,w/900),0,7);ctx.fill()}return 0}ctx.save();ctx.globalCompositeOperation='screen';ctx.lineCap='round';if(mode!==2){let stride=mode===1?2:1;for(let k=0;k<M.length;k+=stride){let e=M[k],i=e.start??e[0],j=e.end??e[1],A=P[i],B=P[j];if(!A||!B)continue;let z=((a[i]?.z||0)+(a[j]?.z||0))/2,alpha=Math.max(.18,Math.min(.78,.46-z*4));ctx.strokeStyle=`rgba(91,215,168,${alpha})`;ctx.lineWidth=Math.max(.65,w/1150);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke()}}wire(ctx,F.FACE_LANDMARKS_FACE_OVAL,P,'rgba(238,255,249,.9)',Math.max(1.15,w/650));wire(ctx,F.FACE_LANDMARKS_LIPS,P,'rgba(255,255,255,.82)',Math.max(.9,w/760));wire(ctx,F.FACE_LANDMARKS_LEFT_EYE,P,'rgba(124,160,255,.95)',Math.max(.9,w/760));wire(ctx,F.FACE_LANDMARKS_RIGHT_EYE,P,'rgba(124,160,255,.95)',Math.max(.9,w/760));for(let i=0;i<P.length;i+=18){let d=Math.max(1.2,w/720)*(1+Math.max(-.35,Math.min(.45,-(a[i]?.z||0)*4)));ctx.fillStyle='rgba(220,255,244,.78)';ctx.beginPath();ctx.arc(P[i].x,P[i].y,d,0,7);ctx.fill()}ctx.restore();return M.length}
+          function draw2(){let c=E().overlay;if(!c)return;let x=c.getContext('2d'),w=c.width,h=c.height,v=E().video,sw=v?.videoWidth||w,sh=v?.videoHeight||h;if(!state.trail)x.clearRect(0,0,w,h);else{x.fillStyle='rgba(7,9,13,.13)';x.fillRect(0,0,w,h)};(hand?.landmarks||[]).forEach((a,j)=>{let p=i=>framePoint(a[i],sw,sh,w,h,facing==='user');x.strokeStyle=j?'#ffa75b':'#7ca0ff';x.lineWidth=Math.max(1.5,w/700);if(mode!==2)HC.forEach(([i,k])=>{let A=p(i),B=p(k);x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);x.stroke()});a.forEach((_,i)=>{let P=p(i);x.fillStyle=i===8?'#fff':'rgba(245,247,255,.94)';x.beginPath();x.arc(P.x,P.y,Math.max(2,w/320),0,7);x.fill()})});if(state.face)(face?.faceLandmarks||[]).forEach(a=>faceMesh(x,a,w,h,sw,sh))}'''
+          s=s[:start]+mesh+s[end:]
+          old="function metrics(){let H=hand?.landmarks||[],F=face?.faceLandmarks||[],g=gesture||hand?.gestures?.[0]?.[0],p=H[0]?pinchRatio(H[0]):99,bs=face?.faceBlendshapes?.[0]?.categories||[],b=bs.filter(x=>x.categoryName!=='_neutral').sort((a,b)=>(b.score||0)-(a.score||0))[0];metric('fps',fps?fps.toFixed(0):'--');metric('infer',`${infer.toFixed(1)} ms`);metric('hand',H.length?`${H.length} · ${hand?.handedness?.[0]?.[0]?.categoryName||'hand'}`:'none');metric('face',F.length?`${F.length} · ${F[0].length} pts`:'none');metric('gesture',g?`${g.categoryName} ${(g.score*100).toFixed(0)}%`:'None');metric('pinch',p<99?p.toFixed(2):'--');metric('blend',b?`${b.categoryName} ${(b.score*100).toFixed(0)}%`:'--');metric('points',String(H.reduce((s,a)=>s+a.length,0)+F.reduce((s,a)=>s+a.length,0)))}"
+          new="function metrics(){let H=hand?.landmarks||[],F=face?.faceLandmarks||[],g=gesture||hand?.gestures?.[0]?.[0],p=H[0]?pinchRatio(H[0]):99,bs=face?.faceBlendshapes?.[0]?.categories||[],b=bs.filter(x=>x.categoryName!=='_neutral').sort((a,b)=>(b.score||0)-(a.score||0))[0],fs=q('[data-face-state]');if(fs){fs.textContent=F.length?`${t().mesh} · ${F[0].length}`:t().noFace;fs.classList.toggle('is-active',!!F.length)}metric('fps',fps?fps.toFixed(0):'--');metric('infer',`${infer.toFixed(1)} ms`);metric('hand',H.length?`${H.length} · ${hand?.handedness?.[0]?.[0]?.categoryName||'hand'}`:'none');metric('face',F.length?`${F.length} · ${F[0].length} pts`:'none');metric('gesture',g?`${g.categoryName} ${(g.score*100).toFixed(0)}%`:'None');metric('pinch',p<99?p.toFixed(2):'--');metric('blend',b?`${b.categoryName} ${(b.score*100).toFixed(0)}%`:'--');metric('points',String(H.reduce((s,a)=>s+a.length,0)+F.reduce((s,a)=>s+a.length,0)));if(state.running)metric('backend',F.length?'MediaPipe · mesh':'MediaPipe')}"
+          s=rep(s,old,new,label='face status metrics')
+          old="window.HJVisionLab={version:'11',route:R,injectDiagnosticFrame,state:()=>({...state,mode,zoom}),sources:{mediaPipe:V,opencv:'5.0.0'}};"
+          new="window.HJVisionLab={version:'11',route:R,injectDiagnosticFrame,projectFramePoint:(p,sw,sh,dw,dh,mirror=true)=>framePoint(p,sw,sh,dw,dh,mirror),state:()=>({...state,mode,zoom}),sources:{mediaPipe:V,opencv:'5.0.0'}};"
+          s=rep(s,old,new,label='projection diagnostic api')
+          p.write_text(s)
+
+          p=Path('site/journal-v11-vision.css')
+          s=p.read_text()
+          s=rep(s,'.vision-grid-v11{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}', '.vision-grid-v11{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-items:start}.is-3d-open .vision-grid-v11{grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr)}',label='desktop grid')
+          s=rep(s,'.vision-camera-card-v11{padding:12px}.vision-camera-card-v11::before{content:"CAMERA / 2D";display:flex;align-items:center;height:14px;padding:4px 4px 10px;font:600 .68rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}', '.vision-camera-card-v11{padding:12px}.vision-camera-head-v11 b{color:#8ff0cc}',label='camera pseudo head removal')
+          s=rep(s,'.vision-stage-v11{position:relative;width:100%;aspect-ratio:3/4;', '.vision-stage-v11{position:relative;width:100%;aspect-ratio:4/3;',label='desktop camera aspect')
+          s=rep(s,'.vision-stage-v11 video{object-fit:cover;transform:scaleX(-1);background:', '.vision-stage-v11 video{object-fit:cover;transform:none;background:',label='mirror base')
+          s=rep(s,'.vision-stage-v11 [data-vision-overlay]{z-index:3;pointer-events:none}', '.is-mirrored .vision-stage-v11 video{transform:scaleX(-1)}.vision-stage-v11 [data-vision-overlay]{z-index:3;pointer-events:none}',label='mirror class')
+          s=rep(s,'.vision-stage-watermark-v11 b{font-weight:500;opacity:.7}', '.vision-stage-watermark-v11 b{font-weight:500;opacity:.7}.vision-face-state-v11{position:absolute;z-index:6;left:16px;bottom:14px;padding:7px 10px;border-radius:999px;background:rgba(9,12,18,.62);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(12px);color:rgba(245,247,251,.7);font:650 .64rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em}.vision-face-state-v11.is-active{color:#b8ffe4;border-color:rgba(91,215,168,.42);background:rgba(20,72,54,.48);box-shadow:0 0 22px rgba(91,215,168,.12)}',label='face state style')
+          s=rep(s,'.vision-3d-card-v11 canvas{display:block;width:100%;aspect-ratio:3/4;', '.vision-3d-card-v11 canvas{display:block;width:100%;aspect-ratio:4/3;',label='desktop diagnostic aspect')
+          old='@media(max-width:900px){.vision-header-v11{grid-template-columns:1fr;gap:24px}.vision-header-v11 h1{font-size:clamp(4.5rem,18vw,8rem)}.vision-command-v11{position:relative;top:auto;grid-template-columns:1fr}.vision-status-v11{justify-self:start}.vision-toggles-v11{order:3}.vision-grid-v11{grid-template-columns:repeat(2,minmax(0,1fr))}.vision-side-v11{display:contents}.vision-actions-head-v11{grid-template-columns:1fr}.vision-actions-head-v11 p{justify-self:start}.vision-action-grid-v11{grid-template-columns:repeat(2,minmax(0,1fr))}}'
+          new='@media(max-width:900px){.vision-header-v11{grid-template-columns:1fr;gap:24px}.vision-header-v11 h1{font-size:clamp(4.5rem,18vw,8rem)}.vision-command-v11{position:relative;top:auto;grid-template-columns:1fr}.vision-status-v11{justify-self:start}.vision-toggles-v11{order:3}.vision-grid-v11,.is-3d-open .vision-grid-v11{grid-template-columns:1fr;gap:7px}.vision-side-v11{display:contents}.vision-actions-head-v11{grid-template-columns:1fr}.vision-actions-head-v11 p{justify-self:start}.vision-action-grid-v11{grid-template-columns:repeat(2,minmax(0,1fr))}}'
+          s=rep(s,old,new,label='tablet stack')
+          old='@media(max-width:620px){.vision-page-v11{padding-top:108px}.vision-header-v11{margin-bottom:24px}.vision-header-copy-v11 p{font-size:1rem}.vision-command-v11{padding:10px;border-radius:22px}.vision-command-v11 button,.vision-toggle-v11 span{min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}.vision-command-main-v11{display:grid;grid-template-columns:1fr 1fr}.vision-command-main-v11 .vision-primary-v11{grid-column:1/-1}.vision-toggles-v11{gap:5px}.vision-toggle-v11 span{padding:8px 10px;font-size:.68rem}.vision-camera-card-v11,.vision-3d-card-v11{border-radius:24px}.vision-camera-card-v11,.vision-3d-card-v11{padding:8px}.vision-stage-v11{border-radius:18px}.vision-stage-watermark-v11{left:10px;top:10px}.vision-stage-watermark-v11 b{display:none}.vision-card-head-v11,.vision-camera-card-v11::before{font-size:.56rem;letter-spacing:.03em}.vision-side-v11{display:contents}.vision-3d-card-v11 canvas{aspect-ratio:3/4}.vision-hud-v11{grid-template-columns:repeat(3,minmax(0,1fr))}.vision-metric-v11{min-height:68px;padding:11px}.vision-actions-v11{margin-top:56px}.vision-action-grid-v11{grid-template-columns:1fr}.vision-action-v11{min-height:105px}.vision-action-v11 p{margin-top:18px}}'
+          new='@media(max-width:620px){.vision-page-v11{padding-top:108px}.vision-header-v11{margin-bottom:24px}.vision-header-copy-v11 p{font-size:1rem}.vision-command-v11{padding:10px;border-radius:22px;margin-bottom:8px}.vision-command-v11 button,.vision-toggle-v11 span{min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}.vision-command-main-v11{display:grid;grid-template-columns:1fr 1fr}.vision-command-main-v11 .vision-primary-v11{grid-column:1/-1}.vision-toggles-v11{gap:5px}.vision-toggle-v11 span{padding:8px 10px;font-size:.68rem}.vision-grid-v11,.is-3d-open .vision-grid-v11{grid-template-columns:1fr;gap:6px}.vision-camera-card-v11,.vision-3d-card-v11{border-radius:24px;padding:8px}.vision-stage-v11{aspect-ratio:3/4;border-radius:18px}.vision-stage-watermark-v11{left:10px;top:10px}.vision-stage-watermark-v11 b{display:none}.vision-face-state-v11{left:10px;bottom:10px;font-size:.58rem;padding:6px 8px}.vision-card-head-v11{font-size:.56rem;letter-spacing:.03em}.vision-side-v11{display:contents}.vision-3d-card-v11 canvas{aspect-ratio:3/4}.vision-hud-v11{grid-template-columns:repeat(3,minmax(0,1fr))}.vision-metric-v11{min-height:68px;padding:11px}.vision-actions-v11{margin-top:56px}.vision-action-grid-v11{grid-template-columns:1fr}.vision-action-v11{min-height:105px}.vision-action-v11 p{margin-top:18px}}'
+          s=rep(s,old,new,label='mobile stack')
+          p.write_text(s)
+
+          p=Path('.github/scripts/design-journal-vision-model-preflight.mjs')
+          s=p.read_text()
+          start=s.index("const geometry = await mobile.evaluate(() => {")
+          end=s.index("await mobileContext.close();",start)+len("await mobileContext.close();")
+          block=r'''const defaultDiagnosticHidden = await mobile.locator('.vision-3d-card-v11').getAttribute('hidden') !== null;
+          expect(defaultDiagnosticHidden, 'Vision diagnostic 3D must be secondary and hidden by default');
+          const geometryBase = await mobile.evaluate(() => {
+            const startRect = document.querySelector('[data-start]')?.getBoundingClientRect();
+            const cameraStage = document.querySelector('.vision-stage-v11')?.getBoundingClientRect();
+            const box = rect => rect ? ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }) : null;
+            return {
+              innerWidth, innerHeight, scrollWidth: document.documentElement.scrollWidth, title: document.title,
+              current: document.querySelector('[data-nav="vision"]')?.getAttribute('aria-current') || '',
+              startVisible: !!document.querySelector('[data-start]')?.getClientRects().length,
+              startInViewport: !!startRect && startRect.top >= 0 && startRect.bottom <= innerHeight,
+              cameraStage: box(cameraStage),
+              touchTargets: [...document.querySelectorAll('.vision-command-v11 button,.vision-toggle-v11 span')].map(node => { const rect = node.getBoundingClientRect(); return { label: node.textContent?.trim() || '', width: rect.width, height: rect.height }; }),
+              projectedCenter: window.HJVisionLab?.projectFramePoint?.({ x: .5, y: .5 }, 1280, 720, 300, 400, true),
+              projectedLeft: window.HJVisionLab?.projectFramePoint?.({ x: 0, y: .5 }, 1280, 720, 300, 400, true),
+              projectedRight: window.HJVisionLab?.projectFramePoint?.({ x: 1, y: .5 }, 1280, 720, 300, 400, true)
+            };
+          });
+          expect(geometryBase.scrollWidth <= geometryBase.innerWidth + 1, `Vision mobile horizontal overflow: ${JSON.stringify(geometryBase)}`);
+          expect(geometryBase.title === 'Vision Lab. — HJ', `Vision mobile title drift: ${geometryBase.title}`);
+          expect(geometryBase.current === 'page', `Vision mobile nav aria-current drift: ${geometryBase.current}`);
+          expect(geometryBase.startVisible, 'Vision mobile Start camera action is not visible');
+          expect(geometryBase.startInViewport, `Vision mobile Start camera action must remain inside the first 844px viewport: ${JSON.stringify(geometryBase)}`);
+          const portraitRatio = 4 / 3;
+          expect(geometryBase.cameraStage && Math.abs(geometryBase.cameraStage.height / geometryBase.cameraStage.width - portraitRatio) < 0.035, `Vision mobile camera stage must be 3:4 portrait: ${JSON.stringify(geometryBase.cameraStage)}`);
+          const undersized = geometryBase.touchTargets.filter(({ width, height }) => width < 44 || height < 44);
+          expect(undersized.length === 0, `Vision mobile command touch targets must be at least 44x44 CSS px: ${JSON.stringify(undersized)}`);
+          expect(Math.abs(geometryBase.projectedCenter.x - 150) < .01 && Math.abs(geometryBase.projectedCenter.y - 200) < .01, `object-fit cover projection center drift: ${JSON.stringify(geometryBase)}`);
+          expect(geometryBase.projectedLeft.x > 300 && geometryBase.projectedRight.x < 0, `portrait crop projection must account for cropped source columns: ${JSON.stringify(geometryBase)}`);
+          await mkdir('.artifacts/design-journal', { recursive: true });
+          await mobile.screenshot({ path: '.artifacts/design-journal/vision-mobile.png', fullPage: true });
+          await mobile.evaluate(() => { const input = document.querySelector('[data-vt="view"]'); input.checked = true; input.dispatchEvent(new Event('change', { bubbles: true })); });
+          await mobile.waitForTimeout(80);
+          const stacked = await mobile.evaluate(() => {
+            const cameraCard = document.querySelector('.vision-camera-card-v11')?.getBoundingClientRect();
+            const threeCard = document.querySelector('.vision-3d-card-v11')?.getBoundingClientRect();
+            const threeStage = document.querySelector('[data-vision-3d]')?.getBoundingClientRect();
+            const box = rect => rect ? ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }) : null;
+            return { cameraCard: box(cameraCard), threeCard: box(threeCard), threeStage: box(threeStage), scrollWidth: document.documentElement.scrollWidth, innerWidth };
+          });
+          expect(stacked.cameraCard && stacked.threeCard && stacked.threeStage, `Vision stacked diagnostic surfaces must be measurable: ${JSON.stringify(stacked)}`);
+          expect(stacked.cameraCard.top < stacked.threeCard.top, `Vision mobile must stack camera above diagnostic 3D: ${JSON.stringify(stacked)}`);
+          expect(Math.abs(stacked.cameraCard.left - stacked.threeCard.left) <= 2 && Math.abs(stacked.cameraCard.width - stacked.threeCard.width) <= 2, `Vision stacked cards must align: ${JSON.stringify(stacked)}`);
+          expect(stacked.threeCard.top - stacked.cameraCard.bottom <= 10, `Vision stacked cards should remain tightly grouped: ${JSON.stringify(stacked)}`);
+          expect(stacked.scrollWidth <= stacked.innerWidth + 1, `Vision stacked mobile overflow: ${JSON.stringify(stacked)}`);
+          await mobile.screenshot({ path: '.artifacts/design-journal/vision-mobile-diagnostic.png', fullPage: true });
+          await mobileContext.close();'''
+          s=s[:start]+block+s[end:]
+          s=rep(s,"realHumanFixture: REAL_FACE_IMAGE","realHumanFixture: REAL_FACE_IMAGE,\n      tessellationEdges: vision.FaceLandmarker.FACE_LANDMARKS_TESSELATION?.length ?? 0",label='tessellation count')
+          s=rep(s,"expect(preflight.realHumanMatrices > 0, `Real-person face should produce a transformation matrix: ${JSON.stringify(preflight)}`);","expect(preflight.realHumanMatrices > 0, `Real-person face should produce a transformation matrix: ${JSON.stringify(preflight)}`);\nexpect(preflight.tessellationEdges > 1000, `MediaPipe face tessellation topology is unavailable: ${JSON.stringify(preflight)}`);\nconst productSource = await page.evaluate(() => fetch('./journal-v11-vision.js', { cache: 'no-store' }).then(r => r.text()));\nexpect(productSource.includes('FACE_LANDMARKS_TESSELATION'), 'Vision product overlay must use MediaPipe face tessellation');\nexpect(productSource.includes('function framePoint('), 'Vision product overlay must include object-fit/mirror projection correction');",label='product mesh assertions')
+          p.write_text(s)
+          PY
+          git diff --check
+          node --check site/journal-v11-vision.js
+          node --check .github/scripts/design-journal-vision-model-preflight.mjs
+      - name: Commit product changes and remove one-shot workflow
+        shell: bash
+        run: |
+          rm .github/workflows/vision-face-mesh-overhaul-once.yml
+          git config user.name hoonex
+          git config user.email 163626004+hoonex@users.noreply.github.com
+          git add site/journal-v11-vision.js site/journal-v11-vision.css .github/scripts/design-journal-vision-model-preflight.mjs .github/workflows/vision-face-mesh-overhaul-once.yml
+          git commit -m "feat: overlay aligned face mesh on live camera"
+          git push origin HEAD:feat/design-journal-liquid-glass-20260827
