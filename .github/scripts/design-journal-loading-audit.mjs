@@ -43,7 +43,10 @@ await visit('#/lab/vision','[data-vision-lab]',['journal-v11-vision.js','journal
   const diagnostic=await page.evaluate(()=>window.HJVisionLab?.injectDiagnosticFrame?.()); expect(diagnostic===true,'Vision diagnostic geometry hook failed');
   await page.waitForFunction(()=>document.querySelector('[data-vm="points"] strong')?.textContent==='499');
   expect((await page.locator('[data-vm="backend"] strong').textContent()||'').trim()==='DIAGNOSTIC','Vision synthetic evidence must be visibly labeled DIAGNOSTIC');
-  const state=await page.evaluate(()=>window.HJVisionLab?.state?.()); expect(state?.hands&&state?.face&&state?.view,`Vision default state drift: ${JSON.stringify(state)}`);
+  const state=await page.evaluate(()=>window.HJVisionLab?.state?.());
+  expect(state?.hands===true&&state?.face===true&&state?.view===false,`Vision camera-first default state drift: ${JSON.stringify(state)}`);
+  expect(await page.locator('.vision-3d-card-v11').getAttribute('hidden')!==null,'Vision diagnostic 3D must remain hidden by default');
+  expect(await page.locator('.vision-camera-card-v11').isVisible(),'Vision camera / face-mesh surface must remain the primary visible surface');
   await assertA11y(page,'Vision diagnostic');
   await mkdir('.artifacts/design-journal',{recursive:true});
   await page.screenshot({path:'.artifacts/design-journal/vision-diagnostic.png',fullPage:true});
