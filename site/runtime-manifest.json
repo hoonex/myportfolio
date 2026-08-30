@@ -6,100 +6,15 @@
     "total_css": 85000
   },
   "core": {
-    "styles": [
-      "styles.css",
-      "journal-v2.css",
-      "journal-v3-refraction.css",
-      "journal-v4-jelly.css",
-      "journal-v5-experiments.css",
-      "journal-v6-studio.css",
-      "journal-v6-compat.css",
-      "journal-v8-spatial.css"
-    ],
-    "scripts": [
-      "app.js",
-      "journal-editorial-core.js",
-      "journal-runtime.js",
-      "journal-spatial-index.js",
-      "journal-v6-studio.js",
-      "journal-route-loader.js"
-    ]
+    "styles": ["styles.css","journal-v2.css","journal-v3-refraction.css","journal-v4-jelly.css","journal-v5-experiments.css","journal-v6-studio.css","journal-v6-compat.css","journal-v8-spatial.css"],
+    "scripts": ["app.js","journal-editorial-core.js","journal-runtime.js","journal-spatial-index.js","journal-v6-studio.js","journal-route-loader.js"]
   },
   "routes": [
-    {
-      "id": "editorial-full",
-      "paths": [
-        "/lab",
-        "/post/glass",
-        "/post/sloar",
-        "/post/motion"
-      ],
-      "styles": [],
-      "scripts": [
-        "journal-v2.js"
-      ]
-    },
-    {
-      "id": "glass",
-      "paths": [
-        "/lab",
-        "/post/glass"
-      ],
-      "styles": [],
-      "scripts": [
-        "journal-v3-refraction.js",
-        "journal-v4-jelly.js",
-        "journal-v9-locale-editorial.js"
-      ]
-    },
-    {
-      "id": "article-labs",
-      "paths": [
-        "/post/sloar",
-        "/post/motion"
-      ],
-      "styles": [],
-      "scripts": [
-        "journal-v5-experiments.js"
-      ]
-    },
-    {
-      "id": "spatial",
-      "paths": [
-        "/post/spatial"
-      ],
-      "styles": [],
-      "scripts": [
-        "journal-v8-spatial.js"
-      ]
-    },
-    {
-      "id": "vision",
-      "paths": [
-        "/lab/vision"
-      ],
-      "styles": [
-        "journal-v11-vision-f2-20260830.css"
-      ],
-      "scripts": [
-        "journal-v11-vision-f2-20260830.js",
-        "journal-v12-vision-privacy-f2-20260830.js",
-        "vision-build-f2-20260830.js"
-      ]
-    },
-    {
-      "id": "article-polish",
-      "paths": [
-        "/post/glass",
-        "/post/sloar",
-        "/post/motion",
-        "/post/spatial"
-      ],
-      "styles": [],
-      "scripts": [
-        "journal-v10-editorial-naturalize.js"
-      ]
-    }
-  ],
-  "vision_build": "F2-20260830-1957"
+    {"id":"editorial-full","paths":["/lab","/post/glass","/post/sloar","/post/motion"],"styles":[],"scripts":["journal-v2.js"]},
+    {"id":"glass","paths":["/lab","/post/glass"],"styles":[],"scripts":["journal-v3-refraction.js","journal-v4-jelly.js","journal-v9-locale-editorial.js"]},
+    {"id":"article-labs","paths":["/post/sloar","/post/motion"],"styles":[],"scripts":["journal-v5-experiments.js"]},
+    {"id":"spatial","paths":["/post/spatial"],"styles":[],"scripts":["journal-v8-spatial.js"]},
+    {"id":"vision","paths":["/lab/vision"],"styles":["journal-v11-vision.css"],"scripts":["journal-v11-vision.js","journal-v12-vision-privacy.js"]},
+    {"id":"article-polish","paths":["/post/glass","/post/sloar","/post/motion","/post/spatial"],"styles":[],"scripts":["journal-v10-editorial-naturalize.js"]}
+  ]
 }
