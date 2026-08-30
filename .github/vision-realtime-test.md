@@ -3,3 +3,5 @@
 The Vision CI must prove repeated FaceLandmarker inference over a moving real-human MediaStream, not only single-image inference.
 
 Required production path: decoded video frames -> requestVideoFrameCallback (with RAF fallback) -> repeated FaceLandmarker -> production face-mesh renderer.
+
+Android compositor contract: the physical camera video is an invisible inference source. The visible camera frame and face mesh are painted into the same canvas surface, so a browser cannot display the video hardware layer while dropping only the mesh overlay layer.
