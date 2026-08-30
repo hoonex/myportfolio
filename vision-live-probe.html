@@ -34,50 +34,445 @@ video{position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:.001;pointe
 <div class="wrap">
   <div class="head">
     <div><div class="brand">Face Rate</div><div class="sub">10초 동안 얼굴 구조와 비율을 측정합니다.</div></div>
-    <div class="version">P10.2</div>
+    <div class="version">P10.3</div>
   </div>
-  <div class="actions"><button class="btn" id="start" disabled>카메라 준비 중</button><button class="btn primary" id="scanBtn" disabled>10초 측정</button><button class="btn" id="share" disabled>결과 공유</button></div>
+
+  <div class="actions">
+    <button class="btn" id="start" disabled>카메라 준비 중</button>
+    <button class="btn primary" id="scanBtn" disabled>10초 측정</button>
+    <button class="btn" id="share" disabled>결과 공유</button>
+  </div>
+
   <div class="stage"><canvas id="out"></canvas></div>
-  <section class="result"><div><div class="scoreBox"><span class="scoreMain" id="scoreNum">--</span><span class="scoreUnit">/ 100</span></div><div class="grade" id="gradeText">측정 전</div></div><div><div class="verdictLabel">Result</div><div class="verdictText" id="verdict">카메라를 켜고 10초 측정을 시작하세요.</div></div></section>
-  <section class="progressSection"><div class="progressTop"><div class="progressText" id="scanStatus">대기 중</div><div class="progressMeta"><span id="countdown">10.0초</span> · <span id="bestWindow">공유 mesh --</span></div></div><div class="progressTrack"><div class="progressBar" id="progressBar"></div></div></section>
-  <div class="metrics"><div class="metric"><span>대칭</span><b id="mSym">--</b></div><div class="metric"><span>눈 비율</span><b id="mEye">--</b></div><div class="metric"><span>얼굴형</span><b id="mFace">--</b></div><div class="metric"><span>코 중심</span><b id="mNose">--</b></div><div class="metric"><span>입 비율</span><b id="mMouth">--</b></div><div class="metric"><span>표정</span><b id="mExpr">--</b></div></div>
+
+  <section class="result">
+    <div>
+      <div class="scoreBox"><span class="scoreMain" id="scoreNum">--</span><span class="scoreUnit">/ 100</span></div>
+      <div class="grade" id="gradeText">측정 전</div>
+    </div>
+    <div>
+      <div class="verdictLabel">Result</div>
+      <div class="verdictText" id="verdict">카메라를 켜고 10초 측정을 시작하세요.</div>
+    </div>
+  </section>
+
+  <section class="progressSection">
+    <div class="progressTop"><div class="progressText" id="scanStatus">대기 중</div><div class="progressMeta"><span id="countdown">10.0초</span> · <span id="bestWindow">공유 mesh --</span></div></div>
+    <div class="progressTrack"><div class="progressBar" id="progressBar"></div></div>
+  </section>
+
+  <div class="metrics">
+    <div class="metric"><span>대칭</span><b id="mSym">--</b></div>
+    <div class="metric"><span>눈 비율</span><b id="mEye">--</b></div>
+    <div class="metric"><span>얼굴형</span><b id="mFace">--</b></div>
+    <div class="metric"><span>코 중심</span><b id="mNose">--</b></div>
+    <div class="metric"><span>입 비율</span><b id="mMouth">--</b></div>
+    <div class="metric"><span>표정</span><b id="mExpr">--</b></div>
+  </div>
+
   <div class="note">카메라 프리뷰 위 HUD에서 상태, 남은 시간, 현재 점수, 0.8초 평균을 바로 볼 수 있습니다. 황금비 1.618 하나로 점수를 만들지 않고, 눈 간격·눈폭·눈-입 거리·얼굴 세로비·광대/턱 폭·코/입 폭·중심선·좌우 대칭을 함께 봅니다. 최종 점수는 정면 프레임의 안정화 평균으로 계산하며, 찡그림·과한 눈찡김·입벌림·입술 압착 같은 표정은 blendshape로 직접 감점합니다. 90점대는 거의 모든 구조 항목과 표정이 동시에 좋아야 나옵니다.</div>
-  <details class="debug"><summary>측정 정보</summary><div class="grid"><div class="box"><div class="k">상태</div><div class="v" id="state">boot</div></div><div class="box"><div class="k">카메라</div><div class="v" id="cam">--</div></div><div class="box"><div class="k">정면 품질</div><div class="v" id="quality">--</div></div><div class="box"><div class="k">0.8초 평균</div><div class="v" id="windowScore">--</div></div><div class="box wide"><div class="k">오류</div><div class="v" id="error">none</div></div></div></details>
-  <video id="video" autoplay playsinline muted></video><canvas id="source" hidden></canvas><canvas id="infer" hidden></canvas>
+
+  <details class="debug"><summary>측정 정보</summary><div class="grid">
+    <div class="box"><div class="k">상태</div><div class="v" id="state">boot</div></div>
+    <div class="box"><div class="k">카메라</div><div class="v" id="cam">--</div></div>
+    <div class="box"><div class="k">정면 품질</div><div class="v" id="quality">--</div></div>
+    <div class="box"><div class="k">0.8초 평균</div><div class="v" id="windowScore">--</div></div>
+    <div class="box wide"><div class="k">오류</div><div class="v" id="error">none</div></div>
+  </div></details>
+
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="source" hidden></canvas>
+  <canvas id="infer" hidden></canvas>
 </div>
+
 <script type="module">
-const VERSION='1.0.1',REV='P10.2-20260831-0022',MOD=`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VERSION}/vision_bundle.mjs`,WASM=`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VERSION}/wasm`,MODEL='https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
-const $=id=>document.getElementById(id),video=$('video'),canvas=$('out'),ctx=canvas.getContext('2d',{alpha:false}),source=$('source'),sctx=source.getContext('2d',{alpha:false}),infer=$('infer'),ictx=infer.getContext('2d',{alpha:false}),startBtn=$('start'),scanBtn=$('scanBtn'),shareBtn=$('share');
-let vision,fileset,task,stream,running=false,lastDetect=0,metricSmoothed=null,renderSmoothed=null,lastMetrics=null,lastProjected=null,lastBlend={},scanActive=false,scanStart=0,best=null,finalSample=null,shareBlob=null,windowSamples=[],stableWindows=[];const scanDuration=10000,clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),set=(id,v,c='')=>{const n=$(id);n.textContent=v;n.className='v '+c},metric=(id,v,c='')=>{const n=$(id);n.textContent=v;n.className=c};
-function err(e){set('error',`${e?.name||'Error'}: ${e?.message||e}`,'bad');console.error(e)}
-function size(){const r=canvas.getBoundingClientRect(),d=Math.min(1.6,devicePixelRatio||1),w=Math.max(2,Math.round(r.width*d)),h=Math.max(2,Math.round(r.height*d));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}return{w,h}}
-function buffers(){const w=video.videoWidth,h=video.videoHeight;if(!w||!h)return false;if(source.width!==w||source.height!==h){source.width=w;source.height=h;const k=Math.min(1,720/Math.max(w,h));infer.width=Math.max(2,Math.round(w*k));infer.height=Math.max(2,Math.round(h*k));set('cam',`${w}×${h} → ${infer.width}×${infer.height}`)}return true}
-function cover(sw,sh,w,h){const z=Math.max(w/sw,h/sh),rw=sw*z,rh=sh*z;return{rw,rh,dx:(w-rw)/2,dy:(h-rh)/2}}
-function project(p,t,w){return{x:w-(t.dx+p.x*t.rw),y:t.dy+p.y*t.rh,z:p.z||0}}
-function smooth(prev,next,a=.56){if(!next)return prev;if(!prev||prev.length!==next.length)return next.map(p=>({...p}));return next.map((p,i)=>({x:prev[i].x+(p.x-prev[i].x)*a,y:prev[i].y+(p.y-prev[i].y)*a,z:prev[i].z+(p.z-prev[i].z)*a}))}
-function line(links,P,color,width){ctx.beginPath();for(const e of links||[]){const a=P[e.start??e[0]],b=P[e.end??e[1]];if(!a||!b)continue;ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y)}ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke()}
-function box(P){let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;for(const p of P){if(!p)continue;x1=Math.min(x1,p.x);y1=Math.min(y1,p.y);x2=Math.max(x2,p.x);y2=Math.max(y2,p.y)}return{x1,y1,x2,y2,w:x2-x1,h:y2-y1}}
-function blendMap(categories){const m={};for(const c of categories||[])m[c.categoryName]=c.score||0;return m}function bavg(B,names){if(!names.length)return 0;return names.reduce((a,n)=>a+(B[n]||0),0)/names.length}
-function evaluate(lm,B={}){if(!lm?.length)return null;const aspect=(source.width||infer.width||1)/(source.height||infer.height||1);if(!Number.isFinite(aspect)||aspect<=0)return null;const raw=lm.map(p=>({x:p.x*aspect,y:p.y,z:p.z||0})),avgPts=ids=>{let x=0,y=0,n=0;for(const i of ids){const p=raw[i];if(!p)continue;x+=p.x;y+=p.y;n++}return n?{x:x/n,y:y/n}:{x:0,y:0}},leftIris=lm.length>=478?avgPts([468,469,470,471,472]):avgPts([33,133]),rightIris=lm.length>=478?avgPts([473,474,475,476,477]):avgPts([362,263]),faceCenter={x:(raw[234].x+raw[454].x)/2,y:(raw[10].y+raw[152].y)/2},roll=Math.atan2(rightIris.y-leftIris.y,rightIris.x-leftIris.x),cs=Math.cos(-roll),sn=Math.sin(-roll),R=raw.map(p=>{const dx=p.x-faceCenter.x,dy=p.y-faceCenter.y;return{x:faceCenter.x+dx*cs-dy*sn,y:faceCenter.y+dx*sn+dy*cs,z:p.z}}),A=ids=>{let x=0,y=0,n=0;for(const i of ids){const p=R[i];if(!p)continue;x+=p.x;y+=p.y;n++}return n?{x:x/n,y:y/n}:{x:0,y:0}},d=(a,b)=>dist(R[a],R[b]),fw=d(234,454),fh=d(10,152);if(!Number.isFinite(fw)||!Number.isFinite(fh)||fw<.01||fh<.01)return null;const centerX=(R[234].x+R[454].x)/2,eyeL=lm.length>=478?A([468,469,470,471,472]):A([33,133]),eyeR=lm.length>=478?A([473,474,475,476,477]):A([362,263]),eyeLineY=(eyeL.y+eyeR.y)/2,mouthCenter=A([13,14,61,291]),eyeLW=d(33,133),eyeRW=d(362,263),eyeW=(eyeLW+eyeRW)/2,pupilDist=Math.hypot(eyeR.x-eyeL.x,eyeR.y-eyeL.y),innerEye=d(133,362),eyeToMouth=Math.abs(mouthCenter.y-eyeLineY),noseW=d(98,327),mouthW=d(61,291),jawW=d(172,397),mouthOpenGeom=d(13,14)/fh,noseOffset=Math.abs(R[1].x-centerX)/fw,mouthOffset=Math.abs(mouthCenter.x-centerX)/fw,cheekL=Math.abs(R[234].x-centerX),cheekR=Math.abs(R[454].x-centerX),jawL=Math.abs(R[172].x-centerX),jawR=Math.abs(R[397].x-centerX),mouthL=Math.abs(R[61].x-centerX),mouthR=Math.abs(R[291].x-centerX),eyeDiff=Math.abs(eyeLW-eyeRW)/(eyeW+.0001),asym=(Math.abs(cheekL-cheekR)/fw)*.22+(Math.abs(jawL-jawR)/fw)*.22+(Math.abs(mouthL-mouthR)/fw)*.18+eyeDiff*.26+(noseOffset+mouthOffset)*.12,gauss=(v,target,sigma,floor=18,peak=100)=>{if(!Number.isFinite(v))return floor;const z=(v-target)/sigma;return clamp(floor+(peak-floor)*Math.exp(-.5*z*z),floor,peak)},centerScore=(off,sigma=.020,floor=20)=>clamp(floor+(100-floor)*Math.exp(-.5*(off/sigma)**2),floor,100),ipdRatio=pupilDist/fw,eyeWidthRatio=eyeW/fw,intercanthalToEye=innerEye/(eyeW+.0001),eyeMouthRatio=eyeToMouth/fh,faceRatio=fh/fw,jawCheek=jawW/fw,noseRatio=noseW/fw,mouthRatio=mouthW/fw,mouthNose=mouthW/(noseW+.0001),sIpd=gauss(ipdRatio,.455,.032),sEyeWidth=gauss(eyeWidthRatio,.195,.028),sFifths=gauss(intercanthalToEye,1.00,.18),eyes=clamp(sIpd*.50+sEyeWidth*.30+sFifths*.20,18,100),sEyeMouth=gauss(eyeMouthRatio,.365,.045),sFaceRatio=gauss(faceRatio,1.36,.15),sJaw=gauss(jawCheek,.80,.085),face=clamp(sEyeMouth*.40+sFaceRatio*.36+sJaw*.24,18,100),sNoseW=gauss(noseRatio,.235,.040),sNoseCenter=centerScore(noseOffset,.019),nose=clamp(sNoseW*.47+sNoseCenter*.53,18,100),sMouthW=gauss(mouthRatio,.38,.052),sMouthNose=gauss(mouthNose,1.60,.24),sMouthCenter=centerScore(mouthOffset,.022),mouth=clamp(sMouthW*.42+sMouthNose*.33+sMouthCenter*.25,18,100),symmetry=clamp(100-asym*430,18,100),squint=bavg(B,['eyeSquintLeft','eyeSquintRight']),blink=bavg(B,['eyeBlinkLeft','eyeBlinkRight']),browDown=bavg(B,['browDownLeft','browDownRight']),noseSneer=bavg(B,['noseSneerLeft','noseSneerRight']),frown=bavg(B,['mouthFrownLeft','mouthFrownRight']),press=bavg(B,['mouthPressLeft','mouthPressRight']),stretch=bavg(B,['mouthStretchLeft','mouthStretchRight']),cheek=bavg(B,['cheekSquintLeft','cheekSquintRight']),smileL=B.mouthSmileLeft||0,smileR=B.mouthSmileRight||0,smileAsym=Math.abs(smileL-smileR),jawOpen=Math.max(B.jawOpen||0,clamp((mouthOpenGeom-.018)/.09,0,1)),pucker=B.mouthPucker||0,strain=clamp(jawOpen*.20+squint*.15+browDown*.13+noseSneer*.17+frown*.12+press*.10+stretch*.07+cheek*.05+pucker*.06+smileAsym*.08,0,1.25),expression=clamp(100-strain*82-blink*.12*100,15,100),rollDeg=Math.abs(roll*180/Math.PI),frontal=clamp(100-noseOffset*760-Math.max(0,rollDeg-2)*2.2,0,100),structureRaw=symmetry*.14+eyes*.24+face*.27+nose*.15+mouth*.20,structure=35+65/(1+Math.exp(-(structureRaw-82)/7)),expressionPenalty=(100-expression)*.27,weakest=Math.min(symmetry,eyes,face,nose,mouth);let total=structure-expressionPenalty-Math.max(0,48-weakest)*.08;total=clamp(total,18,96.5);const vals=[symmetry,eyes,face,nose,mouth,expression,frontal,total];if(!vals.every(Number.isFinite))return null;return{symmetry,eyes,face,nose,mouth,expression,frontal,total,structureRaw,structure,faceRatio,ipdRatio,eyeMouthRatio,jawCheek,noseRatio,mouthRatio,mouthNose,mouthOpen:mouthOpenGeom,rollDeg,strain,aspect}}
-function grade(s){if(s>=92)return'S';if(s>=86)return'A+';if(s>=80)return'A';if(s>=74)return'B+';if(s>=68)return'B';if(s>=60)return'C';if(s>=50)return'D';return'E'}
-function verdict(s){if(s>=88)return'꽤 잘생긴 편이다. 비율이 안정적이고 밸런스가 좋다.';if(s>=78)return'확실히 괜찮은 편이다. 약점보다 장점이 더 보인다.';if(s>=68)return'평균 이상이다. 정면에서 더 잘 나오는 타입이다.';if(s>=58)return'평균권이다. 나쁘진 않은데 강점이 아주 뚜렷하진 않다.';if(s>=48)return'평균 아래다. 비율이 조금 흐트러져 보인다.';return'점수는 낮은 편이다. 대칭이나 비율 쪽 손해가 있다.'}
-function bw(p){const a=[['대칭',p.symmetry],['눈 비율',p.eyes],['얼굴형',p.face],['코 중심',p.nose],['입 비율',p.mouth],['표정',p.expression]].sort((a,b)=>b[1]-a[1]);return{best:a[0],worst:a.at(-1)}}
-function currentWindow(now){windowSamples=windowSamples.filter(s=>now-s.t<=800);if(windowSamples.length<5)return null;const span=windowSamples.at(-1).t-windowSamples[0].t;if(span<480)return null;const keys=['symmetry','eyes','face','nose','mouth','expression','frontal','total'],parts={};for(const k of keys)parts[k]=windowSamples.reduce((a,s)=>a+s.m[k],0)/windowSamples.length;const rep=windowSamples[Math.floor(windowSamples.length/2)];return{parts,total:parts.total,frontal:parts.frontal,lm:rep.lm,projected:rep.P,t0:windowSamples[0].t,t1:windowSamples.at(-1).t}}
-function robustFinal(w,best){if(!w.length||!best)return null;const sorted=[...w].sort((a,b)=>a.total-b.total),trim=Math.floor(sorted.length*.15),kept=sorted.slice(trim,Math.max(trim+1,sorted.length-trim)),keys=['symmetry','eyes','face','nose','mouth','expression','frontal','total'],avg={};for(const k of keys)avg[k]=kept.reduce((a,s)=>a+(s.parts[k]??s[k]),0)/kept.length;return{parts:avg,total:avg.total,frontal:avg.frontal,lm:best.lm,projected:best.projected,t0:best.t0,t1:best.t1}}
-function drawPill(x,y,w,h,text,bg,fg,font=12){ctx.fillStyle=bg;ctx.beginPath();ctx.roundRect(x,y,w,h,999);ctx.fill();ctx.fillStyle=fg;ctx.font=`700 ${font}px system-ui,sans-serif`;ctx.fillText(text,x+12,y+h/2+font/2-2)}
-function drawHud(m,now,w,h){const liveScore=finalSample?finalSample.total:(m?.total??null),liveGrade=liveScore!=null?grade(liveScore):'--';let state='대기 중',stateColor='rgba(23,23,23,.72)',stateText='#fff';if(scanActive){state='측정 중';stateColor='rgba(37,99,235,.90)'}else if(finalSample){state='측정 완료';stateColor='rgba(22,132,91,.90)'}drawPill(14,14,92,32,state,stateColor,stateText,12);if(m?.frontal!=null)drawPill(112,14,82,32,`정면 ${m.frontal.toFixed(0)}`,'rgba(255,255,255,.86)','#171717',12);const boxW=Math.min(132,w*.35),boxH=76,bx=w-boxW-14,by=14;ctx.fillStyle='rgba(255,255,255,.92)';ctx.strokeStyle='rgba(0,0,0,.08)';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(bx,by,boxW,boxH,16);ctx.fill();ctx.stroke();ctx.fillStyle='#6b7280';ctx.font='700 11px system-ui,sans-serif';ctx.fillText('점수',bx+12,by+18);ctx.fillStyle='#171717';ctx.font=`800 ${Math.max(26,w/15)}px system-ui,sans-serif`;ctx.fillText(liveScore!=null?liveScore.toFixed(1):'--',bx+12,by+48);ctx.fillStyle='#2563eb';ctx.font='800 15px system-ui,sans-serif';ctx.fillText(liveGrade,bx+12,by+65);const progress=scanActive?clamp((now-scanStart)/scanDuration,0,1):(finalSample?1:0);ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.roundRect(14,58,w-28,6,999);ctx.fill();ctx.fillStyle='#2563eb';ctx.beginPath();ctx.roundRect(14,58,(w-28)*progress,6,999);ctx.fill();$('progressBar').style.width=`${progress*100}%`;const remain=scanActive?Math.max(0,(scanDuration-(now-scanStart))/1000):0,windowText=$('windowScore').textContent&&$('windowScore').textContent!=='--'?$('windowScore').textContent:'--',bottomY=h-44;drawPill(14,bottomY,100,28,scanActive?`${remain.toFixed(1)}초 남음`:(finalSample?'결과 저장됨':'10초 측정'),'rgba(0,0,0,.62)','#fff',11);const avgLabel=`0.8초 ${windowText}`,avgW=Math.min(Math.max(132,avgLabel.length*7.5),w*.55);drawPill(w-avgW-14,bottomY,avgW,28,avgLabel,'rgba(0,0,0,.62)','#fff',11)}
-function drawCamera(){const{w,h}=size();ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);if(!source.width||!source.height)return{w,h,t:null};const t=cover(source.width,source.height,w,h);ctx.save();ctx.translate(w,0);ctx.scale(-1,1);ctx.drawImage(source,t.dx,t.dy,t.rw,t.rh);ctx.restore();return{w,h,t}}
-function drawOverlay(P,m,w,h,now){const F=vision.FaceLandmarker,b=box(P),progress=scanActive?clamp((now-scanStart)/scanDuration,0,1):(finalSample?1:0);ctx.save();ctx.globalAlpha=.72;line(F.FACE_LANDMARKS_TESSELATION,P,'#75c7ff',Math.max(1,w/520));ctx.restore();ctx.strokeStyle='rgba(255,255,255,.76)';ctx.lineWidth=Math.max(1.5,w/360);ctx.strokeRect(b.x1-10,b.y1-10,b.w+20,b.h+20);if(scanActive){const sy=b.y1+b.h*progress;ctx.strokeStyle='rgba(255,255,255,.94)';ctx.lineWidth=Math.max(1.5,w/340);ctx.beginPath();ctx.moveTo(b.x1,sy);ctx.lineTo(b.x2,sy);ctx.stroke()}drawHud(m,now,w,h)}
-function updatePanels(sample,live=false){if(!sample){set('windowScore','--');return}const p=sample.parts;set('windowScore',`${sample.total.toFixed(1)} / 100`,sample.total>=70?'good':sample.total>=55?'warn':'bad');if(live&&!finalSample){$('scoreNum').textContent=sample.total.toFixed(1);$('gradeText').textContent=`임시 ${grade(sample.total)}`}metric('mSym',p.symmetry.toFixed(0),p.symmetry>=70?'good':p.symmetry>=55?'warn':'bad');metric('mEye',p.eyes.toFixed(0),p.eyes>=70?'good':p.eyes>=55?'warn':'bad');metric('mFace',p.face.toFixed(0),p.face>=70?'good':p.face>=55?'warn':'bad');metric('mNose',p.nose.toFixed(0),p.nose>=70?'good':p.nose>=55?'warn':'bad');metric('mMouth',p.mouth.toFixed(0),p.mouth>=70?'good':p.mouth>=55?'warn':'bad');metric('mExpr',p.expression.toFixed(0),p.expression>=80?'good':p.expression>=60?'warn':'bad')}
-function finalize(){const sample=robustFinal(stableWindows,best);finalSample=sample;if(!sample){set('verdict','측정값이 부족하다. 정면으로 다시 10초 측정해라.','bad');set('scanStatus','측정 실패','bad');$('progressBar').style.width='0%';shareBtn.disabled=true;shareBtn.textContent='결과 공유';return}const g=grade(sample.total),S=bw(sample.parts);$('scoreNum').textContent=sample.total.toFixed(1);$('gradeText').textContent=`${g} 등급`;set('verdict',`${verdict(sample.total)} 강점은 ${S.best[0]}(${S.best[1].toFixed(0)}), 약점은 ${S.worst[0]}(${S.worst[1].toFixed(0)})다.`,sample.total>=70?'good':sample.total>=55?'warn':'bad');set('bestWindow',`공유 mesh ${best.total.toFixed(1)}`,'good');set('scanStatus','측정 완료','good');$('countdown').textContent='완료';$('progressBar').style.width='100%';updatePanels(sample,false);shareBlob=null;shareBtn.disabled=true;shareBtn.textContent='공유 준비 중';prepareShareCard(sample)}
-function startScan(){best=null;finalSample=null;shareBlob=null;windowSamples=[];stableWindows=[];scanActive=true;scanStart=performance.now();set('scanStatus','측정 중','warn');$('countdown').textContent='10.0초';$('bestWindow').textContent='공유 mesh --';$('progressBar').style.width='0%';shareBtn.disabled=true;shareBtn.textContent='결과 공유';set('verdict','10초 동안 정면을 유지하세요. 찡그림·눈찡김·입벌림 같은 표정은 그대로 점수에 반영됩니다.');$('scoreNum').textContent='--';$('gradeText').textContent='측정 중'}
-async function buildShareCard(sample){const c=document.createElement('canvas');c.width=1080;c.height=1350;const x=c.getContext('2d');x.fillStyle='#f5f5f2';x.fillRect(0,0,c.width,c.height);x.fillStyle='#171717';x.font='700 56px system-ui,sans-serif';x.fillText('Face Rate',72,92);x.fillStyle='#888';x.font='500 24px system-ui,sans-serif';x.fillText('10초 측정 결과',72,128);x.fillStyle='#171717';x.font='800 126px system-ui,sans-serif';x.fillText(sample.total.toFixed(1),72,282);x.fillStyle='#888';x.font='500 30px system-ui,sans-serif';x.fillText('/ 100',380,278);x.fillStyle='#2563eb';x.font='800 46px system-ui,sans-serif';x.fillText(`${grade(sample.total)} 등급`,72,338);const cardX=140,cardY=395,cardW=800,cardH=535;x.fillStyle='#fafafa';x.strokeStyle='#dbdbd6';x.lineWidth=2;x.beginPath();x.roundRect(cardX,cardY,cardW,cardH,22);x.fill();x.stroke();const F=vision.FaceLandmarker,P=sample.projected;let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;for(const p of P){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)}const srcW=maxX-minX,srcH=maxY-minY,target={x:190,y:430,w:700,h:455},scale=Math.min(target.w/srcW,target.h/srcH),ox=target.x+(target.w-srcW*scale)/2-minX*scale,oy=target.y+(target.h-srcH*scale)/2-minY*scale;x.beginPath();for(const e of F.FACE_LANDMARKS_TESSELATION){const a=P[e.start??e[0]],b=P[e.end??e[1]];x.moveTo(ox+a.x*scale,oy+a.y*scale);x.lineTo(ox+b.x*scale,oy+b.y*scale)}x.strokeStyle='#4b8df3';x.lineWidth=1.75;x.stroke();const p=sample.parts,labels=[['대칭',p.symmetry],['눈',p.eyes],['얼굴형',p.face],['코',p.nose],['입',p.mouth],['표정',p.expression]],rowY=978,totalW=936,startX=72,colW=totalW/6;x.strokeStyle='#d9d9d4';x.lineWidth=2;x.beginPath();x.moveTo(72,rowY-16);x.lineTo(1008,rowY-16);x.stroke();labels.forEach((it,i)=>{const sx=startX+i*colW;if(i>0){x.beginPath();x.moveTo(sx,rowY);x.lineTo(sx,rowY+92);x.stroke()}x.fillStyle='#777';x.font='600 18px system-ui,sans-serif';x.fillText(it[0],sx+18,rowY+28);x.fillStyle='#171717';x.font='800 44px system-ui,sans-serif';x.fillText(it[1].toFixed(0),sx+18,rowY+78)});const meta=bw(sample.parts),chipY=1125;function chip(tx,x0,w0){x.fillStyle='#fff';x.strokeStyle='#ddd';x.beginPath();x.roundRect(x0,chipY,w0,48,999);x.fill();x.stroke();x.fillStyle='#171717';x.font='600 21px system-ui,sans-serif';x.fillText(tx,x0+18,chipY+31)}chip(`전체 평가  ${sample.total>=78?'괜찮은 편':'보통권'}`,72,258);chip(`강점 ${meta.best[0]} ${meta.best[1].toFixed(0)}`,344,258);chip(`약점 ${meta.worst[0]} ${meta.worst[1].toFixed(0)}`,616,320);x.fillStyle='#a1a1a1';x.font='500 21px system-ui,sans-serif';x.fillText('10초 측정 · 최고 안정화 구간 face mesh',72,1280);return await new Promise(res=>c.toBlob(res,'image/png'))}
-async function prepareShareCard(sample){try{const blob=await buildShareCard(sample);if(!blob)throw new Error('공유 이미지 생성 실패');if(finalSample!==sample)return;shareBlob=blob;shareBtn.disabled=false;shareBtn.textContent='결과 공유'}catch(e){err(e);if(finalSample===sample){shareBlob=null;shareBtn.disabled=false;shareBtn.textContent='텍스트 공유'}}}
-function fallbackDownload(file,text){if(shareBlob){const url=URL.createObjectURL(shareBlob),a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}navigator.clipboard?.writeText(text).catch(()=>{});shareBtn.textContent=shareBlob?'이미지 저장됨':'결과 복사됨';setTimeout(()=>shareBtn.textContent=shareBlob?'결과 공유':'텍스트 공유',1400)}
-function shareResult(){if(!finalSample)return;const text=`Face Rate ${finalSample.total.toFixed(1)}/100 · ${grade(finalSample.total)}\n${$('verdict').textContent}\n${location.href}`;if(!shareBlob){try{if(navigator.share){navigator.share({title:'FACE RATE RESULT',text,url:location.href}).catch(e=>{if(e?.name!=='AbortError')navigator.clipboard?.writeText(text).catch(()=>{})});return}}catch(e){}navigator.clipboard?.writeText(text).catch(()=>{});shareBtn.textContent='결과 복사됨';setTimeout(()=>shareBtn.textContent='텍스트 공유',1400);return}const file=new File([shareBlob],`face-rate-${Math.round(finalSample.total)}.png`,{type:'image/png'});try{if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){navigator.share({title:'FACE RATE RESULT',text,files:[file]}).catch(e=>{if(e?.name!=='AbortError')fallbackDownload(file,text)});return}}catch(e){}fallbackDownload(file,text)}
-async function init(){try{set('state','loading model');const mod=await import(MOD);vision=mod;fileset=await vision.FilesetResolver.forVisionTasks(WASM);task=await vision.FaceLandmarker.createFromOptions(fileset,{baseOptions:{modelAssetPath:MODEL},runningMode:'IMAGE',numFaces:1,minFaceDetectionConfidence:.62,minFacePresenceConfidence:.62,minTrackingConfidence:.62,outputFaceBlendshapes:true});set('state','ready','good');startBtn.disabled=false;startBtn.textContent='카메라 켜기'}catch(e){err(e);set('state','model error','bad')}}
-function tick(now){requestAnimationFrame(tick);const{w,h,t}=drawCamera();if(!running||!t||video.readyState<2||!task){drawHud(lastMetrics,now,w,h);return}if(now-lastDetect>110&&buffers()){lastDetect=now;try{sctx.drawImage(video,0,0,source.width,source.height);ictx.drawImage(source,0,0,infer.width,infer.height);const res=task.detect(infer),face=res?.faceLandmarks?.[0]||null;lastBlend=blendMap(res?.faceBlendshapes?.[0]?.categories||[]);metricSmoothed=smooth(metricSmoothed,face,.42);renderSmoothed=smooth(renderSmoothed,face,.82);if(metricSmoothed?.length&&renderSmoothed?.length){lastMetrics=evaluate(metricSmoothed,lastBlend);const P=renderSmoothed.map(p=>project(p,t,w));lastProjected=P;if(lastMetrics){const qc=lastMetrics.frontal>=75?'good':lastMetrics.frontal>=55?'warn':'bad';set('quality',`${lastMetrics.frontal.toFixed(0)} · 표정 ${lastMetrics.expression.toFixed(0)} · raw ${lastMetrics.structureRaw.toFixed(1)} · strain ${lastMetrics.strain.toFixed(2)}`,qc);if(lastMetrics.frontal>=84)windowSamples.push({t:now,m:lastMetrics,lm:metricSmoothed.map(p=>({...p})),P:P.map(p=>({...p}))});const win=currentWindow(now);if(win){updatePanels(win,true);if(scanActive&&win.frontal>=84){stableWindows.push({...win});if(!best||win.total>best.total)best={...win}}}}}}catch(e){err(e)}}if(lastProjected&&lastMetrics)drawOverlay(lastProjected,lastMetrics,w,h,now);else drawHud(lastMetrics,now,w,h);if(scanActive){const remain=Math.max(0,scanDuration-(now-scanStart));set('scanStatus','측정 중','warn');$('countdown').textContent=`${(remain/1000).toFixed(1)}초`;if(best)set('bestWindow',`공유 mesh ${best.total.toFixed(1)}`,'good');if(remain<=0){scanActive=false;finalize()}}}
-startBtn.addEventListener('click',async()=>{try{startBtn.disabled=true;set('state','requesting camera');stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'user'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30,max:30}}});video.srcObject=stream;await video.play();running=true;buffers();set('state','live','good');startBtn.textContent='카메라 켜짐';scanBtn.disabled=false}catch(e){startBtn.disabled=false;err(e);set('state','camera error','bad')}});scanBtn.addEventListener('click',startScan);shareBtn.addEventListener('click',shareResult);addEventListener('beforeunload',()=>stream?.getTracks().forEach(t=>t.stop()));init();requestAnimationFrame(tick);
+const VERSION='1.0.1';
+const REV='P10.3-20260831-0013';
+const MOD=`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VERSION}/vision_bundle.mjs`;
+const WASM=`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VERSION}/wasm`;
+const MODEL='https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+
+const $=id=>document.getElementById(id);
+const video=$('video'), canvas=$('out'), ctx=canvas.getContext('2d',{alpha:false});
+const source=$('source'), sctx=source.getContext('2d',{alpha:false});
+const infer=$('infer'), ictx=infer.getContext('2d',{alpha:false});
+const startBtn=$('start'), scanBtn=$('scanBtn'), shareBtn=$('share');
+
+let vision, fileset, task, stream;
+let running=false, lastDetect=0, metricSmoothed=null, renderSmoothed=null, lastMetrics=null, lastProjected=null, lastBlend={};
+let scanActive=false, scanStart=0, best=null, finalSample=null, shareBlob=null, windowSamples=[], stableWindows=[];
+const scanDuration=10000;
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const set=(id,v,c='')=>{const n=$(id); n.textContent=v; n.className='v '+c;};
+const metric=(id,v,c='')=>{const n=$(id); n.textContent=v; n.className=c;};
+function err(e){set('error',`${e?.name||'Error'}: ${e?.message||e}`,'bad'); console.error(e)}
+function size(){const r=canvas.getBoundingClientRect(), d=Math.min(1.6,devicePixelRatio||1), w=Math.max(2,Math.round(r.width*d)), h=Math.max(2,Math.round(r.height*d)); if(canvas.width!==w||canvas.height!==h){canvas.width=w; canvas.height=h} return {w,h};}
+function buffers(){const w=video.videoWidth,h=video.videoHeight; if(!w||!h) return false; if(source.width!==w||source.height!==h){source.width=w; source.height=h; const k=Math.min(1,720/Math.max(w,h)); infer.width=Math.max(2,Math.round(w*k)); infer.height=Math.max(2,Math.round(h*k)); set('cam',`${w}×${h} → ${infer.width}×${infer.height}`);} return true;}
+function cover(sw,sh,w,h){const z=Math.max(w/sw,h/sh), rw=sw*z, rh=sh*z; return {rw,rh,dx:(w-rw)/2,dy:(h-rh)/2};}
+function project(p,t,w){return{x:w-(t.dx+p.x*t.rw), y:t.dy+p.y*t.rh, z:p.z||0};}
+function smooth(prev,next,a=.56){if(!next) return prev; if(!prev||prev.length!==next.length) return next.map(p=>({...p})); return next.map((p,i)=>({x:prev[i].x+(p.x-prev[i].x)*a,y:prev[i].y+(p.y-prev[i].y)*a,z:prev[i].z+(p.z-prev[i].z)*a}));}
+function line(links,P,color,width){ctx.beginPath(); for(const e of links||[]){const a=P[e.start??e[0]], b=P[e.end??e[1]]; if(!a||!b) continue; ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y)} ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.stroke();}
+function box(P){let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9; for(const p of P){if(!p) continue; x1=Math.min(x1,p.x); y1=Math.min(y1,p.y); x2=Math.max(x2,p.x); y2=Math.max(y2,p.y)} return{x1,y1,x2,y2,w:x2-x1,h:y2-y1};}
+
+function blendMap(categories){
+  const m={};
+  for(const c of categories||[]) m[c.categoryName]=c.score||0;
+  return m;
+}
+function bavg(B,names){if(!names.length)return 0;return names.reduce((a,n)=>a+(B[n]||0),0)/names.length}
+function evaluate(lm,B={}){
+  if(!lm?.length) return null;
+  const aspect=(source.width||infer.width||1)/(source.height||infer.height||1);
+  if(!Number.isFinite(aspect)||aspect<=0) return null;
+
+  const raw=lm.map(p=>({x:p.x*aspect,y:p.y,z:p.z||0}));
+  const avgPts=ids=>{let x=0,y=0,n=0;for(const i of ids){const p=raw[i];if(!p)continue;x+=p.x;y+=p.y;n++}return n?{x:x/n,y:y/n}:{x:0,y:0}};
+  const leftIris=lm.length>=478?avgPts([468,469,470,471,472]):avgPts([33,133]);
+  const rightIris=lm.length>=478?avgPts([473,474,475,476,477]):avgPts([362,263]);
+  const faceCenter={x:(raw[234].x+raw[454].x)/2,y:(raw[10].y+raw[152].y)/2};
+  const roll=Math.atan2(rightIris.y-leftIris.y,rightIris.x-leftIris.x);
+  const cs=Math.cos(-roll),sn=Math.sin(-roll);
+  const R=raw.map(p=>{const dx=p.x-faceCenter.x,dy=p.y-faceCenter.y;return{x:faceCenter.x+dx*cs-dy*sn,y:faceCenter.y+dx*sn+dy*cs,z:p.z}});
+  const A=ids=>{let x=0,y=0,n=0;for(const i of ids){const p=R[i];if(!p)continue;x+=p.x;y+=p.y;n++}return n?{x:x/n,y:y/n}:{x:0,y:0}};
+  const d=(a,b)=>dist(R[a],R[b]);
+
+  const fw=d(234,454),fh=d(10,152);
+  if(!Number.isFinite(fw)||!Number.isFinite(fh)||fw<.01||fh<.01) return null;
+  const centerX=(R[234].x+R[454].x)/2;
+  const eyeL=lm.length>=478?A([468,469,470,471,472]):A([33,133]);
+  const eyeR=lm.length>=478?A([473,474,475,476,477]):A([362,263]);
+  const eyeLineY=(eyeL.y+eyeR.y)/2;
+  const mouthCenter=A([13,14,61,291]);
+  const eyeLW=d(33,133),eyeRW=d(362,263),eyeW=(eyeLW+eyeRW)/2;
+  const pupilDist=Math.hypot(eyeR.x-eyeL.x,eyeR.y-eyeL.y);
+  const innerEye=d(133,362),eyeToMouth=Math.abs(mouthCenter.y-eyeLineY);
+  const noseW=d(98,327),mouthW=d(61,291),jawW=d(172,397);
+  const mouthOpenGeom=d(13,14)/fh;
+  const noseOffset=Math.abs(R[1].x-centerX)/fw;
+  const mouthOffset=Math.abs(mouthCenter.x-centerX)/fw;
+  const cheekL=Math.abs(R[234].x-centerX),cheekR=Math.abs(R[454].x-centerX);
+  const jawL=Math.abs(R[172].x-centerX),jawR=Math.abs(R[397].x-centerX);
+  const mouthL=Math.abs(R[61].x-centerX),mouthR=Math.abs(R[291].x-centerX);
+  const eyeDiff=Math.abs(eyeLW-eyeRW)/(eyeW+.0001);
+  const asym=(Math.abs(cheekL-cheekR)/fw)*.22+(Math.abs(jawL-jawR)/fw)*.22+(Math.abs(mouthL-mouthR)/fw)*.18+eyeDiff*.26+(noseOffset+mouthOffset)*.12;
+
+  const gauss=(v,target,sigma,floor=18,peak=100)=>{
+    if(!Number.isFinite(v)) return floor;
+    const z=(v-target)/sigma;
+    return clamp(floor+(peak-floor)*Math.exp(-.5*z*z),floor,peak);
+  };
+  const centerScore=(off,sigma=.020,floor=20)=>clamp(floor+(100-floor)*Math.exp(-.5*(off/sigma)**2),floor,100);
+
+  const ipdRatio=pupilDist/fw;
+  const eyeWidthRatio=eyeW/fw;
+  const intercanthalToEye=innerEye/(eyeW+.0001);
+  const eyeMouthRatio=eyeToMouth/fh;
+  const faceRatio=fh/fw;
+  const jawCheek=jawW/fw;
+  const noseRatio=noseW/fw;
+  const mouthRatio=mouthW/fw;
+  const mouthNose=mouthW/(noseW+.0001);
+
+  const sIpd=gauss(ipdRatio,.455,.032);
+  const sEyeWidth=gauss(eyeWidthRatio,.195,.028);
+  const sFifths=gauss(intercanthalToEye,1.00,.18);
+  const eyes=clamp(sIpd*.50+sEyeWidth*.30+sFifths*.20,18,100);
+
+  const sEyeMouth=gauss(eyeMouthRatio,.365,.045);
+  const sFaceRatio=gauss(faceRatio,1.36,.15);
+  const sJaw=gauss(jawCheek,.80,.085);
+  const face=clamp(sEyeMouth*.40+sFaceRatio*.36+sJaw*.24,18,100);
+
+  const sNoseW=gauss(noseRatio,.235,.040);
+  const sNoseCenter=centerScore(noseOffset,.019);
+  const nose=clamp(sNoseW*.47+sNoseCenter*.53,18,100);
+
+  const sMouthW=gauss(mouthRatio,.38,.052);
+  const sMouthNose=gauss(mouthNose,1.60,.24);
+  const sMouthCenter=centerScore(mouthOffset,.022);
+  const mouth=clamp(sMouthW*.42+sMouthNose*.33+sMouthCenter*.25,18,100);
+
+  const symmetry=clamp(100-asym*430,18,100);
+
+  const squint=bavg(B,['eyeSquintLeft','eyeSquintRight']);
+  const blink=bavg(B,['eyeBlinkLeft','eyeBlinkRight']);
+  const browDown=bavg(B,['browDownLeft','browDownRight']);
+  const noseSneer=bavg(B,['noseSneerLeft','noseSneerRight']);
+  const frown=bavg(B,['mouthFrownLeft','mouthFrownRight']);
+  const press=bavg(B,['mouthPressLeft','mouthPressRight']);
+  const stretch=bavg(B,['mouthStretchLeft','mouthStretchRight']);
+  const cheek=bavg(B,['cheekSquintLeft','cheekSquintRight']);
+  const smileL=B.mouthSmileLeft||0, smileR=B.mouthSmileRight||0;
+  const smileAsym=Math.abs(smileL-smileR);
+  const jawOpen=Math.max(B.jawOpen||0, clamp((mouthOpenGeom-.018)/.09,0,1));
+  const pucker=B.mouthPucker||0;
+  const strain=clamp(
+    jawOpen*.20+squint*.15+browDown*.13+noseSneer*.17+frown*.12+press*.10+stretch*.07+cheek*.05+pucker*.06+smileAsym*.08,
+    0,1.25
+  );
+  const expression=clamp(100-strain*82-blink*.12*100,15,100);
+
+  const rollDeg=Math.abs(roll*180/Math.PI);
+  const frontal=clamp(100-noseOffset*760-Math.max(0,rollDeg-2)*2.2,0,100);
+
+  const structureRaw=symmetry*.14+eyes*.24+face*.27+nose*.15+mouth*.20;
+  const structure=35+65/(1+Math.exp(-(structureRaw-82)/7));
+  const expressionPenalty=(100-expression)*.27;
+  const weakest=Math.min(symmetry,eyes,face,nose,mouth);
+  let total=structure-expressionPenalty-Math.max(0,48-weakest)*.08;
+  total=clamp(total,18,96.5);
+
+  const vals=[symmetry,eyes,face,nose,mouth,expression,frontal,total];
+  if(!vals.every(Number.isFinite)) return null;
+  return{symmetry,eyes,face,nose,mouth,expression,frontal,total,structureRaw,structure,faceRatio,ipdRatio,eyeMouthRatio,jawCheek,noseRatio,mouthRatio,mouthNose,mouthOpen:mouthOpenGeom,rollDeg,strain,aspect};
+}
+function grade(s){if(s>=92)return'S'; if(s>=86)return'A+'; if(s>=80)return'A'; if(s>=74)return'B+'; if(s>=68)return'B'; if(s>=60)return'C'; if(s>=50)return'D'; return'E';}
+function verdict(s){if(s>=88)return'꽤 잘생긴 편이다. 비율이 안정적이고 밸런스가 좋다.'; if(s>=78)return'확실히 괜찮은 편이다. 약점보다 장점이 더 보인다.'; if(s>=68)return'평균 이상이다. 정면에서 더 잘 나오는 타입이다.'; if(s>=58)return'평균권이다. 나쁘진 않은데 강점이 아주 뚜렷하진 않다.'; if(s>=48)return'평균 아래다. 비율이 조금 흐트러져 보인다.'; return'점수는 낮은 편이다. 대칭이나 비율 쪽 손해가 있다.';}
+function bw(p){const a=[['대칭',p.symmetry],['눈 비율',p.eyes],['얼굴형',p.face],['코 중심',p.nose],['입 비율',p.mouth],['표정',p.expression]].sort((a,b)=>b[1]-a[1]); return {best:a[0],worst:a.at(-1)};}
+function currentWindow(now){
+  windowSamples=windowSamples.filter(s=>now-s.t<=800);
+  if(windowSamples.length<5) return null;
+  const span=windowSamples.at(-1).t-windowSamples[0].t;
+  if(span<480) return null;
+  const keys=['symmetry','eyes','face','nose','mouth','expression','frontal','total'],parts={};
+  for(const k of keys) parts[k]=windowSamples.reduce((a,s)=>a+s.m[k],0)/windowSamples.length;
+  const rep=windowSamples[Math.floor(windowSamples.length/2)];
+  return{parts,total:parts.total,frontal:parts.frontal,lm:rep.lm,projected:rep.P,t0:windowSamples[0].t,t1:windowSamples.at(-1).t};
+}
+function robustFinal(w,best){if(!w.length||!best) return null; const sorted=[...w].sort((a,b)=>a.total-b.total); const trim=Math.floor(sorted.length*.15); const kept=sorted.slice(trim, Math.max(trim+1, sorted.length-trim)); const keys=['symmetry','eyes','face','nose','mouth','expression','frontal','total'], avg={}; for(const k of keys) avg[k]=kept.reduce((a,s)=>a+(s.parts[k]??s[k]),0)/kept.length; return {parts:avg,total:avg.total,frontal:avg.frontal,lm:best.lm,projected:best.projected,t0:best.t0,t1:best.t1};}
+
+function drawHud(m, now, w, h){
+  const liveScore=finalSample?finalSample.total:(m?.total??null);
+  const liveGrade=liveScore!=null?grade(liveScore):'--';
+  const progress=scanActive?clamp((now-scanStart)/scanDuration,0,1):(finalSample?1:0);
+  const remain=scanActive?Math.max(0,(scanDuration-(now-scanStart))/1000):0;
+  const frontal=m?.frontal!=null?m.frontal.toFixed(0):'--';
+  const windowRaw=$('windowScore').textContent||'--';
+  const windowScore=windowRaw.match(/[0-9]+(?:\.[0-9]+)?/)?.[0]||'--';
+
+  const x=14,y=14,bw=w-28,bh=68,r=16;
+  ctx.save();
+  ctx.fillStyle='rgba(12,14,18,.58)';
+  ctx.strokeStyle='rgba(255,255,255,.14)';
+  ctx.lineWidth=1;
+  ctx.beginPath();ctx.roundRect(x,y,bw,bh,r);ctx.fill();ctx.stroke();
+
+  let state='준비';
+  if(scanActive) state=`측정 중 · ${remain.toFixed(1)}초`;
+  else if(finalSample) state='측정 완료';
+
+  ctx.fillStyle='#fff';
+  ctx.font=`800 ${Math.max(13,w/42)}px system-ui,sans-serif`;
+  ctx.textBaseline='alphabetic';
+  ctx.fillText(state,x+14,y+27);
+
+  const scoreText=liveScore!=null?liveScore.toFixed(1):'--';
+  ctx.font=`800 ${Math.max(19,w/29)}px system-ui,sans-serif`;
+  const scoreW=ctx.measureText(scoreText).width;
+  ctx.fillText(scoreText,x+bw-14-scoreW,y+29);
+  ctx.font=`800 ${Math.max(11,w/48)}px system-ui,sans-serif`;
+  ctx.fillStyle='#78a9ff';
+  const gradeW=ctx.measureText(liveGrade).width;
+  ctx.fillText(liveGrade,x+bw-14-gradeW,y+49);
+
+  ctx.fillStyle='rgba(255,255,255,.72)';
+  ctx.font=`600 ${Math.max(10,w/55)}px system-ui,sans-serif`;
+  ctx.fillText(`정면 ${frontal}  ·  0.8초 평균 ${windowScore}`,x+14,y+50);
+
+  const trackX=x+14,trackY=y+bh-7,trackW=bw-28,trackH=3;
+  ctx.fillStyle='rgba(255,255,255,.20)';
+  ctx.beginPath();ctx.roundRect(trackX,trackY,trackW,trackH,999);ctx.fill();
+  if(progress>0){
+    ctx.fillStyle=finalSample?'#34c487':'#4b8cff';
+    ctx.beginPath();ctx.roundRect(trackX,trackY,trackW*progress,trackH,999);ctx.fill();
+  }
+  ctx.restore();
+  $('progressBar').style.width=`${progress*100}%`;
+}
+
+function drawCamera(){const {w,h}=size(); ctx.fillStyle='#111'; ctx.fillRect(0,0,w,h); if(!source.width||!source.height) return {w,h,t:null}; const t=cover(source.width,source.height,w,h); ctx.save(); ctx.translate(w,0); ctx.scale(-1,1); ctx.drawImage(source,t.dx,t.dy,t.rw,t.rh); ctx.restore(); return {w,h,t};}
+
+function drawOverlay(P,m,w,h,now){
+  const F=vision.FaceLandmarker, b=box(P), progress=scanActive?clamp((now-scanStart)/scanDuration,0,1):(finalSample?1:0);
+  ctx.save(); ctx.globalAlpha=.72; line(F.FACE_LANDMARKS_TESSELATION,P,'#75c7ff',Math.max(1,w/520)); ctx.restore();
+  ctx.strokeStyle='rgba(255,255,255,.76)'; ctx.lineWidth=Math.max(1.5,w/360); ctx.strokeRect(b.x1-10,b.y1-10,b.w+20,b.h+20);
+  if(scanActive){const sy=b.y1+b.h*progress; ctx.strokeStyle='rgba(255,255,255,.94)'; ctx.lineWidth=Math.max(1.5,w/340); ctx.beginPath(); ctx.moveTo(b.x1,sy); ctx.lineTo(b.x2,sy); ctx.stroke();}
+  drawHud(m,now,w,h);
+}
+
+function updatePanels(sample, live=false){
+  if(!sample){set('windowScore','--'); return;}
+  const p=sample.parts;
+  set('windowScore',`${sample.total.toFixed(1)} / 100`,sample.total>=70?'good':sample.total>=55?'warn':'bad');
+  if(live&&!finalSample){$('scoreNum').textContent=sample.total.toFixed(1); $('gradeText').textContent=`임시 ${grade(sample.total)}`;}
+  metric('mSym',p.symmetry.toFixed(0),p.symmetry>=70?'good':p.symmetry>=55?'warn':'bad');
+  metric('mEye',p.eyes.toFixed(0),p.eyes>=70?'good':p.eyes>=55?'warn':'bad');
+  metric('mFace',p.face.toFixed(0),p.face>=70?'good':p.face>=55?'warn':'bad');
+  metric('mNose',p.nose.toFixed(0),p.nose>=70?'good':p.nose>=55?'warn':'bad');
+  metric('mMouth',p.mouth.toFixed(0),p.mouth>=70?'good':p.mouth>=55?'warn':'bad');
+  metric('mExpr',p.expression.toFixed(0),p.expression>=80?'good':p.expression>=60?'warn':'bad');
+}
+
+function finalize(){
+  const sample=robustFinal(stableWindows,best); finalSample=sample;
+  if(!sample){set('verdict','측정값이 부족하다. 정면으로 다시 10초 측정해라.','bad'); set('scanStatus','측정 실패','bad'); $('progressBar').style.width='0%'; shareBtn.disabled=true; shareBtn.textContent='결과 공유'; return;}
+  const g=grade(sample.total), S=bw(sample.parts);
+  $('scoreNum').textContent=sample.total.toFixed(1); $('gradeText').textContent=`${g} 등급`;
+  set('verdict',`${verdict(sample.total)} 강점은 ${S.best[0]}(${S.best[1].toFixed(0)}), 약점은 ${S.worst[0]}(${S.worst[1].toFixed(0)})다.`,sample.total>=70?'good':sample.total>=55?'warn':'bad');
+  set('bestWindow',`공유 mesh ${best.total.toFixed(1)}`,'good'); set('scanStatus','측정 완료','good'); $('countdown').textContent='완료'; $('progressBar').style.width='100%'; updatePanels(sample,false);
+  shareBlob=null; shareBtn.disabled=true; shareBtn.textContent='공유 준비 중'; prepareShareCard(sample);
+}
+
+function startScan(){
+  best=null; finalSample=null; shareBlob=null; windowSamples=[]; stableWindows=[]; scanActive=true; scanStart=performance.now();
+  set('scanStatus','측정 중','warn'); $('countdown').textContent='10.0초'; $('bestWindow').textContent='공유 mesh --'; $('progressBar').style.width='0%'; shareBtn.disabled=true; shareBtn.textContent='결과 공유'; set('verdict','10초 동안 정면을 유지하세요. 찡그림·눈찡김·입벌림 같은 표정은 그대로 점수에 반영됩니다.'); $('scoreNum').textContent='--'; $('gradeText').textContent='측정 중';
+}
+
+async function buildShareCard(sample){
+  const c=document.createElement('canvas'); c.width=1080; c.height=1350; const x=c.getContext('2d');
+  x.fillStyle='#f5f5f2'; x.fillRect(0,0,c.width,c.height);
+  x.fillStyle='#171717'; x.font='700 56px system-ui,sans-serif'; x.fillText('Face Rate',72,92);
+  x.fillStyle='#888'; x.font='500 24px system-ui,sans-serif'; x.fillText('10초 측정 결과',72,128);
+
+  x.fillStyle='#171717'; x.font='800 126px system-ui,sans-serif'; x.fillText(sample.total.toFixed(1),72,282);
+  x.fillStyle='#888'; x.font='500 30px system-ui,sans-serif'; x.fillText('/ 100',380,278);
+  x.fillStyle='#2563eb'; x.font='800 46px system-ui,sans-serif'; x.fillText(`${grade(sample.total)} 등급`,72,338);
+
+  const cardX=140, cardY=395, cardW=800, cardH=535;
+  x.fillStyle='#fafafa'; x.strokeStyle='#dbdbd6'; x.lineWidth=2; x.beginPath(); x.roundRect(cardX,cardY,cardW,cardH,22); x.fill(); x.stroke();
+
+  const F=vision.FaceLandmarker, P=sample.projected;
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9; for(const p of P){minX=Math.min(minX,p.x); minY=Math.min(minY,p.y); maxX=Math.max(maxX,p.x); maxY=Math.max(maxY,p.y)}
+  const srcW=maxX-minX, srcH=maxY-minY, target={x:190,y:430,w:700,h:455};
+  const scale=Math.min(target.w/srcW,target.h/srcH); const ox=target.x+(target.w-srcW*scale)/2-minX*scale, oy=target.y+(target.h-srcH*scale)/2-minY*scale;
+  x.beginPath(); for(const e of F.FACE_LANDMARKS_TESSELATION){const a=P[e.start??e[0]],b=P[e.end??e[1]]; x.moveTo(ox+a.x*scale,oy+a.y*scale); x.lineTo(ox+b.x*scale,oy+b.y*scale)}
+  x.strokeStyle='#4b8df3'; x.lineWidth=1.75; x.stroke();
+
+  const p=sample.parts;
+  const labels=[['대칭',p.symmetry],['눈',p.eyes],['얼굴형',p.face],['코',p.nose],['입',p.mouth],['표정',p.expression]];
+  const rowY=978, totalW=936, startX=72, colW=totalW/6;
+  x.strokeStyle='#d9d9d4'; x.lineWidth=2; x.beginPath(); x.moveTo(72,rowY-16); x.lineTo(1008,rowY-16); x.stroke();
+  labels.forEach((it,i)=>{
+    const sx=startX+i*colW; if(i>0){x.beginPath(); x.moveTo(sx,rowY); x.lineTo(sx,rowY+92); x.stroke();}
+    x.fillStyle='#777'; x.font='600 18px system-ui,sans-serif'; x.fillText(it[0],sx+18,rowY+28);
+    x.fillStyle='#171717'; x.font='800 44px system-ui,sans-serif'; x.fillText(it[1].toFixed(0),sx+18,rowY+78);
+  });
+
+  const meta=bw(sample.parts);
+  const chipY=1125;
+  function chip(tx, x0, w0){x.fillStyle='#fff'; x.strokeStyle='#ddd'; x.beginPath(); x.roundRect(x0,chipY,w0,48,999); x.fill(); x.stroke(); x.fillStyle='#171717'; x.font='600 21px system-ui,sans-serif'; x.fillText(tx,x0+18,chipY+31);}
+  chip(`전체 평가  ${sample.total>=78?'괜찮은 편':'보통권'}`,72,258);
+  chip(`강점 ${meta.best[0]} ${meta.best[1].toFixed(0)}`,344,258);
+  chip(`약점 ${meta.worst[0]} ${meta.worst[1].toFixed(0)}`,616,320);
+
+  x.fillStyle='#a1a1a1'; x.font='500 21px system-ui,sans-serif'; x.fillText('10초 측정 · 최고 안정화 구간 face mesh',72,1280);
+  return await new Promise(res=>c.toBlob(res,'image/png'));
+}
+
+async function prepareShareCard(sample){
+  try{
+    const blob=await buildShareCard(sample);
+    if(!blob) throw new Error('공유 이미지 생성 실패');
+    if(finalSample!==sample) return;
+    shareBlob=blob;
+    shareBtn.disabled=false;
+    shareBtn.textContent='결과 공유';
+  }catch(e){
+    err(e);
+    if(finalSample===sample){shareBlob=null;shareBtn.disabled=false;shareBtn.textContent='텍스트 공유';}
+  }
+}
+function fallbackDownload(file,text){
+  if(shareBlob){
+    const url=URL.createObjectURL(shareBlob),a=document.createElement('a');
+    a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }
+  navigator.clipboard?.writeText(text).catch(()=>{});
+  shareBtn.textContent=shareBlob?'이미지 저장됨':'결과 복사됨';
+  setTimeout(()=>shareBtn.textContent=shareBlob?'결과 공유':'텍스트 공유',1400);
+}
+function shareResult(){
+  if(!finalSample) return;
+  const text=`Face Rate ${finalSample.total.toFixed(1)}/100 · ${grade(finalSample.total)}\n${$('verdict').textContent}\n${location.href}`;
+  if(!shareBlob){
+    try{
+      if(navigator.share){
+        navigator.share({title:'FACE RATE RESULT',text,url:location.href}).catch(e=>{if(e?.name!=='AbortError')navigator.clipboard?.writeText(text).catch(()=>{});});
+        return;
+      }
+    }catch(e){}
+    navigator.clipboard?.writeText(text).catch(()=>{});
+    shareBtn.textContent='결과 복사됨';setTimeout(()=>shareBtn.textContent='텍스트 공유',1400);return;
+  }
+  const file=new File([shareBlob],`face-rate-${Math.round(finalSample.total)}.png`,{type:'image/png'});
+  try{
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+      navigator.share({title:'FACE RATE RESULT',text,files:[file]}).catch(e=>{if(e?.name!=='AbortError')fallbackDownload(file,text);});
+      return;
+    }
+  }catch(e){}
+  fallbackDownload(file,text);
+}
+
+async function init(){
+  try{
+    set('state','loading model');
+    const mod=await import(MOD); vision=mod;
+    fileset=await vision.FilesetResolver.forVisionTasks(WASM);
+    task=await vision.FaceLandmarker.createFromOptions(fileset,{baseOptions:{modelAssetPath:MODEL},runningMode:'IMAGE',numFaces:1,minFaceDetectionConfidence:.62,minFacePresenceConfidence:.62,minTrackingConfidence:.62,outputFaceBlendshapes:true});
+    set('state','ready','good'); startBtn.disabled=false; startBtn.textContent='카메라 켜기';
+  }catch(e){err(e); set('state','model error','bad');}
+}
+
+function tick(now){
+  requestAnimationFrame(tick);
+  const {w,h,t}=drawCamera();
+  if(!running||!t||video.readyState<2||!task){ drawHud(lastMetrics,now,w,h); return; }
+  if(now-lastDetect>110&&buffers()){
+    lastDetect=now;
+    try{
+      sctx.drawImage(video,0,0,source.width,source.height);
+      ictx.drawImage(source,0,0,infer.width,infer.height);
+      const res=task.detect(infer);
+      const face=res?.faceLandmarks?.[0]||null;
+      lastBlend=blendMap(res?.faceBlendshapes?.[0]?.categories||[]);
+      metricSmoothed=smooth(metricSmoothed,face,.42);
+      renderSmoothed=smooth(renderSmoothed,face,.82);
+      if(metricSmoothed?.length&&renderSmoothed?.length){
+        lastMetrics=evaluate(metricSmoothed,lastBlend);
+        const P=renderSmoothed.map(p=>project(p,t,w)); lastProjected=P;
+        if(lastMetrics){
+          const qc=lastMetrics.frontal>=75?'good':lastMetrics.frontal>=55?'warn':'bad';
+          set('quality',`${lastMetrics.frontal.toFixed(0)} · 표정 ${lastMetrics.expression.toFixed(0)} · raw ${lastMetrics.structureRaw.toFixed(1)} · strain ${lastMetrics.strain.toFixed(2)}`,qc);
+          if(lastMetrics.frontal>=84) windowSamples.push({t:now,m:lastMetrics,lm:metricSmoothed.map(p=>({...p})),P:P.map(p=>({...p}))});
+          const win=currentWindow(now);
+          if(win){ updatePanels(win,true); if(scanActive&&win.frontal>=84){ stableWindows.push({...win}); if(!best||win.total>best.total) best={...win}; } }
+        }
+      }
+    }catch(e){ err(e); }
+  }
+  if(lastProjected&&lastMetrics) drawOverlay(lastProjected,lastMetrics,w,h,now); else drawHud(lastMetrics,now,w,h);
+  if(scanActive){
+    const remain=Math.max(0,scanDuration-(now-scanStart));
+    set('scanStatus','측정 중','warn'); $('countdown').textContent=`${(remain/1000).toFixed(1)}초`;
+    if(best) set('bestWindow',`공유 mesh ${best.total.toFixed(1)}`,'good');
+    if(remain<=0){ scanActive=false; finalize(); }
+  }
+}
+
+startBtn.addEventListener('click',async()=>{
+  try{
+    startBtn.disabled=true; set('state','requesting camera');
+    stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'user'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30,max:30}}});
+    video.srcObject=stream; await video.play(); running=true; buffers(); set('state','live','good'); startBtn.textContent='카메라 켜짐'; scanBtn.disabled=false;
+  }catch(e){ startBtn.disabled=false; err(e); set('state','camera error','bad'); }
+});
+scanBtn.addEventListener('click',startScan);
+shareBtn.addEventListener('click',shareResult);
+addEventListener('beforeunload',()=>stream?.getTracks().forEach(t=>t.stop()));
+init(); requestAnimationFrame(tick);
 </script>
 </body>
 </html>
