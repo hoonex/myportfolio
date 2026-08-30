@@ -2,15 +2,15 @@
 (async()=>{
   const BASE='https://raw.githubusercontent.com/hoonex/myportfolio/e7bdf82af9d1aa6e4653bc7d553b5948208739f1/vision-live-probe.html';
   let h=await (await fetch(BASE,{cache:'no-store'})).text();
-  h=h.replace('P13</div>','P14</div>')
+  h=h.replace('P13</div>','P14.1</div>')
      .replace('얼굴을 움직이며 여러 각도를 부드럽게 스캔합니다.','안내에 따라 얼굴을 천천히 움직여주세요.')
      .replace('얼굴을 움직이면 흰 점이 따라갑니다.','화면 안내에 따라 얼굴을 천천히 움직여주세요.')
      .replace("const x=cl(q.yaw/.115,-1.15,1.15)","const x=cl(-q.yaw/.115,-1.15,1.15)")
      .replaceAll('흰 점을 파란 점에 맞추세요','안내 방향으로 천천히 움직이세요');
   h=h.replace(/const steps=\[.*?\],names=\['정면','측면','반대','위','아래'\];/s,`const steps=[
  {key:'center',label:'정면',title:'정면을 바라봐 주세요',hint:'얼굴을 중앙에 맞추면 자동으로 시작합니다',hold:900,min:8,tx:0,ty:0,tol:.30},
- {key:'left',label:'오른쪽',title:'화면 오른쪽을 봐 주세요',hint:'고개만 천천히 돌리세요 · 너무 많이 돌릴 필요 없습니다',hold:720,min:6,tx:.64,ty:0,tol:.30},
- {key:'right',label:'왼쪽',title:'화면 왼쪽을 봐 주세요',hint:'반대쪽도 같은 정도로 천천히 돌려주세요',hold:720,min:6,tx:-.64,ty:0,tol:.30},
+ {key:'left',label:'오른쪽',title:'화면 오른쪽을 봐 주세요',hint:'고개만 천천히 돌리세요 · 옆면이 조금 더 보일 정도까지 천천히 돌리세요',hold:820,min:7,tx:.80,ty:0,tol:.24},
+ {key:'right',label:'왼쪽',title:'화면 왼쪽을 봐 주세요',hint:'반대쪽도 옆면이 충분히 보일 정도까지 돌려주세요',hold:820,min:7,tx:-.80,ty:0,tol:.24},
  {key:'up',label:'위',title:'턱을 살짝 들어 주세요',hint:'고개를 옆으로 돌리지 말고 위쪽만 천천히',hold:680,min:6,tx:0,ty:-.50,tol:.30},
  {key:'down',label:'아래',title:'턱을 살짝 내려 주세요',hint:'마지막입니다 · 아래쪽만 천천히',hold:680,min:6,tx:0,ty:.50,tol:.30}
 ],names=['정면','오른쪽','왼쪽','위','아래'];`);
@@ -23,8 +23,8 @@
   </style>`;
   h=h.replace('</style>',css+'</style>');
   h=h.replace('<ellipse class="ring" id="ring" pathLength="100" cx="50" cy="70" rx="44" ry="63" transform="rotate(-90 50 70)"/></svg>','<ellipse class="ring" id="ring" pathLength="100" cx="50" cy="70" rx="44" ry="63" transform="rotate(-90 50 70)"/><ellipse class="guideArc" id="guideArc" pathLength="100" cx="50" cy="70" rx="44" ry="63" transform="rotate(-90 50 70)"/></svg>');
-  const patch=`<script>(()=>{const A=[-90,0,180,-90,90],AR=['•','→','←','↑','↓'];function u(){const st=document.getElementById('step')?.textContent||'',m=st.match(/([1-5]) \/ 5/),i=m?+m[1]-1:0,a=document.getElementById('guideArc'),ar=document.getElementById('moveArrow'),fg=document.querySelector('.faceGuide'),d=document.getElementById('diagnostics')?.textContent||'';if(a)a.setAttribute('transform','rotate('+A[i]+' 50 70)');if(ar){ar.textContent=AR[i];ar.style.setProperty('--cx',((i===1?18:i===2?-18:0))+'px');ar.style.setProperty('--cy',((i===3?-14:i===4?14:0))+'px')}const mm=d.match(/yaw (-?\\d+\\.\\d+) · pitch (-?\\d+\\.\\d+)/);if(fg&&mm){const yaw=Math.max(-1,Math.min(1,-parseFloat(mm[1])/.115)),pitch=Math.max(-1,Math.min(1,parseFloat(mm[2])/.085)),w=64-Math.abs(yaw)*6.5;fg.style.width=w+'%';fg.style.transform='translate(-50%,-50%) perspective(420px) rotateY('+(-yaw*18)+'deg) rotateX('+(pitch*10)+'deg)'}}setInterval(u,80);u()})()<\/script>`;
+  const patch=`<script>(()=>{const A=[-90,0,180,-90,90],AR=['•','→','←','↑','↓'];function u(){const st=document.getElementById('step')?.textContent||'',m=st.match(/([1-5]) \/ 5/),i=m?+m[1]-1:0,a=document.getElementById('guideArc'),ar=document.getElementById('moveArrow'),fg=document.querySelector('.faceGuide'),d=document.getElementById('diagnostics')?.textContent||'';if(a)a.setAttribute('transform','rotate('+A[i]+' 50 70)');if(ar){ar.textContent=AR[i];ar.style.setProperty('--cx',((i===1?18:i===2?-18:0))+'px');ar.style.setProperty('--cy',((i===3?-14:i===4?14:0))+'px')}const mm=d.match(/yaw (-?\\d+\\.\\d+) · pitch (-?\\d+\\.\\d+)/);if(fg&&mm){const yaw=Math.max(-1,Math.min(1,-parseFloat(mm[1])/.115)),pitch=Math.max(-1,Math.min(1,parseFloat(mm[2])/.085)),w=64-Math.abs(yaw)*8.5;fg.style.width=w+'%';fg.style.transform='translate(-50%,-50%) perspective(420px) rotateY('+(-yaw*24)+'deg) rotateX('+(pitch*10)+'deg)'}}setInterval(u,80);u()})()<\/script>`;
   h=h.replace('</body>',patch+'</body>');
   document.open();document.write(h);document.close();
-})().catch(e=>{document.body.innerHTML='<pre style="white-space:pre-wrap;padding:20px;font:16px system-ui">P14 load error\n'+String(e)+'</pre>'});
+})().catch(e=>{document.body.innerHTML='<pre style="white-space:pre-wrap;padding:20px;font:16px system-ui">P14.1 load error\n'+String(e)+'</pre>'});
 </script></body></html>
