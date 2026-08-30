@@ -167,7 +167,7 @@ if "article.dataset.editorialNaturalized = 'v10';" not in v10:
 privacy = (ROOT / 'journal-v12-vision-privacy.js').read_text()
 for phrase in [
     '성능·사용량 측정 정보가 Google에 전송될 수 있습니다.',
-    'MediaPipe API performance or utilization metrics may be sent to Google.',
+    'MediaPipe API performance or usage metrics may be sent to Google.',
     '測定情報がGoogleへ送信される場合があります。',
     "route() !== '/lab/vision'"
 ]:
