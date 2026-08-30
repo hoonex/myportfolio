@@ -1,4 +1,4 @@
-name: Vision F5 realtime preflight
+name: Vision F6 realtime preflight
 on:
   pull_request:
     paths:
@@ -16,11 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Android source-space realtime proof
+      - name: Run Android direct-display realtime proof
         run: |
           npm install --no-save playwright@1.62.1
           npx playwright install --with-deps chromium
-          python3 -m http.server 4173 --directory site >/tmp/vision-f5-http.log 2>&1 &
+          python3 -m http.server 4173 --directory site >/tmp/vision-f6-http.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 20); do
@@ -31,7 +31,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: vision-f5-realtime-proof
-          path: .artifacts/vision-f5
+          name: vision-f6-realtime-proof
+          path: .artifacts/vision-f6
           if-no-files-found: warn
           retention-days: 7
