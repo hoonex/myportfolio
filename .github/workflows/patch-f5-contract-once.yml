@@ -1,0 +1,24 @@
+name: Patch F5 runtime contract once
+on:
+  push:
+    branches:
+      - feat/design-journal-liquid-glass-20260827
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/design-journal-liquid-glass-20260827
+      - name: Patch runtime contract
+        run: python3 .github/scripts/patch-f5-contract.py
+      - name: Commit contract update
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "test: include Vision F5 in route contract"
+          git push origin HEAD:feat/design-journal-liquid-glass-20260827
