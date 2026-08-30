@@ -1,0 +1,37 @@
+name: Vision F5 realtime preflight
+on:
+  pull_request:
+    paths:
+      - 'site/journal-v12-vision-f5.js'
+      - 'site/runtime-manifest.json'
+      - 'site/journal-route-loader.js'
+      - 'site/index.html'
+      - '.github/scripts/vision-f5-preflight.mjs'
+      - '.github/workflows/vision-f5-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Android source-space realtime proof
+        run: |
+          npm install --no-save playwright@1.62.1
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --directory site >/tmp/vision-f5-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            curl --fail --silent http://127.0.0.1:4173/ >/dev/null && break
+            sleep 0.25
+          done
+          JOURNAL_BASE_URL=http://127.0.0.1:4173 node .github/scripts/vision-f5-preflight.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vision-f5-realtime-proof
+          path: .artifacts/vision-f5
+          if-no-files-found: warn
+          retention-days: 7

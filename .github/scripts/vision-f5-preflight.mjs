@@ -1,0 +1,25 @@
+import { mkdir } from 'node:fs/promises';
+import { chromium } from 'playwright';
+const base=process.env.JOURNAL_BASE_URL||'http://127.0.0.1:4173',IMG='https://storage.googleapis.com/mediapipe-assets/portrait.jpg';
+const expect=(x,m)=>{if(!x)throw Error(m)};
+await mkdir('.artifacts/vision-f5',{recursive:true});
+const browser=await chromium.launch({headless:true});
+const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,userAgent:'Mozilla/5.0 (Linux; Android 16; SM-S931N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36'});
+const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.goto(`${base}/#/lab/vision`,{waitUntil:'domcontentloaded'});
+await page.waitForFunction(()=>window.HJVisionF5&&document.querySelector('[data-vision-lab]')?.dataset.f5Bound,{timeout:15000});
+const boot=await page.evaluate(()=>({version:window.HJVisionF5.version,mode:window.HJVisionF5.sources.mode,watermark:document.querySelector('.vision-stage-watermark-v11 span')?.textContent,videoOpacity:Number(getComputedStyle(document.querySelector('[data-vision-video]')).opacity),canvasDisplay:getComputedStyle(document.querySelector('[data-vision-overlay]')).display}));
+expect(boot.version==='F5-20260830-2041',`F5 revision drift: ${JSON.stringify(boot)}`);expect(boot.mode==='source-space-single-canvas',`F5 mode drift: ${JSON.stringify(boot)}`);expect(boot.watermark?.includes('F5'),`F5 watermark missing: ${JSON.stringify(boot)}`);expect(boot.videoOpacity===0&&boot.canvasDisplay!=='none',`F5 must present only the composited canvas: ${JSON.stringify(boot)}`);
+const started=await page.evaluate(async IMG=>{const r=await fetch(IMG,{cache:'no-store'});if(!r.ok)throw Error(`portrait ${r.status}`);const bmp=await createImageBitmap(await r.blob()),c=document.createElement('canvas');c.width=480;c.height=640;const x=c.getContext('2d');let phase=0;const paint=()=>{phase+=.19;x.fillStyle='#07090d';x.fillRect(0,0,c.width,c.height);const z=Math.max(c.width/bmp.width,c.height/bmp.height)*1.1,w=bmp.width*z,h=bmp.height*z,dx=(c.width-w)/2+Math.sin(phase)*20,dy=(c.height-h)/2;x.drawImage(bmp,dx,dy,w,h)};paint();const s=c.captureStream(24),timer=setInterval(paint,1000/24);window.__f5fixture={bmp,s,timer};return window.HJVisionF5.startStreamForTest(s)},IMG);
+expect(started,'F5 stream did not start');
+await page.waitForFunction(()=>{const s=window.HJVisionF5?.stats?.();return s?.faceRuns>=5&&s?.facePoints>400&&s?.sourceWidth>0},{timeout:15000});
+const samples=[];for(let i=0;i<6;i++){await page.waitForTimeout(180);samples.push(await page.evaluate(()=>window.HJVisionF5.stats()))}
+const last=samples.at(-1),centers=samples.map(s=>s.faceCenterX).filter(Number.isFinite),travel=centers.length?Math.max(...centers)-Math.min(...centers):0;
+expect(last.faceRuns>=8,`F5 FaceLandmarker did not repeat: ${JSON.stringify(samples)}`);expect(last.facePoints>400,`F5 lost face landmarks: ${JSON.stringify(last)}`);expect(last.sourceWidth>=360&&last.sourceHeight>=360,`F5 source surface invalid: ${JSON.stringify(last)}`);expect(travel>.006,`F5 face landmarks did not follow moving stream: ${JSON.stringify({travel,samples})}`);
+const pixels=await page.evaluate(()=>{const c=document.querySelector('[data-vision-overlay]'),x=c.getContext('2d'),d=x.getImageData(0,0,c.width,c.height).data;let green=0,lit=0,total=0;const x0=Math.floor(c.width*.08),x1=Math.floor(c.width*.92),y0=Math.floor(c.height*.18),y1=Math.floor(c.height*.88);for(let y=y0;y<y1;y+=1)for(let xx=x0;xx<x1;xx+=1){let i=(y*c.width+xx)*4,r=d[i],g=d[i+1],b=d[i+2],a=d[i+3];total++;if(a>240&&(r+g+b)>120)lit++;if(a>220&&g>135&&g>r*1.25&&g>b*1.08)green++}return{w:c.width,h:c.height,green,lit,total,faceState:document.querySelector('[data-face-state]')?.textContent,backend:document.querySelector('[data-vm="backend"] strong')?.textContent}});
+expect(pixels.lit>pixels.total*.35,`F5 camera pixels are not present in the visible canvas: ${JSON.stringify(pixels)}`);expect(pixels.green>500,`F5 source-space face mesh is not visibly present over the camera pixels: ${JSON.stringify(pixels)}`);expect(pixels.faceState?.includes('478'),`F5 face state missing: ${JSON.stringify(pixels)}`);expect(pixels.backend?.includes('F5'),`F5 backend HUD missing: ${JSON.stringify(pixels)}`);
+await page.locator('.vision-camera-card-v11').screenshot({path:'.artifacts/vision-f5/vision-f5-realtime.png'});
+await page.evaluate(()=>{const f=window.__f5fixture;if(f){clearInterval(f.timer);f.s.getTracks().forEach(t=>t.stop());f.bmp.close?.();delete window.__f5fixture}window.HJVisionF5.stop()});
+expect(errors.length===0,`F5 page errors: ${errors.join(' | ')}`);
+console.log(`Vision F5 source-space realtime ok: ${JSON.stringify({last,travel,pixels})}`);
+await context.close();await browser.close();
