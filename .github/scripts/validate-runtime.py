@@ -40,8 +40,9 @@ for route in routes:
         seen_paths.add(path)
 
 html = (ROOT / 'index.html').read_text()
-html_styles = re.findall(r'<link[^>]+href="\./([^"?#]+\.css)', html)
-html_scripts = re.findall(r'<script\s+src="\./([^"?#]+\.js)"', html)
+# Cache-busting query strings are deployment metadata, not part of the canonical asset filename.
+html_styles = re.findall(r'<link[^>]+href="\./([^"?#]+\.css)(?:\?[^"#]*)?"', html)
+html_scripts = re.findall(r'<script\s+src="\./([^"?#]+\.js)(?:\?[^"#]*)?"', html)
 if html_styles != core.get('styles', []): fail(f'core style order drift: html={html_styles} manifest={core.get("styles", [])}')
 if html_scripts != core.get('scripts', []): fail(f'core script order drift: html={html_scripts} manifest={core.get("scripts", [])}')
 
