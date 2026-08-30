@@ -1,0 +1,23 @@
+name: Vision F3 normalized SVG once
+on:
+  push:
+    branches: [feat/design-journal-liquid-glass-20260827]
+    paths:
+      - '.github/workflows/vision-f3-normalized-svg-once.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/design-journal-liquid-glass-20260827
+      - run: python .github/scripts/patch-vision-f3-normalized-svg.py
+      - run: |
+          rm .github/scripts/patch-vision-f3-normalized-svg.py .github/workflows/vision-f3-normalized-svg-once.yml
+          git config user.name hoonex
+          git config user.email '163626004+hoonex@users.noreply.github.com'
+          git add site/journal-v11-vision.js site/journal-v11-vision.css site/journal-route-loader.js .github/scripts/design-journal-vision-model-preflight.mjs .github/scripts/patch-vision-f3-normalized-svg.py .github/workflows/vision-f3-normalized-svg-once.yml
+          git commit -m 'fix: simplify Vision to normalized SVG overlay'
+          git push origin HEAD:feat/design-journal-liquid-glass-20260827
