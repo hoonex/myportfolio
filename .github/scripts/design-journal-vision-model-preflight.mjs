@@ -159,9 +159,9 @@ expect(productSource.includes('FACE_LANDMARKS_TESSELATION'), 'Vision product ove
 expect(productSource.includes('function framePoint('), 'Vision product overlay must include object-fit/mirror projection correction');
 expect(productSource.includes('requestVideoFrameCallback'), 'Vision realtime loop must follow decoded video frames when supported');
 expect(productSource.includes('liveStats'), 'Vision realtime loop must expose CI telemetry');
-expect(productSource.includes('preserveAspectRatio="xMidYMid slice"'), 'Vision SVG must use source-space cover projection');
-expect(productSource.includes('data-svg-root'), 'Vision SVG must expose a source-space mirror root');
-expect(productSource.includes('function drawSvgFace('), 'Vision must include an SVG mesh fallback for Android compositor variance');
+expect(productSource.includes('function drawCameraFrame('), 'Vision must composite camera pixels into the visible canvas');
+expect(productSource.includes("cameraSurface:'single-canvas-composite'"), 'Vision must expose the single-canvas Android compositor contract');
+expect(productSource.includes('F4 · CANVAS'), 'Vision visible canvas must carry an in-pixel F4 proof marker');
 expect(pageErrors.length === 0, `Vision model preflight page errors: ${pageErrors.join(' | ')}`);
 await page.waitForTimeout(450);
 await page.locator('.vision-camera-card-v11').screenshot({ path: '.artifacts/design-journal/vision-real-face-mesh.png' });
@@ -181,10 +181,10 @@ expect(streamStarted, 'Vision production stream harness did not start');
 await page.waitForFunction(() => { const s=window.HJVisionLab?.liveStats?.(); return s?.liveFrames >= 18 && s?.faceRuns >= 5 && s?.facePoints > 400; }, { timeout: 12000 });
 const liveSamples = [];
 for (let i=0;i<6;i++) { await page.waitForTimeout(180); liveSamples.push(await page.evaluate(() => window.HJVisionLab.liveStats())); }
-const surfaceContract = await page.evaluate(() => { const v=document.querySelector('[data-vision-video]'),c=document.querySelector('[data-vision-overlay]'),s=document.querySelector('[data-vision-svg]'),mesh=s?.querySelector('[data-svg-mesh]'),root=s?.querySelector('[data-svg-root]'); const vs=getComputedStyle(v),cs=getComputedStyle(c),ss=s?getComputedStyle(s):null; return { videoOpacity:Number(vs.opacity), overlayZ:Number(cs.zIndex), svgZ:Number(ss?.zIndex||0), svgActive:s?.hasAttribute('data-active')||false, svgMeshLength:mesh?.getAttribute('d')?.length||0, svgStroke:mesh?getComputedStyle(mesh).stroke:'', viewBox:s?.getAttribute('viewBox')||'', preserve:s?.getAttribute('preserveAspectRatio')||'', rootTransform:root?.getAttribute('transform')||'', cameraSurface:window.HJVisionLab?.sources?.cameraSurface||'' }; });
-expect(surfaceContract.videoOpacity === 1 && surfaceContract.cameraSurface === 'direct-video+normalized-svg', `Direct mobile camera surface is not active: ${JSON.stringify(surfaceContract)}`);
-expect(surfaceContract.svgActive && surfaceContract.svgZ > surfaceContract.overlayZ && surfaceContract.svgMeshLength > 1000 && surfaceContract.svgStroke !== 'none', `Normalized SVG face mesh is not visibly active: ${JSON.stringify(surfaceContract)}`);
-expect(surfaceContract.preserve === 'xMidYMid slice' && surfaceContract.viewBox.split(' ').length === 4 && surfaceContract.rootTransform.includes('scale(-1 1)'), `Normalized SVG source projection drift: ${JSON.stringify(surfaceContract)}`);
+const surfaceContract = await page.evaluate(() => { const v=document.querySelector('[data-vision-video]'),c=document.querySelector('[data-vision-overlay]'),s=document.querySelector('[data-vision-svg]'); const vs=getComputedStyle(v),cs=getComputedStyle(c),ss=s?getComputedStyle(s):null; const px=c?.getContext('2d')?.getImageData(Math.max(0,Math.floor(c.width/2)),Math.max(0,Math.floor(c.height/2)),1,1)?.data; return { videoOpacity:Number(vs.opacity), canvasZ:Number(cs.zIndex), centerAlpha:px?.[3]??0, svgDisplay:ss?.display||'', cameraSurface:window.HJVisionLab?.sources?.cameraSurface||'' }; });
+expect(surfaceContract.videoOpacity === 0 && surfaceContract.cameraSurface === 'single-canvas-composite', `Native Android video layer was not removed from the visible presentation path: ${JSON.stringify(surfaceContract)}`);
+expect(surfaceContract.canvasZ >= 3 && surfaceContract.centerAlpha > 240, `Single composited camera+mesh canvas is not visibly opaque: ${JSON.stringify(surfaceContract)}`);
+expect(surfaceContract.svgDisplay === 'none', `Legacy SVG overlay must stay out of the F4 presentation path: ${JSON.stringify(surfaceContract)}`);
 const liveLast = liveSamples.at(-1);
 const centers = liveSamples.map(s => s.faceCenterX).filter(Number.isFinite);
 const centerTravel = centers.length ? Math.max(...centers) - Math.min(...centers) : 0;
