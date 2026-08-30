@@ -1,0 +1,68 @@
+name: Vision F5 source-space compositor once
+on:
+  push:
+    branches: [feat/design-journal-liquid-glass-20260827]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/design-journal-liquid-glass-20260827
+      - name: Apply F5 source-space compositor
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          js_path = Path('site/journal-v11-vision.js')
+          js = js_path.read_text()
+          js = js.replace("F4-20260830-2024", "F5-20260830-2041")
+          js = js.replace("LIVE · F4", "LIVE · F5")
+          js = js.replace("F4 · CANVAS", "F5 · SOURCE")
+          js = js.replace("MediaPipe / single canvas", "MediaPipe / source-space composite")
+          js = js.replace("pointer=null,ro=null,state=", "pointer=null,ro=null,sourceCanvas=null,sourceCtx=null,sourceDrawer=null,state=")
+
+          new_block = r'''function sourceSurface(v){let vw=v?.videoWidth||0,vh=v?.videoHeight||0;if(!vw||!vh||v.readyState<2)return null;let scale=Math.min(1,960/Math.max(vw,vh)),w=Math.max(2,Math.round(vw*scale)),h=Math.max(2,Math.round(vh*scale));if(!sourceCanvas){sourceCanvas=document.createElement('canvas');sourceCtx=sourceCanvas.getContext('2d',{alpha:false})}if(sourceCanvas.width!==w||sourceCanvas.height!==h){sourceCanvas.width=w;sourceCanvas.height=h;sourceCtx=sourceCanvas.getContext('2d',{alpha:false});sourceDrawer=null}return{canvas:sourceCanvas,ctx:sourceCtx,w,h}}
+function sourceFace(ctx,a,w,h){if(!a?.length)return 0;let F=mp?.FaceLandmarker,M=F?.FACE_LANDMARKS_TESSELATION||[];ctx.save();ctx.globalCompositeOperation='source-over';ctx.lineCap='round';ctx.lineJoin='round';let drawn=0;if(mp?.DrawingUtils&&M.length){try{if(!sourceDrawer||sourceDrawer.__ctx!==ctx){sourceDrawer=new mp.DrawingUtils(ctx);sourceDrawer.__ctx=ctx}sourceDrawer.drawConnectors(a,M,{color:'#00ff78',lineWidth:Math.max(1.15,w/900)});sourceDrawer.drawConnectors(a,F.FACE_LANDMARKS_FACE_OVAL,{color:'#ffffff',lineWidth:Math.max(2.1,w/520)});sourceDrawer.drawConnectors(a,F.FACE_LANDMARKS_LEFT_EYE,{color:'#55c8ff',lineWidth:Math.max(1.8,w/620)});sourceDrawer.drawConnectors(a,F.FACE_LANDMARKS_RIGHT_EYE,{color:'#55c8ff',lineWidth:Math.max(1.8,w/620)});sourceDrawer.drawConnectors(a,F.FACE_LANDMARKS_LIPS,{color:'#ff79c9',lineWidth:Math.max(1.7,w/650)});drawn=M.length}catch(e){console.warn('[Vision] DrawingUtils source mesh fallback',e)}}if(!drawn){let P=a.map(p=>({x:p.x*w,y:p.y*h}));if(M.length){wire(ctx,M,P,'rgba(0,255,120,.98)',Math.max(1.35,w/760));drawn=M.length}else{ctx.fillStyle='#00ff78';for(let i=0;i<P.length;i+=2){ctx.beginPath();ctx.arc(P[i].x,P[i].y,Math.max(1.4,w/700),0,7);ctx.fill()}drawn=P.length}}let P=a.map(p=>({x:p.x*w,y:p.y*h}));for(let i of [1,33,263,61,291,152]){let p=P[i];if(!p)continue;ctx.fillStyle='#f5ff61';ctx.beginPath();ctx.arc(p.x,p.y,Math.max(2.3,w/420),0,7);ctx.fill()}ctx.restore();return drawn}
+function sourceHands(ctx,groups,w,h){for(let j=0;j<groups.length;j++){let a=groups[j],P=a.map(p=>({x:p.x*w,y:p.y*h}));wire(ctx,HC,P,j?'#ffa75b':'#7ca0ff',Math.max(1.8,w/620));for(let i=0;i<P.length;i++){ctx.fillStyle=i===8?'#fff':'rgba(245,247,255,.96)';ctx.beginPath();ctx.arc(P[i].x,P[i].y,Math.max(2,w/360),0,7);ctx.fill()}}}
+function blitSource(ctx,src,w,h,mirror){ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.fillStyle='#07090d';ctx.fillRect(0,0,w,h);let z=Math.max(w/src.width,h/src.height),rw=src.width*z,rh=src.height*z,dx=(w-rw)/2,dy=(h-rh)/2;if(mirror){ctx.translate(w,0);ctx.scale(-1,1);dx=(w-rw)/2}ctx.drawImage(src,dx,dy,rw,rh);ctx.restore()}
+function drawCanvasProof(ctx,w,h,active){ctx.save();ctx.globalCompositeOperation='source-over';ctx.font=`700 ${Math.max(13,Math.round(w/55))}px ui-monospace,SFMono-Regular,Menlo,monospace`;let label=`F5 · SOURCE${active?' · MESH':''}`,pad=Math.max(8,w/110),tw=ctx.measureText(label).width,bh=Math.max(30,h/24),x=w-tw-pad*2-Math.max(10,w/70),y=Math.max(12,h/55);ctx.fillStyle='rgba(5,18,14,.88)';ctx.fillRect(x,y,tw+pad*2,bh);ctx.strokeStyle='rgba(70,255,180,.95)';ctx.lineWidth=Math.max(1,w/900);ctx.strokeRect(x+.5,y+.5,tw+pad*2-1,bh-1);ctx.fillStyle='#8dffd1';ctx.textBaseline='middle';ctx.fillText(label,x+pad,y+bh/2);ctx.restore()}
+function draw2(){let c=E().overlay;if(!c)return;let x=c.getContext('2d'),w=c.width,h=c.height,v=E().video,faces=state.face?(face?.faceLandmarks||[]):[],s=sourceSurface(v);if(s){let sx=s.ctx;sx.save();sx.globalCompositeOperation='source-over';sx.globalAlpha=1;sx.fillStyle='#07090d';sx.fillRect(0,0,s.w,s.h);sx.drawImage(v,0,0,s.w,s.h);sx.restore();sourceHands(sx,hand?.landmarks||[],s.w,s.h);faces.forEach(a=>sourceFace(sx,a,s.w,s.h));blitSource(x,s.canvas,w,h,facing==='user')}else{x.fillStyle='#07090d';x.fillRect(0,0,w,h)}drawSvgFace(null,v?.videoWidth||1,v?.videoHeight||1);drawCanvasProof(x,w,h,!!faces.length)}
+function proj'''
+          js, n = re.subn(r"function drawCanvasProof\(.*?\nfunction proj", new_block, js, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit(f'failed to replace F4 compositor block: {n}')
+
+          js = js.replace("cameraSurface:'single-canvas-composite'", "cameraSurface:'source-space-single-canvas'")
+          old_diag = "renderFaceMeshDiagnostic:(landmarks,sw,sh)=>{let c=E().overlay;if(!c||!Array.isArray(landmarks))return false;let x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);let canvasOk=faceMesh(x,landmarks,c.width,c.height,sw,sh)>0,svgOk=drawSvgFace(landmarks,sw,sh);return canvasOk&&svgOk}"
+          new_diag = "renderFaceMeshDiagnostic:(landmarks,sw,sh)=>{let c=E().overlay;if(!c||!Array.isArray(landmarks))return false;let x=c.getContext('2d'),tmp=document.createElement('canvas');tmp.width=Math.max(2,sw);tmp.height=Math.max(2,sh);let sx=tmp.getContext('2d',{alpha:false});sx.fillStyle='#111820';sx.fillRect(0,0,tmp.width,tmp.height);let ok=sourceFace(sx,landmarks,tmp.width,tmp.height)>0;blitSource(x,tmp,c.width,c.height,false);drawCanvasProof(x,c.width,c.height,ok);drawSvgFace(null,sw,sh);return ok}"
+          if old_diag not in js:
+              raise SystemExit('diagnostic renderer signature drift')
+          js = js.replace(old_diag, new_diag)
+          js_path.write_text(js)
+
+          loader = Path('site/journal-route-loader.js')
+          text = loader.read_text().replace('F4-20260830-2024', 'F5-20260830-2041')
+          loader.write_text(text)
+          index = Path('site/index.html')
+          index.write_text(index.read_text().replace('F4-20260830-2024', 'F5-20260830-2041'))
+
+          test = Path('.github/scripts/design-journal-vision-model-preflight.mjs')
+          text = test.read_text()
+          text = text.replace("expect(productSource.includes('function drawCameraFrame('), 'Vision must composite camera pixels into the visible canvas');", "expect(productSource.includes('function sourceSurface(') && productSource.includes('function blitSource('), 'Vision must compose MediaPipe geometry in source-frame space before presentation crop');")
+          text = text.replace("cameraSurface:'single-canvas-composite'", "cameraSurface:'source-space-single-canvas'")
+          text = text.replace("F4 · CANVAS", "F5 · SOURCE")
+          text = text.replace("surfaceContract.cameraSurface === 'single-canvas-composite'", "surfaceContract.cameraSurface === 'source-space-single-canvas'")
+          text = text.replace('Legacy SVG overlay must stay out of the F4 presentation path', 'Legacy SVG overlay must stay out of the F5 presentation path')
+          test.write_text(text)
+          PY
+          rm .github/workflows/vision-f5-source-space-once.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add site/journal-v11-vision.js site/journal-route-loader.js site/index.html .github/scripts/design-journal-vision-model-preflight.mjs .github/workflows/vision-f5-source-space-once.yml
+          git commit -m "fix: render Vision mesh in camera source coordinates F5"
+          git push origin HEAD:feat/design-journal-liquid-glass-20260827
