@@ -1,4 +1,4 @@
-// Face-mesh UX + projection audit; direct user commit keeps PR CI runnable.
+// Face-mesh UX + projection + real-human render audit.
 import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright';
 
@@ -9,7 +9,6 @@ const MOD = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VERSION}/vis
 const WASM = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VERSION}/wasm`;
 const GESTURE_MODEL = 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task';
 const FACE_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
-// MediaPipe's own web FaceLandmarker examples use this real-person portrait fixture.
 const REAL_FACE_IMAGE = 'https://storage.googleapis.com/mediapipe-assets/portrait.jpg';
 
 const browser = await chromium.launch({ headless: true });
@@ -81,33 +80,20 @@ const preflight = await page.evaluate(async ({ MOD, WASM, GESTURE_MODEL, FACE_MO
   let face = null;
   try {
     hand = await vision.GestureRecognizer.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: GESTURE_MODEL },
-      runningMode: 'VIDEO',
-      numHands: 2,
-      minHandDetectionConfidence: 0.55,
-      minHandPresenceConfidence: 0.5,
-      minTrackingConfidence: 0.5
+      baseOptions: { modelAssetPath: GESTURE_MODEL }, runningMode: 'VIDEO', numHands: 2,
+      minHandDetectionConfidence: 0.55, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5
     });
     face = await vision.FaceLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: FACE_MODEL },
-      runningMode: 'VIDEO',
-      numFaces: 1,
-      minFaceDetectionConfidence: 0.55,
-      minFacePresenceConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-      outputFaceBlendshapes: true,
-      outputFacialTransformationMatrixes: true
+      baseOptions: { modelAssetPath: FACE_MODEL }, runningMode: 'VIDEO', numFaces: 1,
+      minFaceDetectionConfidence: 0.55, minFacePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
+      outputFaceBlendshapes: true, outputFacialTransformationMatrixes: true
     });
 
     const canvas = document.createElement('canvas');
-    canvas.width = 96;
-    canvas.height = 96;
+    canvas.width = 96; canvas.height = 96;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#eee';
-    ctx.fillRect(32, 24, 32, 48);
-
+    ctx.fillStyle = '#111'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#eee'; ctx.fillRect(32, 24, 32, 48);
     const t0 = performance.now();
     const handResult = hand.recognizeForVideo(canvas, t0);
     const faceResult = face.detectForVideo(canvas, t0 + 1);
@@ -124,19 +110,32 @@ const preflight = await page.evaluate(async ({ MOD, WASM, GESTURE_MODEL, FACE_MO
     const humanFaceResult = face.detectForVideo(humanCanvas, t0 + 2);
     bitmap.close?.();
 
+    const diagnosticPrepared = await window.HJVisionLab?.prepareFaceMeshDiagnostic?.();
+    const video = document.querySelector('[data-vision-video]');
+    if (video) video.poster = REAL_FACE_IMAGE;
+    const meshRendered = window.HJVisionLab?.renderFaceMeshDiagnostic?.(humanFaceResult?.faceLandmarks?.[0], humanCanvas.width, humanCanvas.height) === true;
+    const overlay = document.querySelector('[data-vision-overlay]');
+    const overlayData = overlay?.getContext('2d')?.getImageData(0, 0, overlay.width, overlay.height)?.data;
+    let meshInkPixels = 0;
+    if (overlayData) for (let i = 3; i < overlayData.length; i += 4) if (overlayData[i] > 0) meshInkPixels++;
+    const faceState = document.querySelector('[data-face-state]');
+    if (faceState && humanFaceResult?.faceLandmarks?.[0]) {
+      faceState.textContent = `FACE MESH · ${humanFaceResult.faceLandmarks[0].length}`;
+      faceState.classList.add('is-active');
+    }
+
     return {
-      gestureRecognizer: !!hand,
-      faceLandmarker: !!face,
+      gestureRecognizer: !!hand, faceLandmarker: !!face,
       handResultShape: Array.isArray(handResult?.landmarks) && Array.isArray(handResult?.worldLandmarks) && Array.isArray(handResult?.gestures),
       faceResultShape: Array.isArray(faceResult?.faceLandmarks) && Array.isArray(faceResult?.faceBlendshapes),
-      syntheticHands: handResult?.landmarks?.length ?? -1,
-      syntheticFaces: faceResult?.faceLandmarks?.length ?? -1,
+      syntheticHands: handResult?.landmarks?.length ?? -1, syntheticFaces: faceResult?.faceLandmarks?.length ?? -1,
       realHumanFaces: humanFaceResult?.faceLandmarks?.length ?? -1,
       realHumanFacePoints: humanFaceResult?.faceLandmarks?.[0]?.length ?? 0,
       realHumanBlendshapeSets: humanFaceResult?.faceBlendshapes?.length ?? 0,
       realHumanMatrices: humanFaceResult?.facialTransformationMatrixes?.length ?? 0,
       realHumanFixture: REAL_FACE_IMAGE,
-      tessellationEdges: vision.FaceLandmarker.FACE_LANDMARKS_TESSELATION?.length ?? 0
+      tessellationEdges: vision.FaceLandmarker.FACE_LANDMARKS_TESSELATION?.length ?? 0,
+      diagnosticPrepared: !!diagnosticPrepared, meshRendered, meshInkPixels
     };
   } finally {
     try { hand?.close?.(); } catch {}
@@ -153,10 +152,14 @@ expect(preflight.realHumanFacePoints > 400, `Real-person face landmark count is 
 expect(preflight.realHumanBlendshapeSets > 0, `Real-person face should produce blendshapes: ${JSON.stringify(preflight)}`);
 expect(preflight.realHumanMatrices > 0, `Real-person face should produce a transformation matrix: ${JSON.stringify(preflight)}`);
 expect(preflight.tessellationEdges > 1000, `MediaPipe face tessellation topology is unavailable: ${JSON.stringify(preflight)}`);
+expect(preflight.diagnosticPrepared && preflight.meshRendered, `Production face-mesh renderer failed on the real-person fixture: ${JSON.stringify(preflight)}`);
+expect(preflight.meshInkPixels > 1000, `Real-person production mesh rendered too little visible geometry: ${JSON.stringify(preflight)}`);
 const productSource = await page.evaluate(() => fetch('./journal-v11-vision.js', { cache: 'no-store' }).then(r => r.text()));
 expect(productSource.includes('FACE_LANDMARKS_TESSELATION'), 'Vision product overlay must use MediaPipe face tessellation');
 expect(productSource.includes('function framePoint('), 'Vision product overlay must include object-fit/mirror projection correction');
 expect(pageErrors.length === 0, `Vision model preflight page errors: ${pageErrors.join(' | ')}`);
+await page.waitForTimeout(450);
+await page.locator('.vision-camera-card-v11').screenshot({ path: '.artifacts/design-journal/vision-real-face-mesh.png' });
 
 const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
 expect(resources.some(url => url.includes('@mediapipe/tasks-vision') || url.includes('vision_bundle')), `MediaPipe runtime was not fetched: ${resources.join(', ')}`);
@@ -167,4 +170,4 @@ expect(resources.some(url => url.includes('mediapipe-assets/portrait.jpg')), `Re
 
 await context.close();
 await browser.close();
-console.log(`Vision MediaPipe real-human + VIDEO inference preflight ok: ${JSON.stringify(preflight)}`);
+console.log(`Vision MediaPipe real-human + production mesh preflight ok: ${JSON.stringify(preflight)}`);
