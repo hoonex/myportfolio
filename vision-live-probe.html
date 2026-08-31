@@ -24,6 +24,7 @@ patch("$('capHint').textContent=!state.ok?state.msg:Math.abs(q?.yaw||0)>.058?'ì 
 patch("if(phase==='cal'){const ok=Math.abs(q.yaw)<.058;if(ok){calHold+=dt;centerFrames.push({lm:lm.map(p=>({...p})),pose:{yaw:q.yaw,pitch:q.pitch}});if(!bestFront||Math.abs(q.yaw)<bestFront.err)bestFront={lm:lm.map(p=>({...p})),err:Math.abs(q.yaw),snap:captureFrameImage(lm)};if(calHold>=700&&centerFrames.length>=6){", "if(phase==='cal'){const fq=frontalQuality(lm,q),ok=fq.ok;if(ok){calHold+=dt;centerFrames.push({lm:lm.map(p=>({...p})),pose:{yaw:q.yaw,pitch:q.pitch}});if(!bestFront||fq.score<bestFront.err)bestFront={lm:lm.map(p=>({...p})),err:fq.score,snap:captureFrameImage(lm)};if(calHold>=560&&centerFrames.length>=5){", 'cal-logic');
 html=html.replace('ok=[b.center.length>=8,b.right.length>=4,b.left.length>=4,b.up.length>=4,b.down.length>=4]','ok=[b.center.length>=6,b.right.length>=4,b.left.length>=4,b.up.length>=4,b.down.length>=4]');
 html=html.replace('Math.abs(q.yaw)<.075&&Math.abs(q.pitch-basePitch)<.060','frontalQuality(lm,q).ok&&Math.abs(q.pitch-basePitch)<.085');
+html=html.replace("const invite=location.origin+location.pathname+'#join='+j.id+'.'+j.inviteToken","const invite=location.origin+'/myportfolio/faceduo.html#join='+j.id+'.'+j.inviteToken");
 document.open();document.write(html);document.close();
 }catch(e){document.getElementById("boot").textContent="FaceDuo V2.4 load error\n"+String(e)}
 </script></body></html>
