@@ -1,10 +1,39 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="color-scheme" content="only light"><meta name="theme-color" content="#f4f4f1"><title>FaceDuo</title><style>html,body{margin:0;background:#f4f4f1;color:#151515;font-family:system-ui,sans-serif}#boot{padding:28px;font-size:18px;white-space:pre-wrap}</style></head><body><div id="boot">FaceDuo V2.6 불러오는 중…</div><script>window.__fd26=[];</script>
-<script src="./faceduo6/chunk0.js?v=26"></script>
-<script src="./faceduo6/chunk1.js?v=26"></script>
-<script src="./faceduo6/chunk2.js?v=26"></script>
-<script src="./faceduo6/chunk3.js?v=26"></script>
-<script src="./faceduo6/chunk4.js?v=26"></script>
-<script src="./faceduo6/chunk5.js?v=26"></script>
-<script src="./faceduo6/chunk6.js?v=26"></script>
-<script src="./faceduo6/chunk7.js?v=26"></script>
-<script>try{if(!window.__fd26||window.__fd26.length!==8||window.__fd26.some(x=>!x))throw new Error('FaceDuo V2.6 payload chunk missing');const b=window.__fd26.join(''),bin=atob(b),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);const html=new TextDecoder('utf-8').decode(u);document.open();document.write(html);document.close()}catch(e){document.getElementById('boot').textContent='FaceDuo V2.6 load error\n'+String(e)}</script></body></html>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="color-scheme" content="only light"><meta name="theme-color" content="#f4f4f1"><title>FaceDuo</title><style>html,body{margin:0;background:#f4f4f1;color:#151515;font-family:system-ui,sans-serif}#boot{padding:28px;font-size:18px;white-space:pre-wrap}</style></head><body><div id="boot">FaceDuo V2.7 불러오는 중…</div><script>window.__fd26=[];</script>
+<script src="./faceduo6/chunk0.js?v=27"></script><script src="./faceduo6/chunk1.js?v=27"></script><script src="./faceduo6/chunk2.js?v=27"></script><script src="./faceduo6/chunk3.js?v=27"></script><script src="./faceduo6/chunk4.js?v=27"></script><script src="./faceduo6/chunk5.js?v=27"></script><script src="./faceduo6/chunk6.js?v=27"></script><script src="./faceduo6/chunk7.js?v=27"></script>
+<script>try{
+if(!window.__fd26||window.__fd26.length!==8||window.__fd26.some(x=>!x))throw new Error('FaceDuo V2.7 payload chunk missing');
+const b=window.__fd26.join(''),bin=atob(b),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);let html=new TextDecoder('utf-8').decode(u);
+const patch=(a,b,n)=>{if(!html.includes(a))throw new Error('V2.7 patch miss: '+n);html=html.replace(a,b)};
+html=html.replaceAll('V2.6','V2.7');
+patch("let engine='tasks',legacyMesh=null,legacyLatest=null,legacyBusy=false,legacyRoot='',legacyScriptPromise=null;","let engine='tasks',legacyMesh=null,legacyLatest=null,legacyBusy=false,legacyRoot='',legacyScriptPromise=null,chromePrewarmPromise=null;",'warm-state');
+patch("async function loadLegacyModel(){",`const CHROME_WARM_ASSETS=['face_mesh.js','face_mesh.binarypb','face_mesh_solution_packed_assets.data','face_mesh_solution_packed_assets_loader.js','face_mesh_solution_simd_wasm_bin.js','face_mesh_solution_simd_wasm_bin.wasm'];
+async function warmChromeAssets(){if(!isGoogleChrome())return;const t0=performance.now();$('modelState').textContent='Chrome 얼굴 모델 미리 준비 중…';await Promise.allSettled(CHROME_WARM_ASSETS.map(file=>fetch(FACE_ASSET_PROXY+'?f='+encodeURIComponent(file)+'&v=2',{cache:'force-cache',mode:'cors'}).then(r=>{if(!r.ok)throw new Error(file+' '+r.status);return r.arrayBuffer()})));diag('PREWARM · '+Math.round(performance.now()-t0)+'ms')}
+function prewarmChromeModel(){if(!isGoogleChrome())return loadAnyModel();if(task)return Promise.resolve(task);if(chromePrewarmPromise)return chromePrewarmPromise;chromePrewarmPromise=(async()=>{await warmChromeAssets();return await loadAnyModel()})().catch(e=>{diag('PREWARM fail · '+String(e?.message||e));return null}).finally(()=>{if(!task)chromePrewarmPromise=null});return chromePrewarmPromise}
+async function loadLegacyModel(){`,'prewarm');
+patch(`async function startCamera(){
+  phase='cal';basePitch=null;calHold=0;lastT=0;centerFrames=[];orbitFrames=[];coverageBins.fill(0);bestFront=null;buildScanUI();showOnly('cameraWrap');$('pct').textContent='0%';$('scanPhase').textContent='정면 보정';$('modelState').textContent='카메라 여는 중…';
+  if(stream)stopCamera();
+  stream=await openCameraChromeSafe();
+  video.srcObject=stream;video.muted=true;video.setAttribute('playsinline','');
+  await waitVideoReady();
+  try{await video.play()}catch(e){diag('VIDEO PLAY · '+String(e?.message||e));}
+  $('modelState').textContent='얼굴 모델 준비 중…';
+  await loadAnyModel();
+  lastDetect=0;lastT=0;legacyLatest=null;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
+}`,
+`async function startCamera(){
+  phase='cal';basePitch=null;calHold=0;lastT=0;centerFrames=[];orbitFrames=[];coverageBins.fill(0);bestFront=null;buildScanUI();showOnly('cameraWrap');$('pct').textContent='0%';$('scanPhase').textContent='정면 보정';$('modelState').textContent='카메라와 얼굴 모델 준비 중…';
+  const modelWarm=isGoogleChrome()?prewarmChromeModel():loadAnyModel();
+  if(stream)stopCamera();
+  const cameraWarm=openCameraChromeSafe();
+  stream=await cameraWarm;
+  video.srcObject=stream;video.muted=true;video.setAttribute('playsinline','');
+  await waitVideoReady();
+  try{await video.play()}catch(e){diag('VIDEO PLAY · '+String(e?.message||e));}
+  if(!task)$('modelState').textContent='얼굴 모델 준비 중…';
+  await modelWarm;if(!task)await loadAnyModel();
+  lastDetect=0;lastT=0;legacyLatest=null;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
+}`,'parallel-start');
+patch("async function boot(){buildScanUI();const h=parseHash();currentMode=h.mode;sessionId=h.id||null;sessionToken=h.token||null;if(h.mode==='guest'){$('inviteIntro').classList.add('show');$('startBtn').textContent='내 얼굴 측정하고 비교하기'}else if(h.mode==='owner'){showOnly('wait');startPoll();return}showOnly('home')}","async function boot(){buildScanUI();const h=parseHash();currentMode=h.mode;sessionId=h.id||null;sessionToken=h.token||null;if(h.mode==='guest'){$('inviteIntro').classList.add('show');$('startBtn').textContent='내 얼굴 측정하고 비교하기'}else if(h.mode==='owner'){showOnly('wait');startPoll();return}showOnly('home');if(isGoogleChrome())setTimeout(()=>{prewarmChromeModel().catch(()=>{})},120)}",'boot-prewarm');
+document.open();document.write(html);document.close();
+}catch(e){document.getElementById('boot').textContent='FaceDuo V2.7 load error\n'+String(e)}</script></body></html>
