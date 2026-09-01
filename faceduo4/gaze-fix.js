@@ -1,0 +1,1 @@
+(()=>{document.getElementById('recalibrate')?.addEventListener('click',()=>{const d=document.getElementById('calDot');if(d)d.style.display='block'},true)})();
