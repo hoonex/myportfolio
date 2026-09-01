@@ -47,7 +47,7 @@ function stabilizeFrame(mesh){
 }
 function poseAngles(fr){const yaw=clamp(fr.pose.yaw/.16,-1.18,1.18)*.60,dy=(fr.pose.pitch-(basePitch??fr.pose.pitch)),pitch=clamp(dy/.09,-1.18,1.18)*.44;return{yaw,pitch}}
 function frontalize(fr,ref){
-  const ang=poseAngles(fr),yf=[.78,1,1.22],pf=[.78,1,1.22],ys=ang.yaw?[ -1,1 ]:[1],ps=ang.pitch?[ -1,1 ]:[1];let best=null,bestErr=1e9;
+  const ang=poseAngles(fr),yf=[.78,1,1.22],pf=[.78,1,1.22],ys=ang.yaw?[-1,1]:[1],ps=ang.pitch?[-1,1]:[1];let best=null,bestErr=1e9;
   for(const sy of ys)for(const sp of ps)for(const fy of yf)for(const fp of pf){const m=eyeNormalize(rotate3D(fr.mesh,sy*ang.yaw*fy,sp*ang.pitch*fp)),e=meshError(m,ref);if(e<bestErr){bestErr=e;best=m}}
   const confidence=(1/(1+Math.pow(bestErr/.075,2)))*(fr.stability||1);return{mesh:best,error:bestErr,weight:clamp(confidence,.08,1)}
 }
@@ -66,7 +66,12 @@ function smoothSurface(mesh){
   const adj=adjacency();let cur=mesh.map(p=>p.slice());
   for(let pass=0;pass<2;pass++){
     const next=cur.map(p=>p.slice());
-    for(let i=0;i<cur.length;i++){const ns=[...(adj[i]||[])];if(ns.length<2||FUSION_ANCHORS.includes(i))continue;let ax=0,ay=0,az=0;for(const j of ns){ax+=cur[j][0];ay+=cur[j][1];az+=cur[j][2]}ax/=ns.length;ay/=ns.length;az/=ns.length;const detail=DETAIL_IDS.has(i),contour=CONTOUR_IDS.has(i),nose=NOSE_IDS.has(i),axy=detail?.012:contour?.018:.045,azw=detail?.025:nose?.065:contour?.045:.095;next[i][0]=cur[i][0]*(1-axy)+ax*axy;next[i][1]=cur[i][1]*(1-axy)+ay*axy;next[i][2]=cur[i][2]*(1-azw)+az*azw}cur=next
+    for(let i=0;i<cur.length;i++){
+      const ns=[...(adj[i]||[])];if(ns.length<2||FUSION_ANCHORS.includes(i))continue;let ax=0,ay=0,az=0;for(const j of ns){ax+=cur[j][0];ay+=cur[j][1];az+=cur[j][2]}ax/=ns.length;ay/=ns.length;az/=ns.length;
+      const detail=DETAIL_IDS.has(i),contour=CONTOUR_IDS.has(i),nose=NOSE_IDS.has(i),axy=detail?.012:contour?.018:.045,azw=detail?.025:nose?.065:contour?.045:.095;
+      next[i][0]=cur[i][0]*(1-axy)+ax*axy;next[i][1]=cur[i][1]*(1-axy)+ay*axy;next[i][2]=cur[i][2]*(1-azw)+az*azw
+    }
+    cur=next
   }
   return cur
 }
