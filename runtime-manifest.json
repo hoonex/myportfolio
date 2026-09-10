@@ -11,7 +11,7 @@
   },
   "routes": [
     {"id":"editorial-full","paths":["/lab","/post/glass","/post/sloar","/post/motion"],"styles":[],"scripts":["journal-v2.js"]},
-    {"id":"glass","paths":["/lab","/post/glass"],"styles":["journal-v13-fluid-physics.css"],"scripts":["journal-v3-refraction.js","journal-v4-jelly.js","journal-v13-fluid-physics.js","journal-v13-fluid-controls.js","journal-v9-locale-editorial.js"]},
+    {"id":"glass","paths":["/lab","/post/glass"],"styles":["journal-v14-fluid-physics.css"],"scripts":["journal-v14-liquidglass-engine.js","journal-v3-refraction.js","journal-v14-fluid-physics.js","journal-v13-fluid-controls.js","journal-v9-locale-editorial.js"]},
     {"id":"article-labs","paths":["/post/sloar","/post/motion"],"styles":[],"scripts":["journal-v5-experiments.js"]},
     {"id":"spatial","paths":["/post/spatial"],"styles":[],"scripts":["journal-v8-spatial.js"]},
     {"id":"vision","paths":["/lab/vision"],"styles":["journal-v11-vision.css"],"scripts":["journal-v11-vision.js","journal-v12-vision-privacy.js","journal-v12-vision-f5.js"]},
