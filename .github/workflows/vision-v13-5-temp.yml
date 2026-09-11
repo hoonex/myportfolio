@@ -1,0 +1,86 @@
+name: Temporary Vision v13.5 regression repair
+
+on:
+  push:
+    branches:
+      - fix/vision-v13-5-regression
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/vision-v13-5-regression
+          fetch-depth: 0
+
+      - name: Restore proven hand tracker and expand face mesh on yaw
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('journal-v13-vision.js')
+          s=p.read_text()
+          def rep(old,new):
+              global s
+              if old not in s:
+                  raise SystemExit('missing expected source: '+old[:220])
+              s=s.replace(old,new,1)
+
+          rep('/* Vision Lab v13.4 — opaque solid mesh + hand-priority tracking. */','/* Vision Lab v13.5 — proven gesture hand tracker + yaw-aware opaque face shell. */')
+          rep("const R='/lab/vision',MPV='1.0.1',BUILD='VISION13.4-20260911-2033';","const R='/lab/vision',MPV='1.0.1',BUILD='VISION13.5-20260911-2336';")
+          rep("const HM='https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';","const GM='https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task';")
+          rep("if(kind==='hand'){factory=mod.HandLandmarker;opt={baseOptions:{modelAssetPath:HM},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:.28,minHandPresenceConfidence:.28,minTrackingConfidence:.34}}else", "if(kind==='hand'){factory=mod.GestureRecognizer;opt={baseOptions:{modelAssetPath:GM},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:.5,minHandPresenceConfidence:.5,minTrackingConfidence:.5}}else")
+          rep("if(handTask&&now-lastH>=33&&!health.hand.recovering){try{hand=handTask.detectForVideo(v,ts);", "if(handTask&&now-lastH>=110&&!health.hand.recovering){try{hand=handTask.recognizeForVideo(v,ts);")
+          rep("<p>HandLandmarker runs at hand-priority cadence and drives an opaque palm/finger body. Pinch uses the same tracked landmarks.</p>", "<p>GestureRecognizer restores the proven F6 hand pipeline and exposes the same 21 landmarks for the opaque hand body and pinch interaction.</p>")
+
+          old="function faceProjected(a,g,w,m){if(!a?.length)return null;let P=group(a,g,w,m);return{P,center:P[1]||P[4]||P[0]}}function handProjected(a,g,w,m){return a?.length?{P:group(a,g,w,m)}:null}"
+          new="function faceProjected(a,g,w,m){if(!a?.length)return null;let P=group(a,g,w,m);return{P,center:P[1]||P[4]||P[0]}}function handProjected(a,g,w,m){return a?.length?{P:group(a,g,w,m)}:null}function faceSurfacePoints(P){if(!P?.length)return P;let L=P[234],R=P[454],N=P[1]||P[4]||P[0],T=P[10],B=P[152];if(!L||!R||!N||!T||!B)return P;let cx=(L.x+R.x)*.5,cy=(T.y+B.y)*.5,hx=Math.max(1,Math.abs(R.x-L.x)*.5),hy=Math.max(1,Math.abs(B.y-T.y)*.5),yaw=clamp(Math.abs(N.x-cx)/hx,0,1),ex=.065+.17*yaw,ey=.045+.065*yaw;return P.map(p=>{let dx=p.x-cx,dy=p.y-cy,nx=dx/(hx*1.08),ny=dy/(hy*1.08),edge=Math.pow(clamp(Math.hypot(nx,ny),0,1),1.65);return{x:cx+dx*(1+ex*edge),y:cy+dy*(1+ey*edge),z:p.z||0}})}"
+          rep(old,new)
+
+          old="function drawFace(ctx,F,w,h){if(!F)return;let P=F.P,oval=OVAL.map(i=>P[i]).filter(Boolean);if(state.surface&&oval.length>2){ctx.save();poly(ctx,oval);ctx.fillStyle='rgb(8,52,70)';ctx.fill();ctx.restore();drawFaceCells(ctx,P,w,h)}if(state.wire){"
+          new="function drawFace(ctx,F,w,h){if(!F)return;let P=F.P,S=faceSurfacePoints(P),oval=OVAL.map(i=>S[i]).filter(Boolean);if(state.surface&&oval.length>2){ctx.save();poly(ctx,oval);ctx.fillStyle='rgb(8,52,70)';ctx.fill();ctx.restore();drawFaceCells(ctx,S,w,h)}if(state.wire){"
+          rep(old,new)
+
+          p.write_text(s)
+
+          old_rev='SITE32-VISION13_4-20260911-2033'
+          new_rev='SITE33-VISION13_5-20260911-2336'
+          for name in ['journal-route-loader.js','index.html']:
+              q=Path(name);t=q.read_text()
+              if old_rev not in t: raise SystemExit(f'missing old revision in {name}')
+              q.write_text(t.replace(old_rev,new_rev))
+
+      - name: Verify and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check journal-v13-vision.js
+          node --check journal-route-loader.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('journal-v13-vision.js').read_text()
+          assert "BUILD='VISION13.5-20260911-2336'" in s
+          assert 'GestureRecognizer' in s
+          assert 'gesture_recognizer.task' in s
+          assert 'recognizeForVideo(v,ts)' in s
+          assert 'now-lastH>=110' in s
+          assert 'HandLandmarker' not in s
+          assert 'function faceSurfacePoints(P)' in s
+          assert 'ex=.065+.17*yaw' in s
+          assert 'ey=.045+.065*yaw' in s
+          assert 'drawFaceCells(ctx,S,w,h)' in s
+          rev='SITE33-VISION13_5-20260911-2336'
+          assert rev in Path('journal-route-loader.js').read_text()
+          assert Path('index.html').read_text().count(rev)==2
+          print('Vision v13.5 regression repair contract: ok')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add journal-v13-vision.js journal-route-loader.js index.html
+          git commit -m "fix: restore proven hand tracker and expand face mesh"
+          git push origin HEAD:fix/vision-v13-5-regression
