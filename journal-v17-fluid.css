@@ -1,0 +1,34 @@
+/* Journal v17 — stable physics controls. No DOM scale: press growth is shader-native. */
+.real-liquid-glass.fluid-v17-enabled{
+  transform-origin:50% 50%!important;
+  will-change:transform;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  cursor:grab;
+}
+.real-liquid-glass.fluid-v17-enabled.is-fluid-pressed{cursor:grabbing}
+.real-liquid-glass.fluid-v17-enabled .glass-content{transform:none!important;will-change:auto}
+.fluid-physics-panel{display:grid;gap:14px;margin:-2px 0 14px;padding:0 0 14px;border-bottom:1px solid var(--line)}
+.fluid-panel-group{display:grid;gap:8px}
+.fluid-panel-label{color:var(--muted);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.fluid-preset-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.fluid-preset-grid button,.fluid-action-row button{min-width:0;border:1px solid var(--line);border-radius:11px;background:color-mix(in srgb,var(--bg-elevated) 86%,transparent);color:var(--muted);font-family:inherit;font-size:9.5px;font-weight:650;line-height:1.2;cursor:pointer;transition:background .16s ease,color .16s ease,border-color .16s ease,transform .16s ease}
+.fluid-preset-grid button{padding:8px 9px;text-align:left}
+.fluid-preset-grid button:hover,.fluid-action-row button:hover{color:var(--text);background:color-mix(in srgb,var(--bg-elevated) 96%,currentColor 4%)}
+.fluid-preset-grid button:active,.fluid-action-row button:active{transform:scale(.97)}
+.fluid-preset-grid button.is-active,.fluid-action-row button.is-active{color:var(--text);border-color:color-mix(in srgb,currentColor 30%,var(--line));background:color-mix(in srgb,currentColor 8%,var(--bg-elevated))}
+.fluid-action-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.fluid-action-row button{display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 6px;text-align:center;white-space:nowrap}
+.fluid-action-row button span{font-size:12px;line-height:1}
+.fluid-action-row button:disabled{opacity:.4;cursor:not-allowed}
+.fluid-physics-status{min-height:12px;color:var(--muted);font-size:9px;line-height:1.3}
+.fluid-growth-control{display:grid;grid-template-columns:minmax(0,1fr) minmax(126px,42%);gap:14px;align-items:center;padding:10px 0 2px}
+.fluid-growth-copy{display:grid;gap:3px;min-width:0}
+.fluid-growth-copy b{font-size:.82rem;font-weight:650;letter-spacing:-.01em}
+.fluid-growth-copy small{font-size:.68rem;line-height:1.35;opacity:.58}
+.fluid-growth-input{display:grid;grid-template-columns:minmax(72px,1fr) 42px;gap:8px;align-items:center}
+.fluid-growth-input input{width:100%;margin:0}
+.fluid-growth-input output{font-variant-numeric:tabular-nums;font-size:.72rem;text-align:right;opacity:.78}
+@media(max-width:620px){.fluid-preset-grid{grid-template-columns:1fr 1fr}.fluid-action-row{grid-template-columns:1fr 1fr}.fluid-action-row button[data-fluid-motion]{grid-column:1/-1}}
+@media(max-width:640px){.fluid-growth-control{grid-template-columns:1fr;gap:7px}.fluid-growth-input{grid-template-columns:minmax(0,1fr) 44px}}
+@media(prefers-reduced-motion:reduce){.real-liquid-glass.fluid-v17-enabled{transform:none!important}.fluid-preset-grid button,.fluid-action-row button{transition:none}}
