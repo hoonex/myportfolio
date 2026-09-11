@@ -19,7 +19,7 @@ jobs:
           ref: fix/vision-pinch-v13-3
           fetch-depth: 0
 
-      - name: Patch pinch classifier
+      - name: Fix visible pinch and immediate contact
         shell: python
         run: |
           from pathlib import Path
@@ -28,56 +28,51 @@ jobs:
           def rep(old,new):
               global s
               if old not in s:
-                  raise SystemExit('missing expected source: '+old[:160])
+                  raise SystemExit('missing expected source: '+old[:180])
               s=s.replace(old,new,1)
 
-          rep("/* Vision Lab v13.2 — resilient models + hysteretic multi-hand pinch + filled face cells. */", "/* Vision Lab v13.3 — fused screen/image/world pinch classifier + explicit contact feedback. */")
-          rep("const R='/lab/vision',MPV='1.0.1',BUILD='VISION13.2-20260911-1658';", "const R='/lab/vision',MPV='1.0.1',BUILD='VISION13.3-20260911-1738';")
-          rep("pinchLatch=new Map()", "pinchState=new Map()")
-          rep("pinchLatch.clear()", "pinchState.clear()")
-          rep("pinchLatch.clear()", "pinchState.clear()")
-
-          old="function blend(name){return face?.faceBlendshapes?.[0]?.categories?.find(x=>x.categoryName===name)?.score||0}function dist2(a,b){return a&&b?hypot(a.x-b.x,a.y-b.y):9}function pinch(NH,H,handed,w,h){let live=new Set(),out=[];for(let i=0;i<NH.length;i++){let N=NH[i],P=H[i]?.P;if(!N?.[8]||!P?.[8])continue;let side=handed?.[i]?.[0]?.categoryName||`H${i+1}`,key=side;live.add(key);let palm=(dist2(N[0],N[9])+dist2(N[5],N[17])+dist2(N[0],N[5])+dist2(N[0],N[17]))*.25,tip=Math.min(dist2(N[4],N[8]),dist2(N[4],N[7])*.92),ratio=tip/Math.max(.035,palm),was=pinchLatch.get(key)||false,active=was?ratio<.72:ratio<.55;pinchLatch.set(key,active);let a=P[4],b=P[8];out.push({active,x:(a.x+b.x)/(2*w),y:(a.y+b.y)/(2*h),ratio,side,quality:clamp(1-ratio/.9,0,1)})}for(let key of [...pinchLatch.keys()])if(!live.has(key))pinchLatch.delete(key);out.sort((a,b)=>Number(b.active)-Number(a.active)||a.ratio-b.ratio);return out[0]||null}"
-          new="function blend(name){return face?.faceBlendshapes?.[0]?.categories?.find(x=>x.categoryName===name)?.score||0}function d3(a,b){if(!a||!b)return Infinity;let z=(a.z||0)-(b.z||0);return hypot(a.x-b.x,a.y-b.y,z)}function pinch(NH,WH,H,handed,w,h){let live=new Set(),out=[];for(let i=0;i<NH.length;i++){let N=NH[i],W=WH?.[i],P=H[i]?.P;if(!N?.[8]||!N?.[4]||!P?.[8]||!P?.[4])continue;let side=handed?.[i]?.[0]?.categoryName||`H${i+1}`,key=`${side}:${i}`,prev=pinchState.get(key)||{active:false,smooth:0,release:0};live.add(key);let nPalm=(d3(N[0],N[9])+d3(N[5],N[17])+d3(N[0],N[5])+d3(N[0],N[17]))*.25,nRatio=d3(N[4],N[8])/Math.max(.03,nPalm),pPalm=(hypot(P[5].x-P[17].x,P[5].y-P[17].y)+hypot(P[0].x-P[9].x,P[0].y-P[9].y))*.5,pGap=hypot(P[4].x-P[8].x,P[4].y-P[8].y),pRatio=pGap/Math.max(18,pPalm),wPalm=W?.[17]?(d3(W[0],W[9])+d3(W[5],W[17])+d3(W[0],W[5])+d3(W[0],W[17]))*.25:0,wRatio=wPalm?d3(W[4],W[8])/Math.max(.025,wPalm):nRatio,nScore=clamp((.78-nRatio)/.58,0,1),pScore=clamp((.62-pRatio)/.48,0,1),wScore=clamp((.68-wRatio)/.50,0,1),scores=[nScore,pScore,wScore].sort((a,b)=>b-a),raw=(scores[0]+scores[1])*.5,thresholdPx=Math.max(18,pPalm*.34),hardContact=pGap<=thresholdPx||wRatio<.34||nRatio<.34,smooth=prev.smooth*.42+raw*.58,active=prev.active,release=prev.release;if(!active&&(hardContact||smooth>=.58)){active=true;release=0}else if(active){let clearlyOpen=pGap>thresholdPx*1.55&&pRatio>.62&&nRatio>.70&&wRatio>.66;if(clearlyOpen&&smooth<.42)release++;else release=0;if(release>=2){active=false;release=0}}pinchState.set(key,{active,smooth,release});let a=P[4],b=P[8];out.push({active,x:(a.x+b.x)/(2*w),y:(a.y+b.y)/(2*h),ratio:Math.min(nRatio,pRatio,wRatio),side,quality:clamp(smooth,0,1),gapPx:pGap,thresholdPx,nRatio,pRatio,wRatio})}for(let key of [...pinchState.keys()])if(!live.has(key))pinchState.delete(key);out.sort((a,b)=>Number(b.active)-Number(a.active)||b.quality-a.quality);return out[0]||null}"
+          rep(
+            "screenPalm=(dist2(P[5],P[17])+dist2(P[0],P[9]))*.5,screenRatio=dist2(P[4],P[8])/Math.max(20,screenPalm)",
+            "screenPalm=(dist2(P[5],P[17])+dist2(P[0],P[9]))*.5,screenGap=dist2(P[4],P[8]),contactPx=Math.max(18,screenPalm*.34),screenRatio=screenGap/Math.max(20,screenPalm)"
+          )
+          rep(
+            "if(!st.on&&st.close>=2)st.on=true;",
+            "if(!st.on&&(screenGap<=contactPx||worldRatio<.34||normRatio<.34||st.close>=2))st.on=true;"
+          )
+          rep(
+            "quality:st.ema,a,b,screenRatio,normRatio,worldRatio",
+            "quality:st.ema,a,b,gapPx:screenGap,thresholdPx:contactPx,screenRatio,normRatio,worldRatio"
+          )
+          old="function drawPinchFeedback(ctx,p,w){if(!p)return;ctx.save();ctx.lineCap='round';if(p.a&&p.b){ctx.strokeStyle=p.active?'rgba(255,255,255,.98)':'rgba(100,225,255,.48)';ctx.lineWidth=Math.max(2,w/420);ctx.beginPath();ctx.moveTo(p.a.x,p.a.y);ctx.lineTo(p.b.x,p.b.y);ctx.stroke()}let x=p.x*w,y=p.y*w,r=Math.max(8,w/88);ctx.fillStyle=p.active?'rgba(255,255,255,.96)':'rgba(73,210,255,.26)';ctx.strokeStyle=p.active?'rgba(90,235,255,.98)':'rgba(90,235,255,.62)';ctx.lineWidth=Math.max(2,w/520);ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore()}"
+          new="function drawPinchFeedback(ctx,p,w,h){if(!p)return;ctx.save();ctx.lineCap='round';if(p.a&&p.b){ctx.strokeStyle=p.active?'rgba(255,255,255,.98)':'rgba(100,225,255,.48)';ctx.lineWidth=Math.max(2,w/420);ctx.beginPath();ctx.moveTo(p.a.x,p.a.y);ctx.lineTo(p.b.x,p.b.y);ctx.stroke()}let x=p.x*w,y=p.y*h,r=Math.max(9,w/84);ctx.fillStyle=p.active?'rgba(255,255,255,.96)':'rgba(73,210,255,.20)';ctx.strokeStyle=p.active?'rgba(90,235,255,.98)':'rgba(90,235,255,.55)';ctx.lineWidth=Math.max(2,w/520);ctx.shadowColor=p.active?'rgba(90,235,255,.95)':'transparent';ctx.shadowBlur=p.active?r*1.6:0;ctx.beginPath();ctx.arc(x,y,p.active?r*1.16:r,0,Math.PI*2);ctx.fill();ctx.stroke();if(p.active){ctx.shadowBlur=0;ctx.fillStyle='rgba(255,255,255,.98)';ctx.font=`700 ${Math.max(10,w/78)}px ui-monospace`;ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('PINCH',x,y-r*1.45)}ctx.restore()}"
           rep(old,new)
-          rep("p=pinch(hands,H,hand?.handednesses||[],w,h)", "p=pinch(hands,hand?.worldLandmarks||[],H,hand?.handedness||hand?.handednesses||[],w,h)")
-
-          old_draw="function drawOrbs(ctx,w,h,p){if(!state.play)return;ctx.save();for(let o of orbs){let x=o.x*w,y=o.y*h,r=o.r*Math.min(w,h),g=ctx.createRadialGradient(x-r*.35,y-r*.42,r*.08,x,y,r);g.addColorStop(0,'rgba(255,255,255,.94)');g.addColorStop(.18,`hsla(${o.h} 95% 72% / .9)`);g.addColorStop(1,`hsla(${o.h} 90% 48% / .32)`);ctx.fillStyle=g;ctx.shadowColor=`hsla(${o.h} 100% 66% / .35)`;ctx.shadowBlur=r*.7;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}ctx.shadowBlur=0;if(p){ctx.strokeStyle=p.active?'#fff':'rgba(255,255,255,.38)';ctx.lineWidth=Math.max(1.5,w/700);ctx.beginPath();ctx.arc(p.x*w,p.y*h,Math.max(9,w/90),0,Math.PI*2);ctx.stroke()}ctx.restore()}"
-          new_draw=old_draw+"function drawPinchFeedback(ctx,p,w,h){if(!p)return;let x=p.x*w,y=p.y*h,r=Math.max(12,w/64);ctx.save();ctx.lineWidth=Math.max(2,w/560);ctx.strokeStyle=p.active?'rgba(255,255,255,.98)':'rgba(255,255,255,.30)';ctx.fillStyle=p.active?'rgba(255,255,255,.16)':'rgba(255,255,255,.035)';ctx.shadowColor=p.active?'rgba(106,235,255,.92)':'transparent';ctx.shadowBlur=p.active?r*1.4:0;ctx.beginPath();ctx.arc(x,y,r*(p.active?1.12:.82),0,Math.PI*2);ctx.fill();ctx.stroke();if(p.active){ctx.shadowBlur=0;ctx.fillStyle='rgba(255,255,255,.98)';ctx.font=`700 ${Math.max(10,w/78)}px ui-monospace`;ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('PINCH',x,y-r*1.42)}ctx.restore()}"
-          rep(old_draw,new_draw)
-          rep("H.forEach((x,i)=>drawHand(ctx,x,i,w));metric('fps'", "H.forEach((x,i)=>drawHand(ctx,x,i,w));drawPinchFeedback(ctx,p,w,h);metric('fps'")
-          rep("metric('pinch',p?`${p.side} · ${Math.round(p.quality*100)}%${p.active?' · GRAB':''}`:'--');", "metric('pinch',p?`${p.side} · ${p.gapPx.toFixed(0)}/${p.thresholdPx.toFixed(0)}px · ${Math.round(p.quality*100)}%${p.active?' · PINCH':' · OPEN'}`:'--');")
+          rep("drawPinchFeedback(ctx,p,w);", "drawPinchFeedback(ctx,p,w,h);")
+          rep(
+            "metric('pinch',p?`${p.side} · ${Math.round(p.quality*100)}%${p.active?' · PINCH':''}`:'--');",
+            "metric('pinch',p?`${p.side} · ${p.gapPx.toFixed(0)}/${p.thresholdPx.toFixed(0)}px · ${Math.round(p.quality*100)}% · ${p.active?'PINCH':'OPEN'}`:'--');"
+          )
           p.write_text(s)
-
-          rev='SITE31-VISION13_3-20260911-1738'
-          for name in ['journal-route-loader.js','index.html']:
-              q=Path(name); t=q.read_text(); old='SITE30-VISION13_2-20260911-1658'
-              if old not in t: raise SystemExit(f'missing old revision in {name}')
-              q.write_text(t.replace(old,rev))
 
       - name: Verify and commit
         shell: bash
         run: |
           set -euo pipefail
           node --check journal-v13-vision.js
-          node --check journal-route-loader.js
           python - <<'PY'
           from pathlib import Path
           s=Path('journal-v13-vision.js').read_text()
-          assert "BUILD='VISION13.3-20260911-1738'" in s
-          assert 'worldLandmarks||[]' in s
-          assert 'hand?.handedness||hand?.handednesses||[]' in s
-          assert 'hardContact=pGap<=thresholdPx' in s
-          assert 'release>=2' in s
-          assert 'drawPinchFeedback' in s and "fillText('PINCH'" in s
-          assert 'pinchState=new Map()' in s
-          rev='SITE31-VISION13_3-20260911-1738'
-          assert rev in Path('journal-route-loader.js').read_text()
-          assert Path('index.html').read_text().count(rev)==2
-          print('Vision v13.3 pinch contract: ok')
+          assert "screenGap=dist2(P[4],P[8])" in s
+          assert "contactPx=Math.max(18,screenPalm*.34)" in s
+          assert "screenGap<=contactPx||worldRatio<.34||normRatio<.34||st.close>=2" in s
+          assert "function drawPinchFeedback(ctx,p,w,h)" in s
+          assert "y=p.y*h" in s
+          assert "fillText('PINCH'" in s
+          assert "gapPx:screenGap,thresholdPx:contactPx" in s
+          assert "drawPinchFeedback(ctx,p,w,h)" in s
+          print('Vision pinch visible-contact contract: ok')
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add journal-v13-vision.js journal-route-loader.js index.html
-          git commit -m "fix: fuse multi-space pinch detection"
+          git add journal-v13-vision.js
+          git commit -m "fix: make Vision pinch immediate and visible"
           git push origin HEAD:fix/vision-pinch-v13-3
