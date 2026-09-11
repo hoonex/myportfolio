@@ -4,12 +4,14 @@
   const state = globalThis.__HJRealJellyBootV22 = globalThis.__HJRealJellyBootV22 || {
     attempts: 0,
     ready: false,
-    lastReason: 'boot'
+    lastReason: 'boot',
+    startedAt: 0
   };
 
   let observer = null;
   let timer = 0;
   let raf = 0;
+  let pending = false;
 
   function removeInternalCopy() {
     const glass = document.querySelector('#realLiquidGlass');
@@ -19,18 +21,32 @@
     return glass;
   }
 
-  function stopPolling() {
+  function clearScheduled() {
     if (timer) clearTimeout(timer);
     timer = 0;
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
+    pending = false;
+  }
+
+  function schedule(reason = 'scheduled', delay = 36) {
+    if (!activeRoute() || state.ready || pending) return;
+    pending = true;
+    timer = setTimeout(() => {
+      timer = 0;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        pending = false;
+        verify(reason);
+      });
+    }, delay);
   }
 
   function verify(reason = 'verify') {
     if (!activeRoute()) {
       state.ready = false;
       state.lastReason = 'inactive-route';
-      stopPolling();
+      clearScheduled();
       return;
     }
 
@@ -42,7 +58,7 @@
       state.ready = true;
       state.lastReason = 'installed';
       document.documentElement.dataset.realJellyRuntime = 'ready';
-      stopPolling();
+      clearScheduled();
       return;
     }
 
@@ -50,7 +66,7 @@
     state.lastReason = reason;
     document.documentElement.dataset.realJellyRuntime = 'waiting';
 
-    if (glass && panel && api) {
+    if (glass && panel && api && state.attempts < 8) {
       state.attempts += 1;
       // v21 listens for hj:rendered. Re-emit only after all of its prerequisites exist.
       document.dispatchEvent(new CustomEvent('hj:rendered', {
@@ -58,10 +74,8 @@
       }));
     }
 
-    if (state.attempts < 24) {
-      timer = setTimeout(() => {
-        raf = requestAnimationFrame(() => verify('retry'));
-      }, state.attempts < 6 ? 34 : 90);
+    if (performance.now() - state.startedAt < 8000) {
+      schedule('retry', glass && panel && api ? 48 : 80);
     } else {
       state.lastReason = 'install-timeout';
       document.documentElement.dataset.realJellyRuntime = 'timeout';
@@ -73,16 +87,17 @@
     observer?.disconnect();
     observer = new MutationObserver(() => {
       removeInternalCopy();
-      if (activeRoute() && !state.ready) verify('mutation');
+      schedule('mutation', 0);
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
   }
 
   function boot() {
-    stopPolling();
+    clearScheduled();
     state.attempts = 0;
     state.ready = false;
     state.lastReason = 'boot';
+    state.startedAt = performance.now();
     removeInternalCopy();
     if (activeRoute()) verify('boot');
   }
