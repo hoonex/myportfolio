@@ -1,0 +1,107 @@
+/* Journal v18 — real LiquidGlass rails with a lightweight native input layer. */
+.refraction-controls.liquid-range-root{position:relative}
+.liquid-range-shell{
+  --range-p:50%;
+  --range-n:.5;
+  position:relative;
+  display:block;
+  width:100%;
+  min-width:0;
+  height:28px;
+  isolation:isolate;
+}
+.liquid-range-glass{
+  position:absolute;
+  z-index:0;
+  left:1px;
+  right:1px;
+  top:50%;
+  height:10px;
+  transform:translateY(-50%);
+  border-radius:999px;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.23),rgba(255,255,255,.055));
+  border:1px solid color-mix(in srgb,var(--text) 15%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 5px 15px rgba(0,0,0,.08);
+  transition:filter .14s ease,box-shadow .14s ease;
+}
+.refraction-controls.is-liquid-range-webgl .liquid-range-glass{
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+}
+.liquid-range-progress{
+  position:absolute;
+  z-index:1;
+  left:4px;
+  top:50%;
+  width:calc(100% - 8px);
+  height:3px;
+  transform:translateY(-50%) scaleX(var(--range-n));
+  transform-origin:left center;
+  border-radius:999px;
+  pointer-events:none;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--text) 68%,transparent),color-mix(in srgb,var(--text) 34%,transparent));
+  box-shadow:0 0 9px color-mix(in srgb,var(--text) 14%,transparent);
+  opacity:.72;
+}
+.liquid-range-shell input[type="range"]{
+  -webkit-appearance:none;
+  appearance:none;
+  position:relative;
+  z-index:3;
+  display:block;
+  width:100%;
+  height:28px;
+  margin:0;
+  padding:0;
+  background:transparent!important;
+  accent-color:transparent;
+  cursor:pointer;
+  touch-action:pan-y;
+}
+.liquid-range-shell input[type="range"]::-webkit-slider-runnable-track{
+  height:10px;
+  border:0;
+  border-radius:999px;
+  background:transparent;
+}
+.liquid-range-shell input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:20px;
+  height:20px;
+  margin-top:-5px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.72);
+  background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.98) 0 9%,rgba(255,255,255,.48) 20%,rgba(255,255,255,.12) 58%,rgba(255,255,255,.24) 100%);
+  box-shadow:0 5px 15px rgba(0,0,0,.16),inset 0 1px 1px rgba(255,255,255,.82),0 0 0 1px color-mix(in srgb,var(--text) 12%,transparent);
+  transition:transform .12s ease,box-shadow .12s ease;
+}
+.liquid-range-shell input[type="range"]::-moz-range-track{
+  height:10px;
+  border:0;
+  border-radius:999px;
+  background:transparent;
+}
+.liquid-range-shell input[type="range"]::-moz-range-progress{background:transparent}
+.liquid-range-shell input[type="range"]::-moz-range-thumb{
+  width:20px;
+  height:20px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.72);
+  background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.98) 0 9%,rgba(255,255,255,.48) 20%,rgba(255,255,255,.12) 58%,rgba(255,255,255,.24) 100%);
+  box-shadow:0 5px 15px rgba(0,0,0,.16),inset 0 1px 1px rgba(255,255,255,.82),0 0 0 1px color-mix(in srgb,var(--text) 12%,transparent);
+  transition:transform .12s ease,box-shadow .12s ease;
+}
+.liquid-range-shell.is-active .liquid-range-glass{filter:brightness(1.16) saturate(1.08)}
+.liquid-range-shell.is-active input[type="range"]::-webkit-slider-thumb{
+  transform:scale(1.12);
+  box-shadow:0 7px 20px rgba(0,0,0,.2),inset 0 1px 1px rgba(255,255,255,.9),0 0 0 2px rgba(255,255,255,.18);
+}
+.liquid-range-shell.is-active input[type="range"]::-moz-range-thumb{transform:scale(1.12)}
+.ref-control>.liquid-range-shell{width:100%}
+.fluid-growth-input>.liquid-range-shell{min-width:0}
+@media(prefers-reduced-motion:reduce){
+  .liquid-range-glass,.liquid-range-shell input[type="range"]::-webkit-slider-thumb,.liquid-range-shell input[type="range"]::-moz-range-thumb{transition:none}
+}
