@@ -6,6 +6,17 @@
   <meta name="theme-color" content="#0b0c0e" />
   <meta name="description" content="HJ — interface experiments, tools, and notes." />
   <title>HJ — Design Journal</title>
+  <style>
+    html.hj-lab-booting #app{visibility:hidden;min-height:720px}
+  </style>
+  <script>
+    (()=>{
+      const route=()=>((location.hash.slice(1)||'/').split('?')[0]);
+      const sync=()=>document.documentElement.classList.toggle('hj-lab-booting',route()==='/lab'&&!window.__HJGlassLabReady);
+      sync();
+      addEventListener('hashchange',sync);
+    })();
+  </script>
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./journal-v2.css" />
   <link rel="stylesheet" href="./journal-v3-refraction.css" />
@@ -21,11 +32,11 @@
   <header class="topbar-wrap"><nav class="topbar glass" aria-label="주요 메뉴"><a class="brand" href="#/" aria-label="홈"><span class="brand-mark">HJ</span><span class="brand-status">Design journal</span></a><div class="topbar-links"><a href="#/" data-nav="home">Index</a><a href="#/lab" data-nav="lab">Glass Lab</a><a href="#/lab/vision" data-nav="vision">Vision</a><button class="theme-toggle" id="themeToggle" type="button" aria-label="테마 전환"><span class="theme-toggle-track"><span class="theme-toggle-thumb"></span></span></button></div></nav></header>
   <main id="app" tabindex="-1"></main>
   <footer class="site-footer"><div><span>HJ</span><span class="muted">Interface experiments, 2026</span></div><div class="footer-links"><a href="https://github.com/hoonex" target="_blank" rel="noreferrer">GitHub</a><a href="#/lab">Glass Lab</a><a href="#/lab/vision">Vision Lab</a></div></footer>
-  <script src="./app.js" defer></script>
+  <script src="./app.js?v=LAB20-20260911" defer></script>
   <script src="./journal-editorial-core.js" defer></script>
   <script src="./journal-runtime.js" defer></script>
   <script src="./journal-spatial-index.js" defer></script>
   <script src="./journal-v6-studio.js" defer></script>
-  <script src="./journal-route-loader.js?v=F6-20260830-2106" defer></script>
+  <script src="./journal-route-loader.js?v=LAB20-20260911" defer></script>
 </body>
 </html>
