@@ -7,7 +7,7 @@
     fresnel:.52,edgeHighlight:.10,zRadius:4,cornerRadius:6,
     saturation:.04,brightness:.015
   };
-  let instance=null,controls=null,observer=null,bootToken=0,scheduled=0;
+  let instance=null,controls=null,observer=null,controller=null,bootToken=0,scheduled=0;
   let modulePromise=null;
   const handlers=new Map();
   const neutralContexts=globalThis.__HJLiquidGlassNeutralContexts=
@@ -114,6 +114,10 @@
     try{instance?.destroy?.();}catch{}
     instance=null;
     if(!active()||!controls)return;
+    if(/\b(?:Chrome|Chromium)\/150\./.test(navigator.userAgent)){
+      controls.classList.remove('is-liquid-range-webgl');
+      return;
+    }
     const rails=[...controls.querySelectorAll('.liquid-range-glass')];
     if(!rails.length)return;
     try{
@@ -154,6 +158,7 @@
     if(scheduled)cancelAnimationFrame(scheduled);
     scheduled=0;
     observer?.disconnect();observer=null;
+    controller?.abort();controller=null;
     try{instance?.destroy?.();}catch{}
     instance=null;
     if(controls)controls.classList.remove('is-liquid-range-webgl');
@@ -172,10 +177,11 @@
     if(next===controls){scheduleRefresh();return;}
     cleanup();controls=next;controls.classList.add('liquid-range-root');
     ensureWrapped();
+    controller=new AbortController();
     observer=new MutationObserver(scheduleRefresh);
     observer.observe(controls,{childList:true,subtree:true});
-    controls.addEventListener('scroll',scheduleRefresh,{passive:true});
-    window.addEventListener('resize',scheduleRefresh,{passive:true,once:false});
+    controls.addEventListener('scroll',scheduleRefresh,{passive:true,signal:controller.signal});
+    window.addEventListener('resize',scheduleRefresh,{passive:true,signal:controller.signal});
     bootRenderer();
   }
 
