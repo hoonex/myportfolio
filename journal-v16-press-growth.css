@@ -1,0 +1,46 @@
+/* Journal v16: press-growth control and final scale composition. */
+.real-liquid-glass.fluid-v14-enabled.fluid-press-growth-enabled{
+  scale:var(--hj-fluid-scale-x,1) var(--hj-fluid-scale-y,1)!important;
+}
+.fluid-growth-control{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(126px,42%);
+  gap:14px;
+  align-items:center;
+  padding:10px 0 2px;
+}
+.fluid-growth-copy{
+  display:grid;
+  gap:3px;
+  min-width:0;
+}
+.fluid-growth-copy b{
+  font-size:.82rem;
+  font-weight:650;
+  letter-spacing:-.01em;
+}
+.fluid-growth-copy small{
+  font-size:.68rem;
+  line-height:1.35;
+  opacity:.58;
+}
+.fluid-growth-input{
+  display:grid;
+  grid-template-columns:minmax(72px,1fr) 42px;
+  gap:8px;
+  align-items:center;
+}
+.fluid-growth-input input{width:100%;margin:0}
+.fluid-growth-input output{
+  font-variant-numeric:tabular-nums;
+  font-size:.72rem;
+  text-align:right;
+  opacity:.78;
+}
+@media(max-width:640px){
+  .fluid-growth-control{grid-template-columns:1fr;gap:7px}
+  .fluid-growth-input{grid-template-columns:minmax(0,1fr) 44px}
+}
+@media(prefers-reduced-motion:reduce){
+  .real-liquid-glass.fluid-v14-enabled.fluid-press-growth-enabled{scale:1 1!important}
+}
