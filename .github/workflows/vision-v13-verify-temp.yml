@@ -1,0 +1,57 @@
+name: Temporary Vision v13 verification
+
+on:
+  push:
+    branches:
+      - feat/vision-lab-v13-sloar-010
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout task branch
+        uses: actions/checkout@v4
+
+      - name: JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check journal-v13-vision.js
+          node --check journal-route-loader.js
+
+      - name: Vision route ownership
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          data=json.loads(Path('runtime-manifest.json').read_text())
+          vision=[r for r in data['routes'] if r['id']=='vision']
+          assert len(vision)==1, vision
+          route=vision[0]
+          assert route['paths']==['/lab/vision'], route
+          assert route['styles']==['journal-v13-vision.css'], route
+          assert route['scripts']==['journal-v13-vision.js'], route
+          for old in ['journal-v11-vision.js','journal-v11-vision.css','journal-v12-vision-privacy.js','journal-v12-vision-f5.js']:
+              assert not Path(old).exists(), old
+          source=Path('journal-v13-vision.js').read_text()
+          for token in ['FACE_LANDMARKS_TESSELATION','PALM=','jawOpen','data-v13-toggle','GestureRecognizer','FaceLandmarker']:
+              assert token in source, token
+          print('vision-v13 static contract: ok')
+
+      - name: Canonical Sloar 0.10 bundle equality
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/hoonex/sloar-chat-coder.git "$RUNNER_TEMP/sloar"
+          git -C "$RUNNER_TEMP/sloar" checkout --detach 2fbca76a97017ebf88295b52d080b8158ffbd186
+          grep -F 'version: "0.10.0"' .agents/skills/sloar-chat-coder/SKILL.md
+          diff -qr "$RUNNER_TEMP/sloar/.agents/skills/sloar-chat-coder" .agents/skills/sloar-chat-coder
+          diff -qr "$RUNNER_TEMP/sloar/.agents/skills/web-design-guidance" .agents/skills/web-design-guidance
+          diff -qr "$RUNNER_TEMP/sloar/.agents/skills/apple-web-design" .agents/skills/apple-web-design
+          grep -F '<!-- sloar-chat-coder:begin -->' AGENTS.md
+          grep -F '<!-- sloar-chat-coder:end -->' AGENTS.md
+          python3 .agents/skills/sloar-chat-coder/scripts/doctor.py . --json
