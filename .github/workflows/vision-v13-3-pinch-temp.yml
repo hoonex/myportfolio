@@ -1,0 +1,85 @@
+name: Temporary Vision v13.3 pinch repair
+
+on:
+  push:
+    branches:
+      - fix/vision-pinch-v13-3
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/vision-pinch-v13-3
+          fetch-depth: 0
+
+      - name: Patch pinch recognizer
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('journal-v13-vision.js')
+          s=p.read_text()
+          def rep(old,new):
+              global s
+              if old not in s:
+                  raise SystemExit('missing source: '+old[:120])
+              s=s.replace(old,new,1)
+
+          rep("/* Vision Lab v13.2 — resilient models + hysteretic multi-hand pinch + filled face cells. */", "/* Vision Lab v13.3 — robust multi-cue pinch + filled face cells. */")
+          rep("const R='/lab/vision',MPV='1.0.1',BUILD='VISION13.2-20260911-1658';", "const R='/lab/vision',MPV='1.0.1',BUILD='VISION13.3-20260911-1712';")
+          rep("let state={surface:true,wire:false,debug:false,play:true},orbs=[],grab=null,lastPinch=null,faceTriangles=null,pinchLatch=new Map();", "let state={surface:true,wire:false,debug:false,play:true},orbs=[],grab=null,lastPinch=null,faceTriangles=null,pinchState=new Map();")
+          rep("pinchLatch.clear()", "pinchState.clear()")
+          rep("pinchLatch.clear();lastVideoTime=-1;", "pinchState.clear();lastVideoTime=-1;")
+
+          old="function blend(name){return face?.faceBlendshapes?.[0]?.categories?.find(x=>x.categoryName===name)?.score||0}function dist2(a,b){return a&&b?hypot(a.x-b.x,a.y-b.y):9}function pinch(NH,H,handed,w,h){let live=new Set(),out=[];for(let i=0;i<NH.length;i++){let N=NH[i],P=H[i]?.P;if(!N?.[8]||!P?.[8])continue;let side=handed?.[i]?.[0]?.categoryName||`H${i+1}`,key=side;live.add(key);let palm=(dist2(N[0],N[9])+dist2(N[5],N[17])+dist2(N[0],N[5])+dist2(N[0],N[17]))*.25,tip=Math.min(dist2(N[4],N[8]),dist2(N[4],N[7])*.92),ratio=tip/Math.max(.035,palm),was=pinchLatch.get(key)||false,active=was?ratio<.72:ratio<.55;pinchLatch.set(key,active);let a=P[4],b=P[8];out.push({active,x:(a.x+b.x)/(2*w),y:(a.y+b.y)/(2*h),ratio,side,quality:clamp(1-ratio/.9,0,1)})}for(let key of [...pinchLatch.keys()])if(!live.has(key))pinchLatch.delete(key);out.sort((a,b)=>Number(b.active)-Number(a.active)||a.ratio-b.ratio);return out[0]||null}\nfunction gestureLabel(p,hands){if(!hands.length)return'None';if(p?.active)return`Pinch · ${p.side}`;return hands.length>1?'Tracking ×2':'Tracking'}"
+          new="function blend(name){return face?.faceBlendshapes?.[0]?.categories?.find(x=>x.categoryName===name)?.score||0}function dist2(a,b){return a&&b?hypot(a.x-b.x,a.y-b.y):9}function dist3(a,b){return a&&b?hypot(a.x-b.x,a.y-b.y,(a.z||0)-(b.z||0)):9}function pinch(NH,H,handed,world,w,h){let live=new Set(),out=[];for(let i=0;i<NH.length;i++){let N=NH[i],P=H[i]?.P,W=world?.[i];if(!N?.[4]||!N?.[8]||!P?.[4]||!P?.[8])continue;let side=handed?.[i]?.[0]?.categoryName||handed?.[i]?.[0]?.displayName||`H${i+1}`,key=side;live.add(key);let screenPalm=(dist2(P[5],P[17])+dist2(P[0],P[9]))*.5,screenRatio=dist2(P[4],P[8])/Math.max(20,screenPalm),normPalm=(dist2(N[5],N[17])+dist2(N[0],N[9]))*.5,normRatio=dist2(N[4],N[8])/Math.max(.035,normPalm),worldPalm=W?.[5]&&W?.[17]?(dist3(W[5],W[17])+dist3(W[0],W[9]))*.5:0,worldRatio=worldPalm?dist3(W[4],W[8])/Math.max(.015,worldPalm):99,ratio=Math.min(screenRatio,normRatio,worldRatio),instant=clamp(1-(ratio-.16)/.58,0,1),st=pinchState.get(key)||{ema:instant,on:false,close:0,open:0};st.ema=st.ema*.55+instant*.45;let closing=st.ema>.50||screenRatio<.46||normRatio<.46||worldRatio<.48,opening=st.ema<.27&&screenRatio>.66&&normRatio>.66&&(worldRatio===99||worldRatio>.64);st.close=closing?st.close+1:0;st.open=opening?st.open+1:0;if(!st.on&&st.close>=2)st.on=true;if(st.on&&st.open>=2)st.on=false;pinchState.set(key,st);let a=P[4],b=P[8];out.push({active:st.on,x:(a.x+b.x)/(2*w),y:(a.y+b.y)/(2*h),ratio,side,quality:st.ema,a,b,screenRatio,normRatio,worldRatio})}for(let key of [...pinchState.keys()])if(!live.has(key))pinchState.delete(key);out.sort((a,b)=>Number(b.active)-Number(a.active)||b.quality-a.quality);return out[0]||null}\nfunction gestureLabel(p,hands){if(!hands.length)return'None';if(p?.active)return`Pinch · ${p.side}`;return hands.length>1?'Tracking ×2':'Tracking'}"
+          rep(old,new)
+          rep("H=hands.map(a=>handProjected(a,g,w,m)),p=pinch(hands,H,hand?.handednesses||[],w,h),", "H=hands.map(a=>handProjected(a,g,w,m)),p=pinch(hands,H,hand?.handedness||hand?.handednesses||[],hand?.worldLandmarks||[],w,h),")
+          rep("function drawOrbs(ctx,w,h,p){if(!state.play)return;", "function drawPinchFeedback(ctx,p,w){if(!p)return;ctx.save();ctx.lineCap='round';if(p.a&&p.b){ctx.strokeStyle=p.active?'rgba(255,255,255,.98)':'rgba(100,225,255,.48)';ctx.lineWidth=Math.max(2,w/420);ctx.beginPath();ctx.moveTo(p.a.x,p.a.y);ctx.lineTo(p.b.x,p.b.y);ctx.stroke()}let x=p.x*w,y=p.y*w,r=Math.max(8,w/88);ctx.fillStyle=p.active?'rgba(255,255,255,.96)':'rgba(73,210,255,.26)';ctx.strokeStyle=p.active?'rgba(90,235,255,.98)':'rgba(90,235,255,.62)';ctx.lineWidth=Math.max(2,w/520);ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore()}\nfunction drawOrbs(ctx,w,h,p){if(!state.play)return;")
+          rep("drawFace(ctx,F,w,h);H.forEach((x,i)=>drawHand(ctx,x,i,w));", "drawFace(ctx,F,w,h);H.forEach((x,i)=>drawHand(ctx,x,i,w));drawPinchFeedback(ctx,p,w);")
+          rep("metric('pinch',p?`${p.side} · ${Math.round(p.quality*100)}%${p.active?' · GRAB':''}`:'--');", "metric('pinch',p?`${p.side} · ${Math.round(p.quality*100)}%${p.active?' · PINCH':''}`:'--');")
+          p.write_text(s)
+
+          rev='SITE31-VISION13_3-20260911-1712'
+          for name in ['journal-route-loader.js','index.html']:
+              q=Path(name)
+              t=q.read_text()
+              old='SITE30-VISION13_2-20260911-1658'
+              if old not in t:
+                  raise SystemExit(f'missing revision in {name}')
+              q.write_text(t.replace(old,rev))
+          PY
+
+      - name: Verify and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check journal-v13-vision.js
+          node --check journal-route-loader.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('journal-v13-vision.js').read_text()
+          assert "BUILD='VISION13.3-20260911-1712'" in s
+          assert 'pinchState=new Map()' in s
+          assert 'screenRatio' in s and 'normRatio' in s and 'worldRatio' in s
+          assert 'st.close>=2' in s and 'st.open>=2' in s
+          assert 'hand?.handedness||hand?.handednesses||[]' in s
+          assert 'hand?.worldLandmarks||[]' in s
+          assert 'drawPinchFeedback' in s
+          rev='SITE31-VISION13_3-20260911-1712'
+          assert rev in Path('journal-route-loader.js').read_text()
+          assert Path('index.html').read_text().count(rev)==2
+          print('Vision v13.3 pinch contract: ok')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add journal-v13-vision.js journal-route-loader.js index.html
+          git commit -m "fix: rebuild Vision pinch recognition"
+          git push origin HEAD:fix/vision-pinch-v13-3
