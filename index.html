@@ -7,7 +7,8 @@
   <meta name="description" content="HJ — interface experiments, tools, and notes." />
   <title>HJ — Design Journal</title>
   <style>
-    html.hj-lab-booting #app{visibility:hidden;min-height:720px}
+    html.hj-lab-booting #app{position:relative;min-height:720px}
+    html.hj-lab-booting #app::after{content:"";position:absolute;z-index:2147483000;inset:0;background:var(--bg,#0b0c0e);pointer-events:none}
   </style>
   <script>
     (()=>{
