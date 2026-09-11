@@ -1,0 +1,156 @@
+/* Journal v20 — iOS 26-inspired slider: thin rail + direct-child LiquidGlass capsule thumb. */
+.refraction-controls.apple-slider-v20-root{position:relative}
+.apple-range-v20-shell{
+  --range-fill-x:17px;
+  position:relative;
+  display:block;
+  width:100%;
+  min-width:0;
+  height:30px;
+  isolation:isolate;
+}
+.apple-range-v20-track,
+.apple-range-v20-fill{
+  position:absolute;
+  top:50%;
+  height:4px;
+  transform:translateY(-50%);
+  border-radius:999px;
+  pointer-events:none;
+}
+.apple-range-v20-track{
+  z-index:0;
+  left:17px;
+  right:17px;
+  background:color-mix(in srgb,var(--text) 15%,transparent);
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.20);
+}
+.apple-range-v20-fill{
+  z-index:1;
+  left:17px;
+  width:max(0px,calc(var(--range-fill-x) - 17px));
+  background:#0a84ff;
+  box-shadow:0 0 7px rgba(10,132,255,.14);
+}
+.apple-range-v20-shell input[type="range"]{
+  -webkit-appearance:none;
+  appearance:none;
+  position:relative;
+  z-index:4;
+  display:block;
+  width:100%;
+  height:30px;
+  margin:0;
+  padding:0;
+  background:transparent!important;
+  accent-color:transparent;
+  cursor:pointer;
+  touch-action:pan-y;
+}
+.apple-range-v20-shell input[type="range"]::-webkit-slider-runnable-track{
+  height:30px;
+  border:0;
+  background:transparent;
+}
+.apple-range-v20-shell input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:34px;
+  height:30px;
+  margin-top:0;
+  border:0;
+  border-radius:999px;
+  background:transparent;
+  box-shadow:none;
+  opacity:0;
+}
+.apple-range-v20-shell input[type="range"]::-moz-range-track{
+  height:30px;
+  border:0;
+  background:transparent;
+}
+.apple-range-v20-shell input[type="range"]::-moz-range-progress{background:transparent}
+.apple-range-v20-shell input[type="range"]::-moz-range-thumb{
+  width:34px;
+  height:30px;
+  border:0;
+  border-radius:999px;
+  background:transparent;
+  box-shadow:none;
+  opacity:0;
+}
+
+/* LiquidGlass requires glassElements to be direct children of its root. */
+.refraction-controls.apple-slider-v20-root>.apple-range-v20-thumb{
+  position:absolute;
+  z-index:12;
+  left:0;
+  top:0;
+  width:30px;
+  height:19px;
+  transform:translate(-50%,-50%);
+  transform-origin:center;
+  border-radius:999px;
+  pointer-events:none;
+  isolation:isolate;
+  overflow:visible!important;
+  background:rgba(249,249,252,.94);
+  border:1px solid rgba(255,255,255,.80);
+  box-shadow:
+    0 2px 7px rgba(0,0,0,.16),
+    0 0 0 .5px color-mix(in srgb,var(--text) 14%,transparent),
+    inset 0 1px 1px rgba(255,255,255,.90);
+  will-change:left,top,width,transform;
+}
+.refraction-controls.apple-slider-v20-root>.apple-range-v20-thumb::after{
+  content:"";
+  position:absolute;
+  z-index:2;
+  inset:1px;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.015) 56%,rgba(255,255,255,.10));
+  opacity:.64;
+  transition:opacity .10s ease;
+}
+.refraction-controls.apple-slider-v20-root>.apple-range-v20-thumb>canvas{
+  position:absolute!important;
+  z-index:1!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  border-radius:inherit!important;
+  pointer-events:none!important;
+  opacity:0;
+  transition:opacity .08s ease;
+}
+.refraction-controls.apple-slider-v20-root.is-apple-slider-v20-webgl>.apple-range-v20-thumb.is-active,
+.refraction-controls.apple-slider-v20-root.is-apple-slider-v20-webgl>.apple-range-v20-thumb.is-settling{
+  background:rgba(255,255,255,.035);
+  border-color:rgba(255,255,255,.18);
+  box-shadow:0 3px 10px rgba(0,0,0,.12);
+}
+.refraction-controls.apple-slider-v20-root.is-apple-slider-v20-webgl>.apple-range-v20-thumb.is-active>canvas,
+.refraction-controls.apple-slider-v20-root.is-apple-slider-v20-webgl>.apple-range-v20-thumb.is-settling>canvas{
+  opacity:1;
+}
+.refraction-controls.apple-slider-v20-root.is-apple-slider-v20-webgl>.apple-range-v20-thumb.is-active::after,
+.refraction-controls.apple-slider-v20-root.is-apple-slider-v20-webgl>.apple-range-v20-thumb.is-settling::after{
+  opacity:.18;
+}
+.apple-range-v20-shell.is-active .apple-range-v20-track{background:color-mix(in srgb,var(--text) 18%,transparent)}
+.apple-range-v20-shell.is-active .apple-range-v20-fill{box-shadow:0 0 10px rgba(10,132,255,.22)}
+.ref-control>.apple-range-v20-shell{width:100%}
+.fluid-growth-input>.apple-range-v20-shell{min-width:0}
+@media(prefers-color-scheme:dark){
+  .refraction-controls.apple-slider-v20-root>.apple-range-v20-thumb{
+    background:rgba(247,247,250,.92);
+    border-color:rgba(255,255,255,.60);
+    box-shadow:0 2px 8px rgba(0,0,0,.34),0 0 0 .5px rgba(255,255,255,.14),inset 0 1px 1px rgba(255,255,255,.76);
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .refraction-controls.apple-slider-v20-root>.apple-range-v20-thumb,
+  .refraction-controls.apple-slider-v20-root>.apple-range-v20-thumb::after,
+  .refraction-controls.apple-slider-v20-root>.apple-range-v20-thumb>canvas{transition:none}
+}
