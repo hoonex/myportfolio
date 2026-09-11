@@ -8,15 +8,16 @@
 
   const route = () => (location.hash.slice(1) || '/').split('?')[0];
   const VISION_REV = 'F6-20260830-2106';
+  const DEPLOY_REV = 'LAB22-20260911-1329';
   const assetUrl = rel => {
     const url = new URL(`./${rel}`, document.baseURI);
-    if (/^journal-v1[12]-vision/.test(rel)) url.searchParams.set('v', VISION_REV);
+    url.searchParams.set('v', /^journal-v1[12]-vision/.test(rel) ? `${DEPLOY_REV}-${VISION_REV}` : DEPLOY_REV);
     return url.href;
   };
 
   function manifest() {
     if (!manifestPromise) {
-      manifestPromise = fetch('./runtime-manifest.json', { cache: 'no-cache' }).then(response => {
+      manifestPromise = fetch(`./runtime-manifest.json?v=${encodeURIComponent(DEPLOY_REV)}`, { cache: 'no-store' }).then(response => {
         if (!response.ok) throw new Error(`runtime manifest ${response.status}`);
         return response.json();
       });

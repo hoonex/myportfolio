@@ -1,0 +1,10 @@
+/* Journal v22: the jelly itself is material only — no labels/content inside it. */
+#realLiquidGlass > .glass-content{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+#realLiquidGlass.real-jelly-active > :not(canvas):not(.glass-content){
+  pointer-events:none;
+}
