@@ -1,0 +1,96 @@
+name: Temporary Vision v13.4 solid mesh and hand repair
+
+on:
+  push:
+    branches:
+      - fix/vision-solid-mesh-hand-v13-4
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/vision-solid-mesh-hand-v13-4
+          fetch-depth: 0
+
+      - name: Patch Vision solid surfaces and hand tracking
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path('journal-v13-vision.js')
+          s = p.read_text()
+
+          def rep(old, new):
+              global s
+              if old not in s:
+                  raise SystemExit('missing expected source: ' + old[:180])
+              s = s.replace(old, new, 1)
+
+          rep('/* Vision Lab v13.3 — robust multi-cue pinch + filled face cells. */', '/* Vision Lab v13.4 — opaque solid mesh + hand-priority tracking. */')
+          rep("const R='/lab/vision',MPV='1.0.1',BUILD='VISION13.3-20260911-1712';", "const R='/lab/vision',MPV='1.0.1',BUILD='VISION13.4-20260911-2033';")
+
+          rep("minHandDetectionConfidence:.45,minHandPresenceConfidence:.45,minTrackingConfidence:.45", "minHandDetectionConfidence:.28,minHandPresenceConfidence:.28,minTrackingConfidence:.34")
+          rep("if(handTask&&now-lastH>=66&&!health.hand.recovering)", "if(handTask&&now-lastH>=33&&!health.hand.recovering)")
+          rep("if(faceTask&&now-lastF>=50&&!health.face.recovering)", "if(faceTask&&now-lastF>=66&&!health.face.recovering)")
+
+          rep("let fills=['hsla(188 96% 60% / .17)','hsla(196 96% 63% / .18)','hsla(207 94% 66% / .19)','hsla(222 92% 68% / .20)','hsla(242 90% 70% / .19)','hsla(278 88% 70% / .18)','hsla(318 90% 69% / .17)'];", "let fills=['hsl(188 86% 42%)','hsl(196 88% 46%)','hsl(207 88% 50%)','hsl(222 82% 53%)','hsl(242 72% 56%)','hsl(278 70% 54%)','hsl(318 76% 52%)'];")
+          rep("ctx.globalCompositeOperation='screen';", "ctx.globalCompositeOperation='source-over';")
+          rep("ctx.fillStyle='rgba(36,176,255,.075)'", "ctx.fillStyle='rgb(8,52,70)'")
+
+          rep("ctx.fillStyle=`hsla(${h} 92% 64% / .20)`", "ctx.fillStyle=`hsl(${h} 76% 42%)`")
+          rep("ctx.strokeStyle=`hsla(${h} 96% 78% / .46)`", "ctx.strokeStyle=`hsl(${h} 88% 66%)`")
+          rep("ctx.strokeStyle=`hsla(${h} 90% 65% / .28)`", "ctx.strokeStyle=`hsl(${h} 78% 45%)`")
+          rep("ctx.lineWidth=Math.max(10,w/66);", "ctx.lineWidth=Math.max(16,w/48);")
+          rep("ctx.fillStyle=tip?'rgba(255,255,255,.96)':`hsla(${h} 100% 84% / .88)`", "ctx.fillStyle=tip?'rgb(255,255,255)':`hsl(${h} 92% 72%)`")
+
+          rep("<p>HandLandmarker owns the 21-point hand model. Pinch input uses the same landmarks that render the hand body.</p>", "<p>HandLandmarker runs at hand-priority cadence and drives an opaque palm/finger body. Pinch uses the same tracked landmarks.</p>")
+          rep("<p>FaceLandmarker drives a fully filled triangular face surface. Wireframe is optional; the default view fills the tessellation cells instead of drawing a line cage.</p>", "<p>FaceLandmarker drives a fully opaque triangular face shell. Wireframe stays optional; Surface mode hides the camera image beneath the face.</p>")
+
+          p.write_text(s)
+
+          old_rev = 'SITE31-VISION13_3-20260911-1712'
+          new_rev = 'SITE32-VISION13_4-20260911-2033'
+          for name in ['journal-route-loader.js', 'index.html']:
+              q = Path(name)
+              t = q.read_text()
+              if old_rev not in t:
+                  raise SystemExit(f'missing old revision in {name}')
+              q.write_text(t.replace(old_rev, new_rev))
+
+      - name: Verify and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check journal-v13-vision.js
+          node --check journal-route-loader.js
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('journal-v13-vision.js').read_text()
+          assert "BUILD='VISION13.4-20260911-2033'" in s
+          assert 'minHandDetectionConfidence:.28' in s
+          assert 'minHandPresenceConfidence:.28' in s
+          assert 'minTrackingConfidence:.34' in s
+          assert 'now-lastH>=33' in s
+          assert 'now-lastF>=66' in s
+          assert "ctx.globalCompositeOperation='source-over'" in s
+          assert "ctx.fillStyle='rgb(8,52,70)'" in s
+          assert "hsl(188 86% 42%)" in s
+          assert 'ctx.lineWidth=Math.max(16,w/48)' in s
+          assert "Surface mode hides the camera image beneath the face" in s
+          rev='SITE32-VISION13_4-20260911-2033'
+          assert rev in Path('journal-route-loader.js').read_text()
+          assert Path('index.html').read_text().count(rev)==2
+          print('Vision v13.4 solid mesh + hand tracking contract: ok')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add journal-v13-vision.js journal-route-loader.js index.html
+          git commit -m "fix: make Vision surfaces opaque and prioritize hand tracking"
+          git push origin HEAD:fix/vision-solid-mesh-hand-v13-4
