@@ -7,11 +7,10 @@
   const fullEditorialRoutes = new Set(['/lab', '/post/glass', '/post/sloar', '/post/motion']);
 
   const route = () => (location.hash.slice(1) || '/').split('?')[0];
-  const VISION_REV = 'F6-20260830-2106';
-  const DEPLOY_REV = 'LAB27-20260911-1502';
+  const DEPLOY_REV = 'SITE28-VISION13-20260911-1535';
   const assetUrl = rel => {
     const url = new URL(`./${rel}`, document.baseURI);
-    url.searchParams.set('v', /^journal-v1[12]-vision/.test(rel) ? `${DEPLOY_REV}-${VISION_REV}` : DEPLOY_REV);
+    url.searchParams.set('v', DEPLOY_REV);
     return url.href;
   };
 
@@ -83,7 +82,6 @@
     document.documentElement.dataset.runtimeRoute = 'loading';
     try {
       const config = await manifest();
-      // Exact matching keeps /lab/vision independent from the heavy /lab WebGL stack.
       const groups = (config.routes || []).filter(group => (group.paths || []).includes(current));
       for (const group of groups) {
         for (const style of group.styles || []) await loadStyle(style);
