@@ -1,0 +1,99 @@
+name: Temporary Vision v13.2 pinch + filled mesh patch
+
+on:
+  push:
+    branches:
+      - fix/vision-pinch-filled-mesh-v13-2
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/vision-pinch-filled-mesh-v13-2
+          fetch-depth: 0
+
+      - name: Patch Vision interaction and face surface
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p=Path('journal-v13-vision.js')
+          s=p.read_text()
+          def rep(old,new):
+              global s
+              if old not in s:
+                  raise SystemExit('missing expected source: '+old[:120])
+              s=s.replace(old,new,1)
+
+          rep("/* Vision Lab v13.1 — resilient MediaPipe ownership: dedicated landmark models, independent recovery. */", "/* Vision Lab v13.2 — resilient models + hysteretic multi-hand pinch + filled face cells. */")
+          rep("const R='/lab/vision',MPV='1.0.1',BUILD='VISION13.1-20260911-1645';", "const R='/lab/vision',MPV='1.0.1',BUILD='VISION13.2-20260911-1658';")
+          rep("let state={surface:true,wire:true,debug:false,play:true},orbs=[],grab=null,lastPinch=null;", "let state={surface:true,wire:false,debug:false,play:true},orbs=[],grab=null,lastPinch=null,faceTriangles=null,pinchLatch=new Map();")
+          rep("${tg('surface',c.surface,1)}${tg('wire',c.wire,1)}${tg('debug',c.debug,0)}${tg('play',c.play,1)}", "${tg('surface',c.surface,1)}${tg('wire',c.wire,0)}${tg('debug',c.debug,0)}${tg('play',c.play,1)}")
+          rep("<p>FaceLandmarker owns the face surface, dense tessellation, and blendshapes. It recovers independently from hand tracking.</p>", "<p>FaceLandmarker drives a fully filled triangular face surface. Wireframe is optional; the default view fills the tessellation cells instead of drawing a line cage.</p>")
+          rep("function seed(){orbs=[{x:.18,y:.25,r:.035,vx:.05,vy:.01,h:205},{x:.42,y:.28,r:.045,vx:-.03,vy:.02,h:154},{x:.72,y:.24,r:.032,vx:-.04,vy:.03,h:35},{x:.28,y:.68,r:.042,vx:.03,vy:-.02,h:285},{x:.56,y:.72,r:.034,vx:-.04,vy:.02,h:55},{x:.78,y:.62,r:.048,vx:.02,vy:-.03,h:190}];grab=null;lastPinch=null}", "function seed(){orbs=[{x:.18,y:.25,r:.035,vx:.05,vy:.01,h:205},{x:.42,y:.28,r:.045,vx:-.03,vy:.02,h:154},{x:.72,y:.24,r:.032,vx:-.04,vy:.03,h:35},{x:.28,y:.68,r:.042,vx:.03,vy:-.02,h:285},{x:.56,y:.72,r:.034,vx:-.04,vy:.02,h:55},{x:.78,y:.62,r:.048,vx:.02,vy:-.03,h:190}];grab=null;lastPinch=null;pinchLatch.clear()}")
+          rep("hand=face=null;grab=null;lastVideoTime=-1;", "hand=face=null;grab=null;lastPinch=null;pinchLatch.clear();lastVideoTime=-1;")
+
+          old_face="""function drawFace(ctx,F,w){if(!F)return;let P=F.P,oval=OVAL.map(i=>P[i]).filter(Boolean);if(state.surface&&oval.length>2){ctx.save();poly(ctx,oval);ctx.clip();let b=oval.reduce((r,p)=>({a:Math.min(r.a,p.x),b:Math.max(r.b,p.x),c:Math.min(r.c,p.y),d:Math.max(r.d,p.y)}),{a:Infinity,b:-Infinity,c:Infinity,d:-Infinity}),gr=ctx.createLinearGradient(b.a,b.c,b.b,b.d);gr.addColorStop(0,'rgba(81,222,255,.20)');gr.addColorStop(.5,'rgba(110,115,255,.12)');gr.addColorStop(1,'rgba(255,99,190,.18)');ctx.fillStyle=gr;ctx.fillRect(b.a,b.c,b.b-b.a,b.d-b.c);ctx.restore()}if(state.wire){line(ctx,mp?.FaceLandmarker?.FACE_LANDMARKS_TESSELATION,P,'rgba(80,255,188,.68)',Math.max(1,w/760));line(ctx,mp?.FaceLandmarker?.FACE_LANDMARKS_FACE_OVAL,P,'rgba(240,255,250,.95)',Math.max(2,w/430));line(ctx,mp?.FaceLandmarker?.FACE_LANDMARKS_LEFT_EYE,P,'rgba(104,188,255,.96)',Math.max(1.6,w/500));line(ctx,mp?.FaceLandmarker?.FACE_LANDMARKS_RIGHT_EYE,P,'rgba(104,188,255,.96)',Math.max(1.6,w/500));line(ctx,mp?.FaceLandmarker?.FACE_LANDMARKS_LIPS,P,'rgba(255,128,203,.96)',Math.max(1.7,w/480))}if(state.debug){ctx.save();ctx.fillStyle='rgba(255,255,255,.72)';for(let i=0;i<P.length;i+=6){ctx.beginPath();ctx.arc(P[i].x,P[i].y,Math.max(1.4,w/700),0,Math.PI*2);ctx.fill()}ctx.restore()}}"""
+          new_face="""function faceTriangleIndex(){if(faceTriangles)return faceTriangles;let edges=mp?.FaceLandmarker?.FACE_LANDMARKS_TESSELATION||[],out=[];for(let i=0;i+2<edges.length;i+=3){let ids=new Set();for(let j=0;j<3;j++){let e=edges[i+j],a=e?.start??e?.[0],b=e?.end??e?.[1];if(Number.isInteger(a))ids.add(a);if(Number.isInteger(b))ids.add(b)}if(ids.size===3)out.push([...ids])}if(out.length<100){let adj=new Map(),es=new Set(),add=(a,b)=>{if(!adj.has(a))adj.set(a,new Set());adj.get(a).add(b)};for(let e of edges){let a=e?.start??e?.[0],b=e?.end??e?.[1];if(!Number.isInteger(a)||!Number.isInteger(b)||a===b)continue;add(a,b);add(b,a);es.add(a<b?`${a}:${b}`:`${b}:${a}`)}out=[];for(let [a,set] of adj){let ns=[...set].filter(b=>b>a).sort((x,y)=>x-y);for(let i=0;i<ns.length;i++)for(let j=i+1;j<ns.length;j++){let b=ns[i],c=ns[j],k=b<c?`${b}:${c}`:`${c}:${b}`;if(es.has(k))out.push([a,b,c])}}}faceTriangles=out;return out}
+function drawFaceCells(ctx,P,w,h){let tris=faceTriangleIndex();if(!tris.length)return;let buckets=Array.from({length:7},()=>[]);for(let t of tris){let A=P[t[0]],B=P[t[1]],C=P[t[2]];if(!A||!B||!C)continue;let cx=(A.x+B.x+C.x)/(3*w),cy=(A.y+B.y+C.y)/(3*h),z=(A.z+B.z+C.z)/3,b=clamp(Math.floor((cx*.38+cy*.34+clamp(.2-z*3,0,.28))*7),0,6);buckets[b].push([A,B,C])}let fills=['hsla(188 96% 60% / .17)','hsla(196 96% 63% / .18)','hsla(207 94% 66% / .19)','hsla(222 92% 68% / .20)','hsla(242 90% 70% / .19)','hsla(278 88% 70% / .18)','hsla(318 90% 69% / .17)'];ctx.save();ctx.globalCompositeOperation='screen';for(let i=0;i<buckets.length;i++){let bucket=buckets[i];if(!bucket.length)continue;ctx.beginPath();for(let [A,B,C] of bucket){ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.lineTo(C.x,C.y);ctx.closePath()}ctx.fillStyle=fills[i];ctx.fill()}ctx.restore()}
+function drawFace(ctx,F,w,h){if(!F)return;let P=F.P,oval=OVAL.map(i=>P[i]).filter(Boolean);if(state.surface&&oval.length>2){ctx.save();poly(ctx,oval);ctx.fillStyle='rgba(36,176,255,.075)';ctx.fill();ctx.restore();drawFaceCells(ctx,P,w,h)}if(state.wire){line(ctx,mp?.FaceLandmarker?.FACE_LANDMARKS_TESSELATION,P,'rgba(125,255,218,.34)',Math.max(.7,w/1100));line(ctx,mp?.FaceLandmarker?.FACE_LANDMARKS_FACE_OVAL,P,'rgba(240,255,250,.72)',Math.max(1.4,w/650));line(ctx,mp?.FaceLandmarker?.FACE_LANDMARKS_LEFT_EYE,P,'rgba(104,188,255,.74)',Math.max(1.1,w/720));line(ctx,mp?.FaceLandmarker?.FACE_LANDMARKS_RIGHT_EYE,P,'rgba(104,188,255,.74)',Math.max(1.1,w/720));line(ctx,mp?.FaceLandmarker?.FACE_LANDMARKS_LIPS,P,'rgba(255,128,203,.78)',Math.max(1.2,w/700))}if(state.debug){ctx.save();ctx.fillStyle='rgba(255,255,255,.72)';for(let i=0;i<P.length;i+=6){ctx.beginPath();ctx.arc(P[i].x,P[i].y,Math.max(1.4,w/700),0,Math.PI*2);ctx.fill()}ctx.restore()}}"""
+          rep(old_face,new_face)
+
+          old_pinch="""function blend(name){return face?.faceBlendshapes?.[0]?.categories?.find(x=>x.categoryName===name)?.score||0}function pinch(H,w,h){let P=H?.[0]?.P;if(!P)return null;let a=P[4],b=P[8],span=hypot(P[5].x-P[17].x,P[5].y-P[17].y)||w*.16,ratio=hypot(a.x-b.x,a.y-b.y)/Math.max(18,span);return{active:ratio<.28,x:(a.x+b.x)/2/w,y:(a.y+b.y)/2/h,ratio}}
+function gestureLabel(p,hands){if(!hands.length)return'None';if(p?.active)return'Pinch';return hands.length>1?'Tracking ×2':'Tracking'}"""
+          new_pinch="""function blend(name){return face?.faceBlendshapes?.[0]?.categories?.find(x=>x.categoryName===name)?.score||0}function dist2(a,b){return a&&b?hypot(a.x-b.x,a.y-b.y):9}function pinch(NH,H,handed,w,h){let live=new Set(),out=[];for(let i=0;i<NH.length;i++){let N=NH[i],P=H[i]?.P;if(!N?.[8]||!P?.[8])continue;let side=handed?.[i]?.[0]?.categoryName||`H${i+1}`,key=side;live.add(key);let palm=(dist2(N[0],N[9])+dist2(N[5],N[17])+dist2(N[0],N[5])+dist2(N[0],N[17]))*.25,tip=Math.min(dist2(N[4],N[8]),dist2(N[4],N[7])*.92),ratio=tip/Math.max(.035,palm),was=pinchLatch.get(key)||false,active=was?ratio<.72:ratio<.55;pinchLatch.set(key,active);let a=P[4],b=P[8];out.push({active,x:(a.x+b.x)/(2*w),y:(a.y+b.y)/(2*h),ratio,side,quality:clamp(1-ratio/.9,0,1)})}for(let key of [...pinchLatch.keys()])if(!live.has(key))pinchLatch.delete(key);out.sort((a,b)=>Number(b.active)-Number(a.active)||a.ratio-b.ratio);return out[0]||null}
+function gestureLabel(p,hands){if(!hands.length)return'None';if(p?.active)return`Pinch · ${p.side}`;return hands.length>1?'Tracking ×2':'Tracking'}"""
+          rep(old_pinch,new_pinch)
+          rep("H=hands.map(a=>handProjected(a,g,w,m)),p=pinch(H,w,h),", "H=hands.map(a=>handProjected(a,g,w,m)),p=pinch(hands,H,hand?.handednesses||[],w,h),")
+          rep("drawFace(ctx,F,w);", "drawFace(ctx,F,w,h);")
+          rep("metric('pinch',p?`${Math.round((1-p.ratio)*100)}${p.active?' · GRAB':''}`:'--');", "metric('pinch',p?`${p.side} · ${Math.round(p.quality*100)}%${p.active?' · GRAB':''}`:'--');")
+          p.write_text(s)
+
+          rev='SITE30-VISION13_2-20260911-1658'
+          for name in ['journal-route-loader.js','index.html']:
+              q=Path(name)
+              t=q.read_text()
+              old='SITE29-VISION13_1-20260911-1645'
+              if old not in t:
+                  raise SystemExit(f'missing old revision in {name}')
+              q.write_text(t.replace(old,rev))
+
+      - name: Verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check journal-v13-vision.js
+          node --check journal-route-loader.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('journal-v13-vision.js').read_text()
+          assert "BUILD='VISION13.2-20260911-1658'" in s
+          assert 'faceTriangleIndex' in s and 'drawFaceCells' in s
+          assert "wire:false" in s and "tg('wire',c.wire,0)" in s
+          assert 'pinchLatch=new Map()' in s
+          assert 'active=was?ratio<.72:ratio<.55' in s
+          assert 'hand?.handednesses||[]' in s
+          assert "drawFace(ctx,F,w,h)" in s
+          assert "FACE_LANDMARKS_TESSELATION" in s
+          rev='SITE30-VISION13_2-20260911-1658'
+          assert rev in Path('journal-route-loader.js').read_text()
+          assert Path('index.html').read_text().count(rev)==2
+          print('Vision v13.2 static contract: ok')
+          PY
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add journal-v13-vision.js journal-route-loader.js index.html
+          git commit -m "fix: make pinch robust and fill the face mesh"
+          git push origin HEAD:fix/vision-pinch-filled-mesh-v13-2
