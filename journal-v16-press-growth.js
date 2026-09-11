@@ -12,8 +12,11 @@
   let lastScale = '';
 
   try {
-    const saved = Number(localStorage.getItem(KEY));
-    if (Number.isFinite(saved)) growth = clamp(saved, 0, MAX_GROWTH);
+    const raw = localStorage.getItem(KEY);
+    if (raw !== null) {
+      const saved = Number(raw);
+      if (Number.isFinite(saved)) growth = clamp(saved, 0, MAX_GROWTH);
+    }
   } catch {}
 
   const active = () => location.hash.startsWith('#/lab') && !location.hash.startsWith('#/lab/vision');
@@ -52,7 +55,7 @@
     const input = control.querySelector('input');
     const output = control.querySelector('output');
     if (input && document.activeElement !== input) input.value = String(Math.round(growth * 200) / 2);
-    if (output) output.textContent = `${(growth * 100).toFixed(growth * 100 % 1 ? 1 : 0)}%`;
+    if (output) output.textContent = `${(growth * 100).toFixed((growth * 100) % 1 ? 1 : 0)}%`;
     const b = control.querySelector('b'), small = control.querySelector('small');
     if (b) b.textContent = title;
     if (small) small.textContent = desc;
