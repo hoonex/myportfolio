@@ -1,0 +1,200 @@
+/* Journal v21 — Real Jelly mode UI, expanded shader canvas, hoop and fullscreen. */
+.real-jelly-panel{
+  display:grid;
+  gap:8px;
+  padding-top:2px;
+}
+.real-jelly-actions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px;
+}
+.real-jelly-actions button{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:8px 7px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:color-mix(in srgb,var(--bg-elevated) 86%,transparent);
+  color:var(--muted);
+  font:650 9.5px/1.2 inherit;
+  cursor:pointer;
+  transition:background .16s ease,color .16s ease,border-color .16s ease,transform .16s ease;
+}
+.real-jelly-actions button span{font-size:12px;line-height:1}
+.real-jelly-actions button:hover{color:var(--text)}
+.real-jelly-actions button:active{transform:scale(.97)}
+.real-jelly-actions button.is-active{
+  color:var(--text);
+  border-color:color-mix(in srgb,currentColor 34%,var(--line));
+  background:color-mix(in srgb,currentColor 9%,var(--bg-elevated));
+}
+.real-jelly-status{
+  min-height:12px;
+  color:var(--muted);
+  font:700 8.5px/1.25 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.06em;
+}
+.real-liquid-glass.real-jelly-active{
+  overflow:visible!important;
+  touch-action:none!important;
+  cursor:grab;
+}
+.real-liquid-glass.real-jelly-active.is-real-jelly-held{cursor:grabbing}
+.real-liquid-glass.real-jelly-active>.glass-content{
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:var(--jelly-rest-w)!important;
+  height:var(--jelly-rest-h)!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:5;
+}
+.real-liquid-glass.real-jelly-active>canvas{
+  border-radius:0!important;
+  overflow:visible!important;
+}
+.real-jelly-hoop{
+  position:absolute;
+  z-index:7;
+  right:clamp(16px,4.5%,52px);
+  top:clamp(92px,22%,172px);
+  width:clamp(230px,38%,340px);
+  height:250px;
+  pointer-events:none;
+  opacity:.96;
+}
+.real-jelly-hoop[hidden]{display:none!important}
+.real-jelly-backboard{
+  position:absolute;
+  right:0;
+  top:0;
+  width:12px;
+  height:154px;
+  border-radius:6px;
+  background:linear-gradient(90deg,rgba(255,255,255,.84),rgba(255,255,255,.28));
+  border:1px solid rgba(255,255,255,.72);
+  box-shadow:0 8px 24px rgba(0,0,0,.16),inset 0 0 0 1px rgba(0,0,0,.08);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+.real-jelly-rim{
+  position:absolute;
+  right:8px;
+  top:112px;
+  width:calc(100% - 24px);
+  height:22px;
+  border:5px solid #ff6b35;
+  border-top-width:4px;
+  border-radius:50%;
+  box-sizing:border-box;
+  filter:drop-shadow(0 5px 8px rgba(0,0,0,.22));
+}
+.real-jelly-rim i{
+  position:absolute;
+  top:50%;
+  width:13px;
+  height:13px;
+  border-radius:50%;
+  background:#ff6b35;
+  transform:translateY(-50%);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.35);
+}
+.real-jelly-rim i:first-child{left:-8px}
+.real-jelly-rim i:last-child{right:-8px}
+.real-jelly-net{
+  position:absolute;
+  right:26px;
+  top:130px;
+  width:calc(100% - 60px);
+  height:92px;
+  opacity:.68;
+  overflow:hidden;
+  clip-path:polygon(0 0,100% 0,76% 100%,24% 100%);
+  background:
+    repeating-linear-gradient(74deg,transparent 0 20px,rgba(255,255,255,.8) 21px 23px,transparent 24px 42px),
+    repeating-linear-gradient(106deg,transparent 0 20px,rgba(255,255,255,.8) 21px 23px,transparent 24px 42px);
+}
+.real-jelly-score{
+  position:absolute;
+  right:20px;
+  top:172px;
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  padding:5px 8px;
+  border:1px solid rgba(255,255,255,.45);
+  border-radius:999px;
+  background:rgba(10,12,18,.26);
+  color:#fff;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  text-shadow:0 1px 4px rgba(0,0,0,.4);
+}
+.real-jelly-score span{font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.real-jelly-score b{font:800 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+.real-jelly-hoop.is-score .real-jelly-rim{animation:jelly-score-rim .42s ease}
+.real-jelly-hoop.is-score .real-jelly-score{animation:jelly-score-pop .5s cubic-bezier(.2,.8,.2,1)}
+@keyframes jelly-score-rim{0%,100%{transform:scale(1)}45%{transform:scale(1.06,.88)}}
+@keyframes jelly-score-pop{0%{transform:scale(.86)}55%{transform:scale(1.12)}100%{transform:scale(1)}}
+.refraction-shell:fullscreen,
+.refraction-shell.is-jelly-pseudo-fullscreen{
+  margin:0!important;
+  width:100vw!important;
+  height:100vh!important;
+  max-width:none!important;
+  border-radius:0!important;
+  border:0!important;
+  grid-template-columns:minmax(0,1fr) minmax(270px,330px)!important;
+  background:var(--card)!important;
+}
+.refraction-shell:fullscreen .refraction-root,
+.refraction-shell.is-jelly-pseudo-fullscreen .refraction-root{
+  min-height:100vh!important;
+  height:100vh!important;
+}
+.refraction-shell:fullscreen .refraction-controls,
+.refraction-shell.is-jelly-pseudo-fullscreen .refraction-controls{
+  height:100vh;
+  max-height:100vh;
+  overflow:auto;
+}
+.refraction-shell.is-jelly-pseudo-fullscreen{
+  position:fixed!important;
+  inset:0!important;
+  z-index:10000!important;
+}
+html.jelly-pseudo-fullscreen-open,
+html.jelly-pseudo-fullscreen-open body{overflow:hidden!important}
+@media(max-width:760px){
+  .refraction-shell:fullscreen,
+  .refraction-shell.is-jelly-pseudo-fullscreen{
+    grid-template-columns:1fr!important;
+    grid-template-rows:minmax(58vh,1fr) minmax(0,42vh)!important;
+  }
+  .refraction-shell:fullscreen .refraction-root,
+  .refraction-shell.is-jelly-pseudo-fullscreen .refraction-root{
+    min-height:58vh!important;
+    height:auto!important;
+  }
+  .refraction-shell:fullscreen .refraction-controls,
+  .refraction-shell.is-jelly-pseudo-fullscreen .refraction-controls{
+    height:auto;
+    max-height:42vh;
+    border-left:0!important;
+    border-top:1px solid var(--line)!important;
+  }
+  .real-jelly-hoop{right:12px;top:58px;width:min(54vw,300px);height:210px}
+  .real-jelly-backboard{height:132px}
+  .real-jelly-rim{top:94px}
+  .real-jelly-net{top:113px;height:78px}
+  .real-jelly-score{top:148px}
+}
+@media(prefers-reduced-motion:reduce){
+  .real-jelly-actions button,.real-jelly-hoop.is-score .real-jelly-rim,.real-jelly-hoop.is-score .real-jelly-score{transition:none;animation:none}
+}
