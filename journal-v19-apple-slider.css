@@ -1,0 +1,147 @@
+/* Journal v19 — Apple-style iOS 26 slider: thin track + capsule Liquid Glass thumb. */
+.refraction-controls.apple-slider-root{position:relative}
+.apple-range-shell{
+  --range-p:50%;
+  --apple-thumb-w:30px;
+  --apple-thumb-shift:0px;
+  position:relative;
+  display:block;
+  width:100%;
+  min-width:0;
+  height:30px;
+  isolation:isolate;
+}
+.apple-range-track,
+.apple-range-fill{
+  position:absolute;
+  top:50%;
+  height:4px;
+  transform:translateY(-50%);
+  border-radius:999px;
+  pointer-events:none;
+}
+.apple-range-track{
+  z-index:0;
+  left:0;
+  right:0;
+  background:color-mix(in srgb,var(--text) 15%,transparent);
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.18);
+}
+.apple-range-fill{
+  z-index:1;
+  left:0;
+  width:var(--range-p);
+  background:#0a84ff;
+  box-shadow:0 0 8px rgba(10,132,255,.16);
+}
+.apple-range-thumb-glass{
+  position:absolute;
+  z-index:2;
+  left:clamp(15px,var(--range-p),calc(100% - 15px));
+  top:50%;
+  width:var(--apple-thumb-w);
+  height:19px;
+  transform:translate(calc(-50% + var(--apple-thumb-shift)),-50%);
+  border-radius:999px;
+  pointer-events:none;
+  overflow:visible;
+  background:rgba(250,250,252,.94);
+  border:1px solid rgba(255,255,255,.82);
+  box-shadow:
+    0 2px 7px rgba(0,0,0,.16),
+    0 0 0 .5px color-mix(in srgb,var(--text) 16%,transparent),
+    inset 0 1px 1px rgba(255,255,255,.88);
+  transition:background .12s ease,border-color .12s ease,box-shadow .12s ease,filter .12s ease;
+}
+.apple-range-thumb-glass::after{
+  content:"";
+  position:absolute;
+  inset:1px;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.02) 58%,rgba(255,255,255,.12));
+  opacity:.62;
+  transition:opacity .12s ease;
+}
+.apple-range-thumb-glass>canvas{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  border-radius:inherit!important;
+  pointer-events:none!important;
+  opacity:0;
+  transition:opacity .12s ease;
+}
+.is-apple-slider-webgl .apple-range-shell.is-active .apple-range-thumb-glass,
+.is-apple-slider-webgl .apple-range-shell.is-settling .apple-range-thumb-glass{
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+  filter:saturate(1.04) brightness(1.025);
+}
+.is-apple-slider-webgl .apple-range-shell.is-active .apple-range-thumb-glass::after,
+.is-apple-slider-webgl .apple-range-shell.is-settling .apple-range-thumb-glass::after{opacity:0}
+.is-apple-slider-webgl .apple-range-shell.is-active .apple-range-thumb-glass>canvas,
+.is-apple-slider-webgl .apple-range-shell.is-settling .apple-range-thumb-glass>canvas{opacity:1}
+.apple-range-shell input[type="range"]{
+  -webkit-appearance:none;
+  appearance:none;
+  position:relative;
+  z-index:4;
+  display:block;
+  width:100%;
+  height:30px;
+  margin:0;
+  padding:0;
+  background:transparent!important;
+  accent-color:transparent;
+  cursor:pointer;
+  touch-action:pan-y;
+}
+.apple-range-shell input[type="range"]::-webkit-slider-runnable-track{
+  height:30px;
+  border:0;
+  background:transparent;
+}
+.apple-range-shell input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:34px;
+  height:28px;
+  margin-top:1px;
+  border:0;
+  border-radius:999px;
+  background:transparent;
+  box-shadow:none;
+  opacity:0;
+}
+.apple-range-shell input[type="range"]::-moz-range-track{
+  height:30px;
+  border:0;
+  background:transparent;
+}
+.apple-range-shell input[type="range"]::-moz-range-progress{background:transparent}
+.apple-range-shell input[type="range"]::-moz-range-thumb{
+  width:34px;
+  height:28px;
+  border:0;
+  border-radius:999px;
+  background:transparent;
+  box-shadow:none;
+  opacity:0;
+}
+.apple-range-shell.is-active .apple-range-track{background:color-mix(in srgb,var(--text) 17%,transparent)}
+.apple-range-shell.is-active .apple-range-fill{box-shadow:0 0 10px rgba(10,132,255,.22)}
+.ref-control>.apple-range-shell{width:100%}
+.fluid-growth-input>.apple-range-shell{min-width:0}
+@media(prefers-color-scheme:dark){
+  .apple-range-thumb-glass{
+    background:rgba(247,247,250,.93);
+    border-color:rgba(255,255,255,.64);
+    box-shadow:0 2px 8px rgba(0,0,0,.34),0 0 0 .5px rgba(255,255,255,.15),inset 0 1px 1px rgba(255,255,255,.76);
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .apple-range-thumb-glass,.apple-range-thumb-glass::after,.apple-range-thumb-glass>canvas{transition:none}
+}
