@@ -1,7 +1,0 @@
-Vision v13 verification receipt
-
-Source verification run: https://github.com/hoonex/myportfolio/actions/runs/34572524521
-Result: success
-Covered: JavaScript syntax for journal-v13-vision.js and journal-route-loader.js; exact /lab/vision manifest ownership; removal of v11/v12 Vision runtime files; required MediaPipe mesh/pinch/jawOpen source contracts; exact canonical Sloar 0.10.0 bundle equality; Sloar doctor.
-
-This receipt is temporary review evidence and may be removed before merge.
