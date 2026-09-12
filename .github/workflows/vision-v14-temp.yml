@@ -1,4 +1,4 @@
-name: Temporary Vision v14 interactive art upgrade
+name: Diagnose Vision v14 generated source
 
 on:
   push:
@@ -6,58 +6,36 @@ on:
       - feat/vision-v14-interactive-art
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  patch:
+  diagnose:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
           ref: feat/vision-v14-interactive-art
           fetch-depth: 0
-      - name: Apply Vision v14 patch
+      - name: Generate source
         run: |
           sed -i 's/a.length?.55:0/a.length ? .55 : 0/' .github/vision-v14-patch.py
           python .github/vision-v14-patch.py
-      - name: Verify
+      - name: Inspect parser boundary
         run: |
-          set -euo pipefail
-          node --check journal-v14-vision.js
-          node --check journal-route-loader.js
           python - <<'PY'
           from pathlib import Path
-          import json
           s=Path('journal-v14-vision.js').read_text()
-          assert "BUILD='VISION14-20260912-1252'" in s
-          assert 'function pinches(' in s
-          assert 'grabs=new Map()' in s and 'lastPinches=new Map()' in s
-          assert "state.mode==='orbit'" in s
-          assert "state.mode==='threads'" in s
-          assert "state.mode==='bloom'" in s
-          assert 'drawSculpt' in s
-          assert 'data-v14-mode="sculpt"' in s
-          assert 'requestFullscreen' in s
-          assert 'globalThis.HJVision14' in s
-          assert not Path('journal-v13-vision.js').exists()
-          assert not Path('journal-v13-vision.css').exists()
-          m=json.loads(Path('runtime-manifest.json').read_text())
-          v=next(x for x in m['routes'] if x['id']=='vision')
-          assert v['styles']==['journal-v14-vision.css']
-          assert v['scripts']==['journal-v14-vision.js']
-          rev='SITE36-VISION14-20260912-1252'
-          assert rev in Path('journal-route-loader.js').read_text()
-          assert Path('index.html').read_text().count(rev)==2
-          print('Vision v14 interactive art contract: ok')
+          lines=s.splitlines()
+          for i in range(48,64):
+              if i <= len(lines):
+                  print(f'{i:03}: {lines[i-1]!r}')
+          print('TOTAL_BACKTICKS', s.count('`'), 'PARITY', s.count('`') % 2)
+          bal=0
+          for i,line in enumerate(lines,1):
+              bal ^= (line.count('`') & 1)
+              if 45 <= i <= 64:
+                  print('BT',i,line.count('`'),'OPEN',bal)
           PY
-      - name: Commit product changes
-        run: |
-          set -euo pipefail
-          rm .github/workflows/vision-v14-temp.yml .github/vision-v14-patch.py
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "feat: turn Vision Lab into a dual-hand interactive art playground"
-          git push origin HEAD:feat/vision-v14-interactive-art
+          node --check journal-v14-vision.js || true
