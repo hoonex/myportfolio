@@ -14,7 +14,7 @@
     {"id":"glass","paths":["/lab","/post/glass"],"styles":["journal-v17-fluid.css","journal-v20-apple-slider.css","journal-v21-real-jelly.css","journal-v22-real-jelly-clean.css"],"scripts":["journal-v23-liquidglass-jelly-engine.js","journal-v27-real-jelly.js","journal-v3-refraction.js","journal-v17-fluid-runtime.js","journal-v13-fluid-controls.js","journal-v20-apple-slider.js","journal-v9-locale-editorial.js"]},
     {"id":"article-labs","paths":["/post/sloar","/post/motion"],"styles":[],"scripts":["journal-v5-experiments.js"]},
     {"id":"spatial","paths":["/post/spatial"],"styles":[],"scripts":["journal-v8-spatial.js"]},
-    {"id":"vision","paths":["/lab/vision"],"styles":["journal-v13-vision.css"],"scripts":["journal-v13-vision.js"]},
+    {"id":"vision","paths":["/lab/vision"],"styles":["journal-v14-vision.css"],"scripts":["journal-v14-vision.js"]},
     {"id":"article-polish","paths":["/post/glass","/post/sloar","/post/motion","/post/spatial"],"styles":[],"scripts":["journal-v10-editorial-naturalize.js"]}
   ]
 }
