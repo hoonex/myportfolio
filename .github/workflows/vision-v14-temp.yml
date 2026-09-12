@@ -45,8 +45,9 @@ jobs:
           assert s.count('`') % 2 == 0
           assert 'function pinches(' in s
           assert 'return out.sort((a,b)=>a.side.localeCompare(b.side))' in s
-          assert "function gestureLabel(ps,hands)" in s
-          assert "}`;return hands.length>1" not in s
+          assert s.count('function gestureLabel(') == 1
+          assert 'function updatePlay(' not in s
+          assert 'function updateArt(' in s
           assert 'grabs=new Map()' in s and 'lastPinches=new Map()' in s
           assert "state.mode==='orbit'" in s
           assert "state.mode==='threads'" in s
