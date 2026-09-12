@@ -19,7 +19,9 @@ jobs:
           ref: feat/vision-v14-interactive-art
           fetch-depth: 0
       - name: Apply Vision v14 patch
-        run: python .github/vision-v14-patch.py
+        run: |
+          sed -i 's/a.length?.55:0/a.length ? .55 : 0/' .github/vision-v14-patch.py
+          python .github/vision-v14-patch.py
       - name: Verify
         run: |
           set -euo pipefail
