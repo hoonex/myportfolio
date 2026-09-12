@@ -1,0 +1,77 @@
+name: Vision v14 foreground layer fix
+
+on:
+  push:
+    branches:
+      - fix/vision-v14-foreground-layer
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/vision-v14-foreground-layer
+          fetch-depth: 0
+      - name: Reorder canvas layers and bump cache
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          js = Path('journal-v14-vision.js')
+          s = js.read_text()
+          old = "updateArt(dt,ps,F,w,h,now);drawFace(ctx,F,w,h);drawArt(ctx,w,h,ps,F,now);H.forEach((x,i)=>drawHand(ctx,x,i,w));drawPinchFeedback(ctx,ps,w,h);"
+          new = "updateArt(dt,ps,F,w,h,now);drawFace(ctx,F,w,h);H.forEach((x,i)=>drawHand(ctx,x,i,w));drawArt(ctx,w,h,ps,F,now);drawPinchFeedback(ctx,ps,w,h);"
+          if old not in s:
+              raise SystemExit('expected render-order sequence not found')
+          s = s.replace(old, new, 1)
+          s = s.replace("BUILD='VISION14.1-20260912-1650'", "BUILD='VISION14.2-20260912-2358'", 1)
+          js.write_text(s)
+
+          loader = Path('journal-route-loader.js')
+          x = loader.read_text()
+          oldrev = 'SITE37-VISION14_1-20260912-1650'
+          newrev = 'SITE38-VISION14_2-20260912-2358'
+          if oldrev not in x:
+              raise SystemExit('old loader revision not found')
+          loader.write_text(x.replace(oldrev, newrev, 1))
+
+          index = Path('index.html')
+          y = index.read_text()
+          if y.count(oldrev) != 2:
+              raise SystemExit(f'expected 2 old index revisions, found {y.count(oldrev)}')
+          index.write_text(y.replace(oldrev, newrev))
+          PY
+      - name: Verify
+        run: |
+          set -euo pipefail
+          node --check journal-v14-vision.js
+          node --check journal-route-loader.js
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('journal-v14-vision.js').read_text()
+          assert "BUILD='VISION14.2-20260912-2358'" in s
+          face = s.index('drawFace(ctx,F,w,h);')
+          hand = s.index('H.forEach((x,i)=>drawHand(ctx,x,i,w));', face)
+          art = s.index('drawArt(ctx,w,h,ps,F,now);', hand)
+          pinch = s.index('drawPinchFeedback(ctx,ps,w,h);', art)
+          assert face < hand < art < pinch
+          rev = 'SITE38-VISION14_2-20260912-2358'
+          assert rev in Path('journal-route-loader.js').read_text()
+          assert Path('index.html').read_text().count(rev) == 2
+          print('render order: camera -> face -> hand -> art -> pinch')
+          PY
+      - name: Commit product changes
+        run: |
+          set -euo pipefail
+          rm .github/workflows/vision-v14-layer-temp.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: keep Vision art above face mesh"
+          git push origin HEAD:fix/vision-v14-foreground-layer
