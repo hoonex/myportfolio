@@ -1,4 +1,4 @@
-name: Diagnose Vision v14 generated source
+name: Build Vision v14 interactive art
 
 on:
   push:
@@ -6,36 +6,75 @@ on:
       - feat/vision-v14-interactive-art
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  build:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: feat/vision-v14-interactive-art
           fetch-depth: 0
-      - name: Generate source
-        run: |
-          sed -i 's/a.length?.55:0/a.length ? .55 : 0/' .github/vision-v14-patch.py
-          python .github/vision-v14-patch.py
-      - name: Inspect parser boundary
+      - name: Repair patch boundary and generate source
         run: |
           python - <<'PY'
           from pathlib import Path
-          s=Path('journal-v14-vision.js').read_text()
-          lines=s.splitlines()
-          for i in range(48,64):
-              if i <= len(lines):
-                  print(f'{i:03}: {lines[i-1]!r}')
-          print('TOTAL_BACKTICKS', s.count('`'), 'PARITY', s.count('`') % 2)
-          bal=0
-          for i,line in enumerate(lines,1):
-              bal ^= (line.count('`') & 1)
-              if 45 <= i <= 64:
-                  print('BT',i,line.count('`'),'OPEN',bal)
+          p=Path('.github/vision-v14-patch.py')
+          s=p.read_text()
+          old='sub(r"function pinch\\(NH,H,handed,world,w,h\\)\\{.*?\\}\\nfunction gestureLabel\\(p,hands\\)\\{.*?\\}",new_pinch)'
+          new='sub(r"function pinch\\(NH,H,handed,world,w,h\\)\\{.*?\\nfunction updatePlay",new_pinch+"\\nfunction updatePlay")'
+          if old not in s:
+              raise SystemExit('old pinch/gesture replacement boundary not found')
+          s=s.replace(old,new,1).replace('a.length?.55:0','a.length ? .55 : 0')
+          p.write_text(s)
           PY
-          node --check journal-v14-vision.js || true
+          python .github/vision-v14-patch.py
+      - name: Verify generated runtime
+        run: |
+          set -euo pipefail
+          node --check journal-v14-vision.js
+          node --check journal-route-loader.js
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          s=Path('journal-v14-vision.js').read_text()
+          assert "BUILD='VISION14-20260912-1252'" in s
+          assert s.count('`') % 2 == 0
+          assert 'function pinches(' in s
+          assert 'return out.sort((a,b)=>a.side.localeCompare(b.side))' in s
+          assert "function gestureLabel(ps,hands)" in s
+          assert "}`;return hands.length>1" not in s
+          assert 'grabs=new Map()' in s and 'lastPinches=new Map()' in s
+          assert "state.mode==='orbit'" in s
+          assert "state.mode==='threads'" in s
+          assert "state.mode==='bloom'" in s
+          assert 'drawSculpt' in s
+          assert 'data-v14-mode="orbit"' in s and 'data-v14-mode="sculpt"' in s
+          assert 'requestFullscreen' in s
+          assert 'globalThis.HJVision14' in s
+          assert 'recognizeForVideo(v,ts)' in s
+          assert not Path('journal-v13-vision.js').exists()
+          assert not Path('journal-v13-vision.css').exists()
+          assert Path('journal-v14-vision.js').exists()
+          assert Path('journal-v14-vision.css').exists()
+          m=json.loads(Path('runtime-manifest.json').read_text())
+          v=next(x for x in m['routes'] if x['id']=='vision')
+          assert v['styles']==['journal-v14-vision.css']
+          assert v['scripts']==['journal-v14-vision.js']
+          rev='SITE36-VISION14-20260912-1252'
+          assert rev in Path('journal-route-loader.js').read_text()
+          assert Path('index.html').read_text().count(rev)==2
+          print('Vision v14 interactive art contract: ok')
+          PY
+      - name: Commit verified product changes
+        run: |
+          set -euo pipefail
+          rm .github/workflows/vision-v14-temp.yml .github/vision-v14-patch.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: turn Vision Lab into a dual-hand interactive art playground"
+          git push origin HEAD:feat/vision-v14-interactive-art
