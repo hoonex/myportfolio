@@ -38,6 +38,13 @@
 .spatial-live-lab-v8{border-radius:18px!important;box-shadow:0 10px 32px rgba(0,0,0,.05)!important}
 .manifesto-copy em{font-family:inherit!important;font-style:normal!important;font-weight:500!important}
 
+/* Long-form pages get the same restraint: fewer oversized rounded surfaces and less shadow. */
+.article-hero{border-radius:18px!important}
+.article-body .callout{border-radius:14px!important;background:transparent!important}
+.code-lab{border-radius:18px!important;box-shadow:none!important}
+.terminal{border-radius:14px!important;box-shadow:0 18px 48px rgba(0,0,0,.20)!important}
+.article-rail-v6{border-radius:16px!important;box-shadow:0 10px 30px rgba(0,0,0,.05)!important}
+
 /* New portfolio content is intentionally a list, not another stack of rounded cards. */
 .selected-builds{margin:0 0 124px}
 .section-head--builds{margin-bottom:0}
