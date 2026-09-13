@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0c0e" />
-  <meta name="description" content="HJ — interface experiments, tools, and notes." />
-  <title>HJ — Design Journal</title>
+  <meta name="description" content="HJ — interactive systems, tools, simulations, and interface experiments." />
+  <title>HJ — Design + Engineering</title>
   <style>
     html.hj-lab-booting #app{position:relative;min-height:720px}
     html.hj-lab-booting #app::after{content:"";position:absolute;z-index:2147483000;inset:0;background:var(--bg,#0b0c0e);pointer-events:none}
@@ -26,18 +26,20 @@
   <link rel="stylesheet" href="./journal-v6-studio.css" />
   <link rel="stylesheet" href="./journal-v6-compat.css" />
   <link rel="stylesheet" href="./journal-v8-spatial.css" />
+  <link rel="stylesheet" href="./portfolio-v15.css?v=SITE39-PORTFOLIO15-20260914-0110" />
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" width="0" height="0"><defs><filter id="liquid-edge" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.008 0.018" numOctaves="2" seed="7" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="B" result="displaced" /><feGaussianBlur in="displaced" stdDeviation="0.25" /></filter></defs></svg>
-  <div class="ambient" aria-hidden="true"><div class="ambient-orb ambient-orb-a"></div><div class="ambient-orb ambient-orb-b"></div><div class="ambient-grid"></div></div>
-  <header class="topbar-wrap"><nav class="topbar glass" aria-label="주요 메뉴"><a class="brand" href="#/" aria-label="홈"><span class="brand-mark">HJ</span><span class="brand-status">Design journal</span></a><div class="topbar-links"><a href="#/" data-nav="home">Index</a><a href="#/lab" data-nav="lab">Glass Lab</a><a href="#/lab/vision" data-nav="vision">Vision</a><button class="theme-toggle" id="themeToggle" type="button" aria-label="테마 전환"><span class="theme-toggle-track"><span class="theme-toggle-thumb"></span></span></button></div></nav></header>
+  <div class="ambient" aria-hidden="true"><div class="ambient-grid"></div></div>
+  <header class="topbar-wrap"><nav class="topbar glass" aria-label="주요 메뉴"><a class="brand" href="#/" aria-label="홈"><span class="brand-mark">HJ</span><span class="brand-status">Design + engineering</span></a><div class="topbar-links"><a href="#/" data-nav="home">Index</a><a href="#/lab" data-nav="lab">Glass Lab</a><a href="#/lab/vision" data-nav="vision">Vision</a><button class="theme-toggle" id="themeToggle" type="button" aria-label="테마 전환"><span class="theme-toggle-track"><span class="theme-toggle-thumb"></span></span></button></div></nav></header>
   <main id="app" tabindex="-1"></main>
-  <footer class="site-footer"><div><span>HJ</span><span class="muted">Interface experiments, 2026</span></div><div class="footer-links"><a href="https://github.com/hoonex" target="_blank" rel="noreferrer">GitHub</a><a href="#/lab">Glass Lab</a><a href="#/lab/vision">Vision Lab</a></div></footer>
+  <footer class="site-footer"><div><span>HJ</span><span class="muted">Interactive systems · tools · experiments, 2026</span></div><div class="footer-links"><a href="https://github.com/hoonex" target="_blank" rel="noreferrer">GitHub</a><a href="#/lab">Glass Lab</a><a href="#/lab/vision">Vision Lab</a></div></footer>
   <script src="./app.js?v=SITE38-VISION14_2-20260912-1842" defer></script>
   <script src="./journal-editorial-core.js" defer></script>
   <script src="./journal-runtime.js" defer></script>
   <script src="./journal-spatial-index.js" defer></script>
   <script src="./journal-v6-studio.js" defer></script>
+  <script src="./portfolio-v15.js?v=SITE39-PORTFOLIO15-20260914-0110" defer></script>
   <script src="./journal-route-loader.js?v=SITE38-VISION14_2-20260912-1842" defer></script>
 </body>
 </html>
