@@ -1,0 +1,30 @@
+name: Portfolio v15 check
+
+on:
+  push:
+    branches:
+      - verify/portfolio-v15
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax and contract checks
+        run: |
+          set -euo pipefail
+          node --check portfolio-v15.js
+          grep -q 'Selected builds' portfolio-v15.js
+          grep -q 'AeroForge' portfolio-v15.js
+          grep -q 'Vision Lab' portfolio-v15.js
+          grep -q 'Sloar Chat Coder' portfolio-v15.js
+          grep -q 'Glass / Jelly Lab' portfolio-v15.js
+          grep -q 'portfolio-v15.css?v=SITE39-PORTFOLIO15-20260914-0110' index.html
+          grep -q 'portfolio-v15.js?v=SITE39-PORTFOLIO15-20260914-0110' index.html
+          grep -q 'ambient-grid' index.html
+          if grep -q 'ambient-orb-a' index.html; then exit 1; fi
+          echo 'portfolio v15 contract: ok'
