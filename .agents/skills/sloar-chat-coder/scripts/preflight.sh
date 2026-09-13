@@ -10,7 +10,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   grep -q '^name: sloar-chat-coder$' "$skill" || { echo "invalid skill name" >&2; exit 1; }
   grep -q '^description:' "$skill" || { echo "missing description" >&2; exit 1; }
   stable_version="$(tr -d '[:space:]' < "$version_file")"
-  skill_version="$(awk '$1 == "version:" { gsub(/\"/, "", $2); print $2; exit }' "$skill")"
+  skill_version="$(awk '$1 == "version:" { gsub(/"/, "", $2); print $2; exit }' "$skill")"
   [[ -n "$stable_version" && "$skill_version" == "$stable_version" ]] || { echo "VERSION mismatch" >&2; exit 1; }
   for f in "$root"/.agents/skills/sloar-chat-coder/scripts/*.sh; do bash -n "$f"; done
   python3 -m py_compile "$root"/.agents/skills/sloar-chat-coder/scripts/*.py
@@ -36,6 +36,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   [[ -f "$root/.agents/skills/sloar-chat-coder/references/turn-terminalization.md" ]] || { echo "missing turn terminalization reference" >&2; exit 1; }
   [[ -f "$root/.agents/skills/sloar-chat-coder/references/ownership-evidence-closure.md" ]] || { echo "missing ownership/evidence closure reference" >&2; exit 1; }
   [[ -f "$root/.agents/skills/sloar-chat-coder/references/web-architecture-capsule.md" ]] || { echo "missing web architecture capsule reference" >&2; exit 1; }
+  [[ -f "$root/.agents/skills/sloar-chat-coder/references/rendered-ui-evidence.md" ]] || { echo "missing rendered UI evidence reference" >&2; exit 1; }
   [[ -f "$root/.agents/skills/web-design-guidance/SKILL.md" ]] || { echo "missing web design guidance companion" >&2; exit 1; }
   [[ -f "$root/.agents/skills/web-design-guidance/references/design-discovery.md" ]] || { echo "missing web design discovery reference" >&2; exit 1; }
   [[ -f "$root/.agents/skills/web-design-guidance/references/adaptive-design-discovery.md" ]] || { echo "missing adaptive design discovery reference" >&2; exit 1; }
