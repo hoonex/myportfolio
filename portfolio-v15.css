@@ -1,0 +1,73 @@
+/* Portfolio v15 — content-first audit. Keep effects where they explain interaction; remove decorative defaults. */
+:root{
+  --radius-xl:22px;
+  --radius-lg:18px;
+  --radius-md:14px;
+}
+:root:not([data-theme="dark"]){
+  --glass-fill:rgba(248,248,246,.78);
+  --glass-shadow:0 8px 28px rgba(20,24,34,.07),inset 0 1px 0 rgba(255,255,255,.58);
+}
+:root[data-theme="dark"]{
+  --glass-fill:rgba(19,20,23,.80);
+  --glass-shadow:0 8px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.10);
+}
+
+/* Decorative background effects were competing with the actual work. */
+.ambient-orb{display:none!important}
+.ambient-grid{background-size:96px 96px!important;opacity:.18!important;mask-image:linear-gradient(to bottom,rgba(0,0,0,.28),transparent 68%)!important}
+
+/* Functional floating chrome, not a giant glass pill. */
+.topbar{border-radius:18px!important;height:54px!important;max-width:860px}
+.topbar-links a{border-radius:10px!important;padding:9px 11px!important;transition:background .16s ease,color .16s ease,transform .12s ease!important}
+.glass{-webkit-backdrop-filter:blur(18px) saturate(128%)!important;backdrop-filter:blur(18px) saturate(128%)!important}
+.brand-status{letter-spacing:-.01em}
+
+/* Keep the hero typographic instead of using the usual portfolio serif-italic accent. */
+.home-page .hero{min-height:80svh}
+.hero h1 .serifish{font-family:inherit!important;font-style:normal!important;font-weight:430!important;letter-spacing:inherit!important;color:var(--muted)}
+.hero-note{max-width:310px}
+
+/* Cards still contain interactive previews, but the card itself no longer performs generic hover theatre. */
+.post-card{border-radius:18px!important;background:transparent!important;box-shadow:none!important}
+.post-card:hover,.post-card--studio:hover{transform:none!important;box-shadow:none!important;border-color:rgba(127,127,127,.28)!important;background:rgba(127,127,127,.035)!important}
+.post-card-arrow{width:42px!important;height:42px!important;border-radius:12px!important;font-size:1.05rem!important}
+.card-orb{display:none!important}
+.studio-preview{border-radius:14px!important;background:color-mix(in srgb,var(--bg-elevated) 92%,transparent)!important}
+.post-card--spatial-v8{background:transparent!important}
+.spatial-live-lab-v8{border-radius:18px!important;box-shadow:0 10px 32px rgba(0,0,0,.05)!important}
+.manifesto-copy em{font-family:inherit!important;font-style:normal!important;font-weight:500!important}
+
+/* New portfolio content is intentionally a list, not another stack of rounded cards. */
+.selected-builds{margin:0 0 124px}
+.section-head--builds{margin-bottom:0}
+.builds-intro{max-width:720px;margin:18px 0 34px;color:var(--muted);font-size:clamp(.98rem,1.5vw,1.12rem);line-height:1.62;letter-spacing:-.015em}
+.build-list{border-top:1px solid var(--line)}
+.build-row{display:grid;grid-template-columns:44px minmax(0,1fr) minmax(180px,.42fr) 32px;gap:20px;align-items:start;padding:24px 2px;border-bottom:1px solid var(--line);transition:background .16s ease,padding .2s var(--spring)}
+.build-row:hover{background:rgba(127,127,127,.035);padding-left:10px;padding-right:10px}
+.build-index,.build-kicker,.build-meta{font:650 .66rem/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.055em;color:var(--muted)}
+.build-index{padding-top:3px}
+.build-main{display:grid;gap:7px;min-width:0}
+.build-main strong{font-size:clamp(1.5rem,2.8vw,2.55rem);line-height:1;letter-spacing:-.045em;font-weight:640}
+.build-description{max-width:690px;color:var(--muted);font-size:.9rem;line-height:1.58}
+.build-meta{justify-self:end;max-width:210px;text-align:right;padding-top:4px}
+.build-arrow{justify-self:end;font-size:1rem;padding-top:1px;transition:transform .18s ease}
+.build-row:hover .build-arrow{transform:translate(2px,-2px)}
+.home-page .manifesto{margin-top:104px}
+
+@media(max-width:760px){
+  .selected-builds{margin-bottom:88px}
+  .build-row{grid-template-columns:32px minmax(0,1fr) 24px;gap:12px;padding:20px 0}
+  .build-meta{grid-column:2;justify-self:start;text-align:left;max-width:none;padding-top:4px}
+  .build-arrow{grid-column:3;grid-row:1/span 2}
+  .build-description{font-size:.86rem}
+}
+@media(max-width:520px){
+  .topbar{border-radius:15px!important}
+  .builds-intro{margin-bottom:24px}
+  .build-row{grid-template-columns:26px minmax(0,1fr) 22px}
+  .build-main strong{font-size:1.5rem}
+}
+@media(prefers-reduced-motion:reduce){
+  .build-row,.build-arrow{transition:none!important}
+}
