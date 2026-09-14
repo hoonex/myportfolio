@@ -1,0 +1,33 @@
+name: Portfolio v16 check
+on:
+  push:
+    branches: [verify/portfolio-v16-project-pages]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --check portfolio-v15.js
+          node --check portfolio-v16-projects.js
+      - name: Check portfolio contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          home = Path('portfolio-v15.js').read_text()
+          projects = Path('portfolio-v16-projects.js').read_text()
+          index = Path('index.html').read_text()
+          css = Path('portfolio-v16-projects.css').read_text()
+          assert "href:'#/project/aeroforge'" in home
+          assert "href:'#/project/sloar'" in home
+          assert "Resonance, Piano, Sculpt" in home
+          assert "851a82f" in projects
+          assert "Stable 0.10.3" in projects
+          assert "현재 구현된 것" in projects
+          assert "계획이나 예정 기능은 넣지 않고" in projects
+          assert 'portfolio-v16-projects.css?v=SITE44-PORTFOLIO16-20260915-0018' in index
+          assert 'portfolio-v16-projects.js?v=SITE44-PORTFOLIO16-20260915-0018' in index
+          assert '.project-page-v16' in css
+          print('portfolio v16 static contracts: ok')
+          PY
