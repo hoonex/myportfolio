@@ -1,0 +1,66 @@
+name: Temporary Vision Piano v14.6 build
+
+on:
+  push:
+    branches:
+      - feat/vision-piano-v14-6
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/vision-piano-v14-6
+          fetch-depth: 0
+      - name: Apply piano mode
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('.github/vision-piano-v14-6.py')
+          s=p.read_text()
+          s=s.replace("resonance.lastNotes.clear();resonance.audioError=''}`", "resonance.lastNotes.clear();resonance.audioError=''}`".replace('}`','}'), 1)
+          s=s.replace("resonance.lastNotes.clear();resonance.audioError='';piano.states.clear();piano.active.clear();piano.flashes=[]}`", "resonance.lastNotes.clear();resonance.audioError='';piano.states.clear();piano.active.clear();piano.flashes=[]}", 1)
+          p.write_text(s)
+          PY
+          python .github/vision-piano-v14-6.py
+      - name: Verify piano contract
+        run: |
+          set -euo pipefail
+          node --check journal-v14-vision.js
+          node --check journal-route-loader.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('journal-v14-vision.js').read_text()
+          assert "BUILD='VISION14.6-20260914-1450'" in s
+          assert 'data-v14-mode="piano">Piano' in s
+          assert "piano:['Piano'" in s
+          assert 'const PIANO_KEYS=' in s and s.count("side:'Left'") >= 5 and s.count("side:'Right'") >= 5
+          assert 'function pianoFingerSamples(' in s
+          assert 'function fingerBend(' in s
+          assert 'function makePianoVoice(' in s and 'function gatePianoVoice(' in s
+          assert "else if(state.mode==='piano')updatePiano" in s
+          assert "else if(state.mode==='piano')drawPiano" in s
+          assert '10 FINGERS · 10 KEYS' in s
+          assert 'if(isAudioMode(mode))await activateAudioFromGesture(mode)' in s
+          assert "mode==='resonance'||mode==='piano'" in s
+          assert 'PIANO_KEYS)makePianoVoice(k.id)' in s
+          assert 'SITE43-VISION14_6-20260914-1450' in Path('journal-route-loader.js').read_text()
+          assert Path('index.html').read_text().count('SITE43-VISION14_6-20260914-1450')==2
+          print('Vision piano contract: ok')
+          PY
+      - name: Commit product changes
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add journal-v14-vision.js journal-route-loader.js index.html
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m "feat: add ten-finger Vision piano mode"
+          git push origin HEAD:feat/vision-piano-v14-6
