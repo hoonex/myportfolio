@@ -1,0 +1,66 @@
+name: Verify Vision 14.4 pinch audio performance fix
+
+on:
+  push:
+    branches:
+      - fix/vision14-4-pinch-audio-perf
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/vision14-4-pinch-audio-perf
+          fetch-depth: 0
+      - name: Apply Vision 14.4 patch
+        run: python .github/vision14-4-patch.py
+      - name: Verify runtime contract
+        run: |
+          set -euo pipefail
+          node --check journal-v14-vision.js
+          node --check journal-route-loader.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('journal-v14-vision.js').read_text()
+          assert "BUILD='VISION14.4-20260914-1054'" in s
+          assert 'contactPx=Math.max(9,screenPalm*.22)' in s
+          assert 'worldRatio<.24||normRatio<.24' in s
+          assert 'screenRatio<.32||normRatio<.30||worldRatio<.32' in s
+          assert 'handDue=handTask&&now-lastH>=90' in s
+          assert 'faceDue=faceTask&&now-lastF>=105' in s
+          assert '}else if(faceDue){' in s
+          assert "cap=coarse?1.12:1.35" in s
+          assert 'async function activateAudioFromGesture()' in s
+          assert "if(c.state!=='running')await c.resume()" in s
+          assert "if(c.state!=='running'){audioEngine.ready=false" in s
+          assert "mode==='resonance')await activateAudioFromGesture()" in s
+          assert "state.mode==='resonance')await activateAudioFromGesture()" in s
+          assert 'master.gain.value=.68' in s
+          assert "v.gate.gain.setTargetAtTime(on?.18+.09*quality:0" in s
+          assert 'for(let j=0;j<=16;j++){let x=j/16*w' in s
+          assert 'for(let i=0;i<=24;i++){let t=i/24' in s
+          assert 'function ensureAudio()' not in s
+          draw=s[s.index('function draw(now='):]
+          order=['drawFace(ctx,F,w,h)','H.forEach((x,i)=>drawHand(ctx,x,i,w))','drawArt(ctx,w,h,ps,F,now)','drawPinchFeedback(ctx,ps,w,h)']
+          pos=[draw.index(x) for x in order]
+          assert pos==sorted(pos),pos
+          rev='SITE41-VISION14_4-20260914-1054'
+          assert rev in Path('journal-route-loader.js').read_text()
+          assert Path('index.html').read_text().count(rev)==2
+          print('Vision 14.4 contract: ok')
+          PY
+      - name: Commit product changes only
+        run: |
+          set -euo pipefail
+          rm -f .github/vision14-4-patch.py .github/workflows/vision14-4-temp.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: tighten pinch and restore Resonance audio performance"
+          git push origin HEAD:fix/vision14-4-pinch-audio-perf
