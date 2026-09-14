@@ -1,0 +1,33 @@
+name: Portfolio v17 check
+
+on:
+  push:
+    branches:
+      - verify/portfolio-v17-sloar0103
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check portfolio-v15.js
+          node --check portfolio-v16-projects.js
+          node --check portfolio-v17-repo-projects.js
+      - name: Verify portfolio and upgrade contracts
+        run: |
+          set -euo pipefail
+          grep -q 'portfolio-v17-repo-projects.css?v=SITE45-PORTFOLIO17-SLOAR0103-20260915-0858' index.html
+          grep -q 'portfolio-v17-repo-projects.js?v=SITE45-PORTFOLIO17-SLOAR0103-20260915-0858' index.html
+          grep -q "href:'#/project/daily-tech'" portfolio-v17-repo-projects.js
+          grep -q "href:'#/project/esp32-car'" portfolio-v17-repo-projects.js
+          grep -q "href:'#/project/nightshift'" portfolio-v17-repo-projects.js
+          grep -q '01d78c1' portfolio-v17-repo-projects.js
+          grep -q 'd5a21d4' portfolio-v17-repo-projects.js
+          grep -q '32243fc' portfolio-v17-repo-projects.js
+          grep -q 'version: "0.10.3"' .agents/skills/sloar-chat-coder/SKILL.md
+          test ! -e .github/workflows/sloar-upgrade-temp.yml
+          python3 -m compileall -q .agents/skills/sloar-chat-coder/scripts
+          git diff --check HEAD^ HEAD || true
