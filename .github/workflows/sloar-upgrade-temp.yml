@@ -1,0 +1,49 @@
+name: Sloar 0.10.3 upgrade
+
+on:
+  push:
+    branches:
+      - feat/portfolio-v17-repo-projects-sloar-0103
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/portfolio-v17-repo-projects-sloar-0103
+          fetch-depth: 0
+
+      - name: Resolve canonical Sloar 0.10.3
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/sloar
+          git init /tmp/sloar
+          git -C /tmp/sloar remote add origin https://github.com/hoonex/sloar-chat-coder.git
+          git -C /tmp/sloar fetch --depth=1 origin d17208cd20d7dfa4101e55f84c41e082972ea961
+          git -C /tmp/sloar checkout --detach FETCH_HEAD
+          test "$(cat /tmp/sloar/VERSION)" = "0.10.3"
+
+      - name: Upgrade installed Sloar safely
+        run: |
+          set -euo pipefail
+          python3 /tmp/sloar/.agents/skills/sloar-chat-coder/scripts/install.py --target "$GITHUB_WORKSPACE" --upgrade
+          grep -q 'version: "0.10.3"' .agents/skills/sloar-chat-coder/SKILL.md
+          python3 -m compileall -q .agents/skills/sloar-chat-coder/scripts
+          python3 .agents/skills/sloar-chat-coder/scripts/doctor.py . --json > /tmp/sloar-doctor.json
+          cat /tmp/sloar-doctor.json
+
+      - name: Commit only the upgrade result
+        run: |
+          set -euo pipefail
+          rm .github/workflows/sloar-upgrade-temp.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add AGENTS.md .agents/skills/sloar-chat-coder .agents/skills/web-design-guidance .agents/skills/apple-web-design .github/workflows/sloar-upgrade-temp.yml
+          git diff --cached --check
+          git commit -m "chore: upgrade Sloar to 0.10.3"
+          git push origin HEAD:feat/portfolio-v17-repo-projects-sloar-0103
