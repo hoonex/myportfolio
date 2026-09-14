@@ -1,0 +1,50 @@
+name: Temporary Vision v14.5 runtime fix
+
+on:
+  push:
+    branches:
+      - fix/vision-resonance-runtime-v14-4
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/vision-resonance-runtime-v14-4
+          fetch-depth: 0
+      - name: Apply runtime fixes
+        run: python .github/vision14-runtime-fix.py
+      - name: Verify Vision v14.5
+        run: |
+          set -euo pipefail
+          node --check journal-v14-vision.js
+          node --check journal-route-loader.js
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('journal-v14-vision.js').read_text()
+          assert "BUILD='VISION14.5-20260914-1328'" in s
+          assert 'contactPx=Math.max(6,screenPalm*.16)' in s
+          assert 'worldRatio<.18||normRatio<.18' in s
+          assert 'makeVoice(\'Left\');makeVoice(\'Right\')' in s
+          assert 'width:{ideal:960},height:{ideal:540},frameRate:{ideal:30,max:30}' in s
+          assert 'now-lastH>=85' in s and 'now-lastF>=120' in s
+          assert 'if(!ranHand&&faceTask' in s
+          assert 'Math.min(1.25,Math.max(1,devicePixelRatio||1))' in s
+          rev='SITE42-VISION14_5-20260914-1328'
+          assert rev in Path('journal-route-loader.js').read_text()
+          assert Path('index.html').read_text().count(rev)==2
+          print('Vision v14.5 runtime contract: ok')
+          PY
+      - name: Commit product changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add journal-v14-vision.js journal-route-loader.js index.html
+          git commit -m 'fix: tighten pinch, smooth inference, and unlock Resonance audio'
+          git push origin HEAD:fix/vision-resonance-runtime-v14-4
