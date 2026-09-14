@@ -34,8 +34,8 @@ jobs:
           assert 'makeVoice(\'Left\');makeVoice(\'Right\')' in s
           assert 'width:{ideal:960},height:{ideal:540},frameRate:{ideal:30,max:30}' in s
           assert 'now-lastH>=85' in s and 'now-lastF>=120' in s
-          assert 'if(!ranHand&&faceTask' in s
-          assert 'Math.min(1.25,Math.max(1,devicePixelRatio||1))' in s
+          assert 'else if(faceDue)' in s
+          assert 'cap=coarse?1:1.25' in s
           rev='SITE42-VISION14_5-20260914-1328'
           assert rev in Path('journal-route-loader.js').read_text()
           assert Path('index.html').read_text().count(rev)==2
