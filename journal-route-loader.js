@@ -7,7 +7,7 @@
   const fullEditorialRoutes = new Set(['/lab', '/post/glass', '/post/sloar', '/post/motion']);
 
   const route = () => (location.hash.slice(1) || '/').split('?')[0];
-  const DEPLOY_REV = 'SITE40-VISION14_3-20260914-1043';
+  const DEPLOY_REV = 'SITE41-VISION14_4-20260914-1054';
   const assetUrl = rel => {
     const url = new URL(`./${rel}`, document.baseURI);
     url.searchParams.set('v', DEPLOY_REV);
