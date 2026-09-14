@@ -41,8 +41,9 @@ jobs:
           assert "state.mode==='resonance'" in s
           assert "state.mode==='bloom'" not in s
           assert 'function updateBloom' not in s and 'function drawBloom' not in s
+          draw=s[s.index('function draw(now='):]
           order=['drawFace(ctx,F,w,h)','H.forEach((x,i)=>drawHand(ctx,x,i,w))','drawArt(ctx,w,h,ps,F,now)','drawPinchFeedback(ctx,ps,w,h)']
-          pos=[s.index(x) for x in order]
+          pos=[draw.index(x) for x in order]
           assert pos==sorted(pos), pos
           rev='SITE40-VISION14_3-20260914-1043'
           assert rev in Path('journal-route-loader.js').read_text()
