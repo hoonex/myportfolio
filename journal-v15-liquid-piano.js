@@ -22,6 +22,7 @@ const QUALITY={
   quality:{label:'Quality',mobilePx:760000,desktopPx:1350000,mobileDpr:1,desktopDpr:1.2,maxPoly:16,shader:2}
 };
 const PRESETS={
+  grand:{label:'Grand',partials:[[1,'triangle',1],[2,'sine',.12]],attack:.004,decay:.44,sustain:.48,release:.52,brightness:7000,resonance:1.1,space:.16,detune:0,stereo:.42},
   glass:{label:'Glass',partials:[[1,'triangle',1],[2,'sine',.16]],attack:.006,decay:.34,sustain:.40,release:.26,brightness:6100,resonance:1.8,space:.18,detune:3,stereo:.5},
   soft:{label:'Soft',partials:[[1,'sine',1]],attack:.018,decay:.62,sustain:.58,release:.46,brightness:3400,resonance:.9,space:.12,detune:0,stereo:.34},
   bell:{label:'Bell',partials:[[1,'sine',1],[2.01,'sine',.28]],attack:.004,decay:.78,sustain:.18,release:.66,brightness:7600,resonance:2.4,space:.28,detune:5,stereo:.62}
@@ -40,7 +41,7 @@ const DEFAULTS={
   attack:.006,decay:.34,sustain:.40,release:.26,brightness:6100,resonance:1.8,space:.18,detune:3,stereo:.5,velocity:.86,polyphony:12,
   refraction:1,chromatic:.72,depth:.82
 };
-let settings=loadSettings(),root=null,audio=null,preset='glass',octave=0,sustainPedal=false,volume=.72,sampleBank={raw:new Map(),buffers:new Map(),fetching:new Map(),decoding:new Map()};
+let settings=loadSettings(),root=null,audio=null,preset='grand',octave=0,sustainPedal=false,volume=.72,sampleBank={raw:new Map(),buffers:new Map(),fetching:new Map(),decoding:new Map()};
 let voices=new Map(),voiceSeq=0,holders=new Map(),sourceState=new Map(),sustained=new Set(),pointerSources=new Map(),keysByMidi=new Map(),keydowns=new Set();
 let renderer=null,resizeObserver=null,scrollNode=null,boardHost=null,lastPlayed='—',pseudoFull=false;
 function loadSettings(){try{return normalizeSettings({...DEFAULTS,...JSON.parse(localStorage.getItem(STORAGE)||'{}')})}catch{return {...DEFAULTS}}}
@@ -93,14 +94,14 @@ function prewarm(){ensureAudio();primeSampleDecodes()}
 setTimeout(()=>{if(route()===R){prefetchSamples();installSampleCredit()}},0)
 function stealVoice(){while(voices.size>=effectivePoly()){let oldest=null;for(const [m,v] of voices)if(!oldest||v.seq<oldest[1].seq)oldest=[m,v];if(!oldest)break;stopVoice(oldest[0],true)}}
 function startVoice(midi,velocity=.8){
-  if(!ensureAudio()||!audio)return;stealVoice();const anchor=nearestSample(midi),sample=sampleBank.buffers.get(anchor.midi),c=audio.ctx,t=c.currentTime,vel=clamp(velocity*settings.velocity,.2,1),bassComp=midi<45?1.5:midi<52?1.34:midi<60?1.17:1;
+  if(!ensureAudio()||!audio)return;stealVoice();const anchor=nearestSample(midi),sample=preset==='grand'?sampleBank.buffers.get(anchor.midi):null,c=audio.ctx,t=c.currentTime,vel=clamp(velocity*settings.velocity,.2,1),bassComp=midi<45?1.5:midi<52?1.34:midi<60?1.17:1;
   if(sample){
     const source=c.createBufferSource(),gate=c.createGain(),pan=c.createStereoPanner?c.createStereoPanner():null;
     source.buffer=sample;source.playbackRate.setValueAtTime(Math.pow(2,(midi-anchor.midi)/12),t);gate.gain.setValueAtTime(.0001,t);gate.gain.exponentialRampToValueAtTime(Math.max(.018,.21*vel*bassComp),t+.006);
     source.connect(gate);let out=gate;if(pan){gate.connect(pan);pan.pan.value=clamp(((midi-60)/24)*settings.stereo,-settings.stereo,settings.stereo);out=pan}out.connect(audio.dry);out.connect(audio.delay);source.start(t);
     voices.set(midi,{gate,filter:null,pan,oscs:[],source,seq:++voiceSeq,sample:true});lastPlayed=noteName(midi);syncDisplay();renderer?.accent(midi);return;
   }
-  decodeSample(anchor);
+  if(preset==='grand')decodeSample(anchor);
   const base=PRESETS[preset],f=midiHz(midi),gate=c.createGain(),filter=c.createBiquadFilter(),pan=c.createStereoPanner?c.createStereoPanner():null,oscs=[];
   filter.type='lowpass';filter.frequency.setValueAtTime(settings.brightness,t);filter.Q.value=settings.resonance;gate.gain.setValueAtTime(.0001,t);
   const peak=Math.max(.008,.145*vel*bassComp);gate.gain.exponentialRampToValueAtTime(peak,t+settings.attack);gate.gain.exponentialRampToValueAtTime(Math.max(.0002,peak*settings.sustain),t+settings.attack+settings.decay);
