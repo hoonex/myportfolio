@@ -7,7 +7,7 @@
   const fullEditorialRoutes = new Set(['/lab', '/post/glass', '/post/sloar', '/post/motion']);
 
   const route = () => (location.hash.slice(1) || '/').split('?')[0];
-  const DEPLOY_REV = 'SITE50-LIQUIDPIANO3_2-REALPIANO-20260915-1522';
+  const DEPLOY_REV = 'SITE51-LIQUIDPIANO4-ULTRA-20260916-0751';
   const assetUrl = rel => {
     const url = new URL(`./${rel}`, document.baseURI);
     url.searchParams.set('v', DEPLOY_REV);
