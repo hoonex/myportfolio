@@ -1,4 +1,4 @@
-/* Liquid Glass Piano v3 — real single-canvas refraction + pro instrument controls. */
+/* Liquid Glass Piano v4 — ultra-light single-canvas optical refraction. */
 .lp-page{padding-top:108px;padding-bottom:72px}
 .lp-hero{display:grid;grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr);gap:34px;align-items:end;margin:0 0 26px}
 .lp-kicker{align-self:start;font:700 .64rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;color:var(--muted)}
@@ -6,7 +6,7 @@
 .lp-hero h1{margin:0;font-size:clamp(4.2rem,9.5vw,8.5rem);line-height:.79;letter-spacing:-.08em;font-weight:680}
 .lp-hero p{margin:0;color:var(--muted);font-size:clamp(.96rem,1.4vw,1.12rem);line-height:1.55;max-width:41ch;letter-spacing:-.02em}
 .lp-instrument{border:1px solid var(--line);border-radius:32px;padding:7px;background:color-mix(in srgb,var(--bg) 95%,transparent)}
-.lp-stage{position:relative;min-height:clamp(640px,69vw,790px);overflow:hidden;border-radius:25px;background:#09101a;isolation:isolate;color:#fff;contain:layout paint style}
+.lp-stage{position:relative;min-height:clamp(560px,62vw,720px);overflow:hidden;border-radius:25px;background:#09101a;isolation:isolate;color:#fff;contain:layout paint style}
 .lp-stage::after{content:"";position:absolute;z-index:8;inset:0;pointer-events:none;border:1px solid rgba(255,255,255,.09);border-radius:inherit;box-shadow:inset 0 1px rgba(255,255,255,.08),inset 0 -60px 100px rgba(0,0,0,.18)}
 .lp-gl-canvas{position:absolute;z-index:0;inset:0;display:block;width:100%;height:100%;pointer-events:none}
 .lp-stage[data-renderer="fallback"]{background:radial-gradient(circle at 24% 24%,rgba(70,175,255,.17),transparent 31%),radial-gradient(circle at 78% 46%,rgba(201,95,255,.14),transparent 34%),linear-gradient(160deg,#08101a,#111a28 46%,#090d14)}
@@ -71,11 +71,11 @@ html.lp-pseudo-fullscreen{overflow:hidden}
 .lp-stagebar button:focus-visible,.lp-settings button:focus-visible,.lp-key:focus-visible,.lp-volume input:focus-visible,.lp-setting input:focus-visible{outline:2px solid #b9ebff;outline-offset:2px}
 @media(max-width:900px){
   .lp-hero{grid-template-columns:1fr;gap:18px}.lp-hero>div{grid-template-columns:1fr;gap:16px}.lp-hero h1{font-size:clamp(4.5rem,17vw,7.8rem)}
-  .lp-stagebar{grid-template-columns:1fr auto}.lp-presets{overflow:auto;scrollbar-width:none}.lp-actions{grid-column:1/-1;justify-content:flex-start}.lp-stage{min-height:700px}.lp-notes{grid-template-columns:1fr}
+  .lp-stagebar{grid-template-columns:1fr auto}.lp-presets{overflow:auto;scrollbar-width:none}.lp-actions{grid-column:1/-1;justify-content:flex-start}.lp-stage{min-height:610px}.lp-notes{grid-template-columns:1fr}
 }
 @media(max-width:620px){
   .lp-page{padding-top:96px}.lp-hero{margin-bottom:18px}.lp-hero h1{font-size:clamp(4rem,20vw,6.6rem)}.lp-hero p{font-size:.92rem}.lp-instrument{padding:5px;border-radius:23px}
-  .lp-stage{min-height:690px;border-radius:18px}.lp-stagebar{grid-template-columns:1fr auto;align-items:start}.lp-presets{max-width:calc(100vw - 168px)}.lp-center{grid-row:2;grid-column:1}.lp-actions{grid-row:2;grid-column:2;justify-content:flex-end}.lp-volume{display:none}
+  .lp-stage{min-height:550px;border-radius:18px}.lp-stagebar{grid-template-columns:1fr auto;align-items:start}.lp-presets{max-width:calc(100vw - 168px)}.lp-center{grid-row:2;grid-column:1}.lp-actions{grid-row:2;grid-column:2;justify-content:flex-end}.lp-volume{display:none}
   .lp-frequency{top:112px;left:14px}.lp-keyboard-scroll{padding-left:12px;padding-right:12px;bottom:60px}.lp-hint{left:14px;right:14px;bottom:16px;justify-content:flex-start}.lp-hint span:first-child{display:none}
   .lp-settings{top:auto;left:7px;right:7px;bottom:7px;width:auto;max-height:min(76dvh,650px);border-radius:22px;transform:translateY(calc(100% + 20px))}.lp-settings.open{transform:translateY(0)}
   .lp-mode-grid:has([data-lp-mode]){grid-template-columns:repeat(2,minmax(0,1fr))}.lp-notes article{padding:18px}
@@ -84,3 +84,5 @@ html.lp-pseudo-fullscreen{overflow:hidden}
 @media(prefers-reduced-motion:reduce){.lp-key span,.lp-key small,.lp-stagebar button,.lp-settings{transition:none!important}}
 
 .lp-sample-credit{margin:12px 4px 0;color:var(--muted);font-size:.68rem;line-height:1.5}.lp-sample-credit a{color:inherit;text-underline-offset:2px}.lp-sample-credit strong{color:var(--text);font-weight:650}
+
+@media(pointer:coarse){.lp-stage::after{box-shadow:inset 0 1px rgba(255,255,255,.07),inset 0 -34px 60px rgba(0,0,0,.14)}.lp-key span,.lp-key small{text-shadow:none;transition:none}.lp-settings{box-shadow:0 14px 38px rgba(0,0,0,.34)}}

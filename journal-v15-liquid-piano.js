@@ -1,7 +1,7 @@
-/* Liquid Glass Piano v3 — single-surface WebGL2 refraction, pro controls, event-driven rendering. */
+/* Liquid Glass Piano v4 — ultra-light single-surface optical refraction. */
 (()=>{
 'use strict';
-const R='/lab/piano',BUILD='PIANO3_2-REALPIANO-20260915-1522',MAX_KEYS=64;
+const R='/lab/piano',BUILD='PIANO4-ULTRA-20260916-0751',MAX_KEYS=64;
 const app=document.querySelector('#app');if(!app)return;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const route=()=>((location.hash.slice(1)||'/').split('?')[0]);
@@ -9,17 +9,17 @@ const WHITE_PCS=new Set([0,2,4,5,7,9,11]);
 const NAMES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
 const KEY_CODES=['KeyA','KeyW','KeyS','KeyE','KeyD','KeyF','KeyT','KeyG','KeyY','KeyH','KeyU','KeyJ','KeyK','KeyO','KeyL','KeyP','Semicolon'];
 const KEY_MIDIS=Array.from({length:17},(_,i)=>60+i);
-const STORAGE='hj-liquid-piano-v3';
+const STORAGE='hj-liquid-piano-v4';
 const MODES={
-  compact:{label:'Compact',min:60,max:76,keyWidth:72,keyHeight:300},
-  standard:{label:'Standard',min:48,max:76,keyWidth:54,keyHeight:330},
-  wide:{label:'Wide',min:36,max:84,keyWidth:42,keyHeight:310},
-  performance:{label:'Performance',min:48,max:76,keyWidth:76,keyHeight:370}
+  compact:{label:'Compact',min:60,max:72,keyWidth:42,keyHeight:258},
+  standard:{label:'Standard',min:48,max:76,keyWidth:50,keyHeight:306},
+  wide:{label:'Wide',min:36,max:84,keyWidth:38,keyHeight:286},
+  performance:{label:'Performance',min:48,max:76,keyWidth:58,keyHeight:318}
 };
 const QUALITY={
-  performance:{label:'Performance',mobilePx:260000,desktopPx:420000,mobileDpr:.68,desktopDpr:.8,maxPoly:8,shader:0},
-  balanced:{label:'Balanced',mobilePx:470000,desktopPx:820000,mobileDpr:.88,desktopDpr:1,maxPoly:12,shader:1},
-  quality:{label:'Quality',mobilePx:760000,desktopPx:1350000,mobileDpr:1,desktopDpr:1.2,maxPoly:16,shader:2}
+  performance:{label:'Performance',mobilePx:135000,desktopPx:300000,mobileDpr:.48,desktopDpr:.68,maxPoly:6,shader:0},
+  balanced:{label:'Balanced',mobilePx:240000,desktopPx:560000,mobileDpr:.64,desktopDpr:.88,maxPoly:8,shader:1},
+  quality:{label:'Quality',mobilePx:430000,desktopPx:980000,mobileDpr:.82,desktopDpr:1.05,maxPoly:12,shader:2}
 };
 const PRESETS={
   grand:{label:'Grand',partials:[[1,'triangle',1],[2,'sine',.12]],attack:.004,decay:.44,sustain:.48,release:.52,brightness:7000,resonance:1.1,space:.16,detune:0,stereo:.42},
@@ -35,9 +35,9 @@ const SAMPLE_ANCHORS=[
   [66,'Fs4.mp3'],[69,'A4.mp3'],[72,'C5.mp3'],[75,'Ds5.mp3'],[78,'Fs5.mp3'],
   [81,'A5.mp3'],[84,'C6.mp3'],[87,'Ds6.mp3'],[90,'Fs6.mp3'],[93,'A6.mp3'],[96,'C7.mp3']
 ].map(([midi,file])=>({midi,file}));
-const SAMPLE_PREFETCH=new Set([45,48,51,54,57,60,63,66,69,72,75]);
+const SAMPLE_PREFETCH=new Set();
 const DEFAULTS={
-  mode:'standard',quality:(globalThis.matchMedia?.('(pointer:coarse)')?.matches?'performance':'balanced'),keyWidth:54,keyHeight:330,blackHeight:61,labels:true,glide:true,
+  mode:(globalThis.matchMedia?.('(pointer:coarse)')?.matches?'compact':'standard'),quality:(globalThis.matchMedia?.('(pointer:coarse)')?.matches?'performance':'balanced'),keyWidth:(globalThis.matchMedia?.('(pointer:coarse)')?.matches?42:50),keyHeight:(globalThis.matchMedia?.('(pointer:coarse)')?.matches?258:306),blackHeight:61,labels:!globalThis.matchMedia?.('(pointer:coarse)')?.matches,glide:true,
   attack:.006,decay:.34,sustain:.40,release:.26,brightness:6100,resonance:1.8,space:.18,detune:3,stereo:.5,velocity:.86,polyphony:12,
   refraction:1,chromatic:.72,depth:.82
 };
@@ -90,8 +90,8 @@ function primeSampleDecodes(){if(!audio)return;for(const midi of [48,57,60,69,72
 function installSampleCredit(){
   if(!root||root.querySelector('[data-lp-sample-credit]'))return;const p=document.createElement('p');p.className='lp-sample-credit';p.dataset.lpSampleCredit='';p.innerHTML='Piano recordings: <strong>Salamander Grand Piano</strong> · Yamaha C5 · Alexander Holm · <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer">CC BY 3.0</a>. Synth fallback remains available while a sample is loading.';root.append(p);
 }
-function prewarm(){ensureAudio();primeSampleDecodes()}
-setTimeout(()=>{if(route()===R){prefetchSamples();installSampleCredit()}},0)
+function prewarm(){ensureAudio()}
+setTimeout(()=>{if(route()===R)installSampleCredit()},0)
 function stealVoice(){while(voices.size>=effectivePoly()){let oldest=null;for(const [m,v] of voices)if(!oldest||v.seq<oldest[1].seq)oldest=[m,v];if(!oldest)break;stopVoice(oldest[0],true)}}
 function startVoice(midi,velocity=.8){
   if(!ensureAudio()||!audio)return;stealVoice();const anchor=nearestSample(midi),sample=preset==='grand'?sampleBank.buffers.get(anchor.midi):null,c=audio.ctx,t=c.currentTime,vel=clamp(velocity*settings.velocity,.2,1),bassComp=midi<45?1.5:midi<52?1.34:midi<60?1.17:1;
@@ -172,13 +172,13 @@ function settingsMarkup(){
     </section>
     <section><h3>Liquid / performance</h3><div class="lp-mode-grid">${Object.entries(QUALITY).map(([id,q])=>`<button type="button" data-lp-quality="${id}" class="${settings.quality===id?'active':''}">${q.label}</button>`).join('')}</div>
       ${range('refraction','Refraction',.25,1.8,.01,settings.refraction)}${range('chromatic','Chromatic',0,1.4,.01,settings.chromatic)}${range('depth','Glass depth',.25,1.6,.01,settings.depth)}
-      <p class="lp-perf-note">Performance는 실제 굴절을 유지하면서 렌더 해상도와 RGB 샘플 수를 줄입니다. Idle 상태에서는 RAF가 0입니다.</p>
+      <p class="lp-perf-note">Performance는 실제 좌표 굴절을 유지하면서 단일 texture sample과 초저해상도 surface를 사용합니다. Idle RAF는 0입니다.</p>
     </section>
   </aside>`;
 }
 function markup(){
   return `<div class="lp-page" data-lp-root>
-    <section class="lp-hero"><div class="lp-kicker">WEBGL2 / REFRACTIVE INSTRUMENT</div><div><h1>Liquid<br>Piano.</h1><p>한 장의 GPU surface에서 배경 픽셀 좌표를 실제로 굴절시키고, 건반은 투명한 입력 레이어만 남깁니다. 연주하지 않을 때 렌더 루프는 멈춥니다.</p></div></section>
+    <section class="lp-hero"><div class="lp-kicker">WEBGL2 / REFRACTIVE INSTRUMENT</div><div><h1>Liquid<br>Piano.</h1><p>건반 전체를 하나의 convex optical surface로 계산해 뒤 장면의 texture 좌표를 실제로 굴절시킵니다. 모바일은 한 입력당 한 frame만 그리고 바로 멈춥니다.</p></div></section>
     <section class="lp-instrument"><div class="lp-stage" data-lp-stage data-renderer="boot">
       <canvas class="lp-gl-canvas" data-lp-gl aria-hidden="true"></canvas>
       <div class="lp-stagebar">
@@ -191,7 +191,7 @@ function markup(){
       <div class="lp-hint"><span>A W S E D F T G Y H U J K O L P ;</span><span>Space sustain · Z/X octave · settings ⌘</span></div>
       ${settingsMarkup()}
     </div></section>
-    <section class="lp-notes"><article><span>01</span><h2>Single-pass optics</h2><p>SDF 법선으로 배경 texture sampling 좌표를 이동하고, Fresnel·specular·chromatic aberration을 한 WebGL2 surface에서 합성합니다.</p></article><article><span>02</span><h2>Zero idle animation</h2><p>키 press가 settle되면 requestAnimationFrame을 완전히 중지합니다. 건반별 backdrop-filter도 없습니다.</p></article><article><span>03</span><h2>Instrument controls</h2><p>건반 폭·높이·범위, ADSR, filter, space, detune, stereo, polyphony, 굴절 품질을 연주 중 직접 조절합니다.</p></article></section>
+    <section class="lp-notes"><article><span>01</span><h2>Single-pass optics</h2><p>건반 전체의 렌즈 기울기로 texture 좌표를 이동하고, rim·Fresnel·specular를 같은 WebGL2 pass에서 합성합니다.</p></article><article><span>02</span><h2>Zero idle animation</h2><p>모바일은 press/release 이벤트를 한 frame으로 coalesce합니다. 건반별 backdrop-filter와 idle animation은 없습니다.</p></article><article><span>03</span><h2>Instrument controls</h2><p>건반 폭·높이·범위, ADSR, filter, space, detune, stereo, polyphony, 굴절 품질을 연주 중 직접 조절합니다.</p></article></section>
   </div>`;
 }
 function compile(gl,type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){const msg=gl.getShaderInfoLog(s)||'shader compile failed';gl.deleteShader(s);throw Error(msg)}return s}
@@ -205,34 +205,32 @@ function makeRenderer(stage,canvas,keyEls){
   const bgVS=`#version 300 es
 precision highp float;out vec2 v_uv;const vec2 P[3]=vec2[3](vec2(-1.,-1.),vec2(3.,-1.),vec2(-1.,3.));void main(){vec2 p=P[gl_VertexID];v_uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}`;
   const bgFS=`#version 300 es
-precision highp float;in vec2 v_uv;out vec4 outColor;uniform float u_energy;uniform float u_hue;
+precision mediump float;in vec2 v_uv;out vec4 outColor;uniform float u_energy;uniform float u_hue;
 vec3 pal(float h){vec3 k=vec3(0.,4.,2.);return .54+.46*cos(6.28318*(h+k/3.));}
-void main(){vec2 uv=v_uv;vec3 base=mix(vec3(.013,.020,.033),vec3(.050,.070,.105),uv.y);vec3 c1=pal(fract(u_hue)),c2=pal(fract(u_hue+.21));
-float a=exp(-dot((uv-vec2(.22,.72))*vec2(2.4,2.0),(uv-vec2(.22,.72))*vec2(2.4,2.0)));
-float b=exp(-dot((uv-vec2(.80,.43))*vec2(2.0,2.2),(uv-vec2(.80,.43))*vec2(2.0,2.2)));
-vec2 g=abs(fract(uv*vec2(22.,13.))-.5);float grid=(1.-smoothstep(.475,.5,max(g.x,g.y)))*.045;
-float bands=.022*(.5+.5*sin((uv.x*9.+uv.y*4.)*6.28318));
-outColor=vec4(base+c1*a*(.08+.12*u_energy)+c2*b*(.065+.10*u_energy)+grid+bands,1.);}`;
+void main(){vec2 uv=v_uv;vec3 base=mix(vec3(.010,.016,.028),vec3(.048,.066,.098),uv.y);vec3 c1=pal(fract(u_hue)),c2=pal(fract(u_hue+.21));
+vec2 d1=(uv-vec2(.22,.70))*vec2(2.25,1.9),d2=(uv-vec2(.80,.42))*vec2(1.9,2.05);float a=exp(-dot(d1,d1)),b=exp(-dot(d2,d2));
+float rail=1.-smoothstep(.035,.052,abs(fract(uv.x*6.5+uv.y*.16)-.5));float hline=1.-smoothstep(.020,.032,abs(fract(uv.y*8.0)-.5));
+float ribbons=.5+.5*sin((uv.x*8.5+uv.y*2.6)*6.28318);float hard=step(.86,ribbons)*.085;
+outColor=vec4(base+c1*a*(.10+.08*u_energy)+c2*b*(.085+.07*u_energy)+vec3(.18,.24,.31)*(rail*.24+hline*.10)+hard,1.);}`;
   const keyVS=`#version 300 es
 precision highp float;uniform vec2 u_cssSize;uniform vec4 u_rects[64];uniform vec4 u_meta[64];out vec2 v_local;flat out float v_kind;flat out float v_press;flat out vec2 v_size;
 const vec2 P[6]=vec2[6](vec2(0.,0.),vec2(1.,0.),vec2(0.,1.),vec2(0.,1.),vec2(1.,0.),vec2(1.,1.));
 void main(){int i=gl_InstanceID;vec4 r=u_rects[i];vec2 q=P[gl_VertexID];float pr=u_meta[i].y;vec2 px=r.xy+q*r.zw;px.y+=pr*(u_meta[i].x>.5?5.:7.);vec2 ndc=vec2(px.x/u_cssSize.x*2.-1.,1.-px.y/u_cssSize.y*2.);gl_Position=vec4(ndc,0.,1.);v_local=q;v_kind=u_meta[i].x;v_press=pr;v_size=r.zw;}`;
   const keyFS=`#version 300 es
-precision highp float;uniform sampler2D u_scene;uniform vec2 u_resolution;uniform int u_pass;uniform float u_quality;uniform float u_refraction;uniform float u_chromatic;uniform float u_depth;
+precision mediump float;uniform sampler2D u_scene;uniform vec2 u_resolution;uniform vec2 u_cssSize;uniform int u_pass;uniform float u_quality;uniform float u_refraction;uniform float u_chromatic;uniform float u_depth;
 in vec2 v_local;flat in float v_kind;flat in float v_press;flat in vec2 v_size;out vec4 outColor;
 float sdRoundBox(vec2 p,vec2 b,float r){vec2 q=abs(p)-b+r;return min(max(q.x,q.y),0.)+length(max(q,0.))-r;}
 void main(){int kind=int(v_kind+.5);if(kind!=u_pass)discard;vec2 halfS=max(vec2(3.),v_size*.5-vec2(1.25));vec2 p=(v_local-.5)*v_size;float rad=min(kind==0?20.:13.,min(halfS.x,halfS.y)*.34);
-float pressProfile=exp(-dot((v_local-vec2(.5,.66))*vec2(3.8,3.0),(v_local-vec2(.5,.66))*vec2(3.8,3.0)))*v_press;p.y+=pressProfile*2.2*u_depth;
-float d=sdRoundBox(p,halfS,rad),aa=max(fwidth(d)*1.25,.65),mask=1.-smoothstep(-aa,aa,d);if(mask<.01)discard;
-float inside=max(-d,0.),edge=1.-smoothstep(0.,kind==0?20.:12.,inside);vec2 q=p/max(halfS,vec2(1.)),normal;
-if(u_quality<.5)normal=normalize(vec2(q.x*1.28,q.y*.76)+vec2(.0001));
-else{float e=1.15;normal=normalize(vec2(sdRoundBox(p+vec2(e,0.),halfS,rad)-sdRoundBox(p-vec2(e,0.),halfS,rad),sdRoundBox(p+vec2(0.,e),halfS,rad)-sdRoundBox(p-vec2(0.,e),halfS,rad))+vec2(.00001));}
-vec2 uv=gl_FragCoord.xy/u_resolution;float refr=((kind==0?4.8:6.0)*edge*u_depth+pressProfile*3.2)*u_refraction;vec2 off=normal*refr/u_resolution;
-vec3 col;if(u_quality<.5||u_chromatic<.01)col=texture(u_scene,uv+off).rgb;else{vec2 ca=normal*(.45+1.35*edge)*u_chromatic/u_resolution;col=vec3(texture(u_scene,uv+off+ca).r,texture(u_scene,uv+off).g,texture(u_scene,uv+off-ca).b);}
-float rim=1.-smoothstep(0.,1.6,abs(d)),fres=pow(edge,1.45),spec=pow(max(dot(normal,normalize(vec2(-.56,.83))),0.),18.)*edge;
-if(kind==0){col=mix(col,vec3(.86,.95,1.),.055+fres*.085);col+=vec3(.64,.84,1.)*(rim*.24+spec*.30);}else{col*=.36;col+=vec3(.022,.040,.068);col+=vec3(.44,.64,.88)*(rim*.13+spec*.18);}
-col+=pressProfile*(kind==0?vec3(.035,.065,.085):vec3(.018,.035,.055));outColor=vec4(col,1.);}`;
-  let bgP,keyP,tex=null,fbo=null,w=0,h=0,cssW=0,cssH=0,raf=0,lastFrame=0,sceneDirty=true,sceneEnergy=.35,sceneHue=.56,destroyed=false,measureQueued=false;
+float pressProfile=exp(-dot((v_local-vec2(.5,.67))*vec2(3.6,2.8),(v_local-vec2(.5,.67))*vec2(3.6,2.8)))*v_press;p.y+=pressProfile*1.8*u_depth;
+float d=sdRoundBox(p,halfS,rad),aa=max(fwidth(d)*1.15,.55),mask=1.-smoothstep(-aa,aa,d);if(mask<.01)discard;
+float inside=max(-d,0.),edge=1.-smoothstep(0.,kind==0?20.:12.,inside);vec2 q=p/max(halfS,vec2(1.));
+vec2 slope=vec2(q.x*.88,q.y*.36);slope+=vec2((v_local.x-.5)*.30,(v_local.y-.67)*.44)*pressProfile*u_depth;float bend=(kind==0?13.0:16.0)*(.28+edge*.92)*(.48+u_depth*.52)*u_refraction;
+vec2 uv=gl_FragCoord.xy/u_resolution,off=slope*bend/max(u_cssSize,vec2(1.));vec3 col;
+if(u_quality<1.5||u_chromatic<.01)col=texture(u_scene,uv+off).rgb;else{vec2 n=normalize(slope+vec2(.0001));vec2 ca=n*(.65+1.5*edge)*u_chromatic/max(u_cssSize,vec2(1.));col=vec3(texture(u_scene,uv+off+ca).r,texture(u_scene,uv+off).g,texture(u_scene,uv+off-ca).b);}
+vec2 n=normalize(slope+vec2(.0001));float rim=1.-smoothstep(0.,1.45,abs(d)),fres=pow(edge,1.22),spec=pow(max(dot(n,normalize(vec2(-.58,.82))),0.),20.)*edge;float body=clamp(1.-dot(q*vec2(.78,.56),q*vec2(.78,.56)),0.,1.);
+if(kind==0){col=mix(col,vec3(.91,.97,1.),.035+body*.025+fres*.075);col+=vec3(.62,.84,1.)*(rim*.28+spec*.34);}else{col*=.40;col+=vec3(.018,.034,.060);col+=vec3(.42,.66,.92)*(rim*.16+spec*.22);}
+col+=pressProfile*(kind==0?vec3(.030,.060,.082):vec3(.016,.032,.054));outColor=vec4(col,1.);}`;
+  let bgP,keyP,tex=null,fbo=null,w=0,h=0,cssW=0,cssH=0,raf=0,sceneDirty=true,sceneEnergy=.32,sceneHue=.56,destroyed=false,measureQueued=false;
   try{bgP=program(gl,bgVS,bgFS);keyP=program(gl,keyVS,keyFS)}catch(e){console.error('[Liquid Piano] WebGL shader',e);return null}
   const U={bg:{energy:gl.getUniformLocation(bgP,'u_energy'),hue:gl.getUniformLocation(bgP,'u_hue')},key:{
     cssSize:gl.getUniformLocation(keyP,'u_cssSize'),rects:gl.getUniformLocation(keyP,'u_rects[0]'),meta:gl.getUniformLocation(keyP,'u_meta[0]'),scene:gl.getUniformLocation(keyP,'u_scene'),resolution:gl.getUniformLocation(keyP,'u_resolution'),pass:gl.getUniformLocation(keyP,'u_pass'),
@@ -254,11 +252,11 @@ col+=pressProfile*(kind==0?vec3(.035,.065,.085):vec3(.018,.035,.055));outColor=v
     gl.uniform1i(U.key.pass,0);gl.drawArraysInstanced(gl.TRIANGLES,0,6,count);gl.uniform1i(U.key.pass,1);gl.drawArraysInstanced(gl.TRIANGLES,0,6,count);
   }
   function draw(){if(destroyed||!w||!h)return;if(sceneDirty)renderScene();else{gl.bindFramebuffer(gl.READ_FRAMEBUFFER,fbo);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,null);gl.blitFramebuffer(0,0,w,h,0,0,w,h,gl.COLOR_BUFFER_BIT,gl.NEAREST);gl.bindFramebuffer(gl.FRAMEBUFFER,null)}renderKeys()}
-  function frame(ts){raf=0;if(destroyed)return;const dt=lastFrame?Math.min(2,(ts-lastFrame)/16.67):1;lastFrame=ts;let active=false;for(let i=0;i<count;i++){const k=targets[i]>press[i]?.42:.24;const next=press[i]+(targets[i]-press[i])*(1-Math.pow(1-k,dt));if(Math.abs(next-targets[i])>.008)active=true;press[i]=Math.abs(next-targets[i])<.008?targets[i]:next}draw();if(active)raf=requestAnimationFrame(frame);else lastFrame=0}
+  function frame(){raf=0;if(destroyed)return;for(let i=0;i<count;i++)press[i]=targets[i];draw()}
   function invalidate(force=false){if(force)sceneDirty=true;if(!raf)raf=requestAnimationFrame(frame)}
   function setPressed(m,on){const i=midiToIndex.get(m);if(i==null)return;targets[i]=on?1:0;invalidate(false)}
   function releaseAll(){targets.fill(0);invalidate(false)}
-  function accent(m){sceneHue=((m%12)/12+.49)%1;sceneEnergy=.58;sceneDirty=true;invalidate(false)}
+  function accent(m){if(settings.quality==='quality'&&!coarse){sceneHue=((m%12)/12+.49)%1;sceneEnergy=.48;sceneDirty=true}invalidate(false)}
   function opticsChanged(realloc=false){if(realloc)alloc();sceneDirty=true;invalidate(false)}
   function destroy(){destroyed=true;if(raf)cancelAnimationFrame(raf);try{gl.deleteProgram(bgP);gl.deleteProgram(keyP);if(tex)gl.deleteTexture(tex);if(fbo)gl.deleteFramebuffer(fbo)}catch{}}
   measure();stage.dataset.renderer='webgl2';return{setPressed,releaseAll,accent,measure:scheduleMeasure,hitTest,opticsChanged,destroy};
