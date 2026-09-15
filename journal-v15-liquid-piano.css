@@ -82,3 +82,5 @@ html.lp-pseudo-fullscreen{overflow:hidden}
   .lp-stage:fullscreen .lp-frequency,.lp-stage.is-pseudo-fullscreen .lp-frequency{top:max(112px,calc(env(safe-area-inset-top) + 100px))}
 }
 @media(prefers-reduced-motion:reduce){.lp-key span,.lp-key small,.lp-stagebar button,.lp-settings{transition:none!important}}
+
+.lp-sample-credit{margin:12px 4px 0;color:var(--muted);font-size:.68rem;line-height:1.5}.lp-sample-credit a{color:inherit;text-underline-offset:2px}.lp-sample-credit strong{color:var(--text);font-weight:650}

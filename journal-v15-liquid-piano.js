@@ -1,7 +1,7 @@
 /* Liquid Glass Piano v3 — single-surface WebGL2 refraction, pro controls, event-driven rendering. */
 (()=>{
 'use strict';
-const R='/lab/piano',BUILD='PIANO3_1-MOBILEPERF-20260915-1428',MAX_KEYS=64;
+const R='/lab/piano',BUILD='PIANO3_2-REALPIANO-20260915-1522',MAX_KEYS=64;
 const app=document.querySelector('#app');if(!app)return;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const route=()=>((location.hash.slice(1)||'/').split('?')[0]);
@@ -22,16 +22,26 @@ const QUALITY={
   quality:{label:'Quality',mobilePx:760000,desktopPx:1350000,mobileDpr:1,desktopDpr:1.2,maxPoly:16,shader:2}
 };
 const PRESETS={
+  grand:{label:'Grand',partials:[[1,'triangle',1],[2,'sine',.12]],attack:.004,decay:.44,sustain:.48,release:.52,brightness:7000,resonance:1.1,space:.16,detune:0,stereo:.42},
   glass:{label:'Glass',partials:[[1,'triangle',1],[2,'sine',.16]],attack:.006,decay:.34,sustain:.40,release:.26,brightness:6100,resonance:1.8,space:.18,detune:3,stereo:.5},
   soft:{label:'Soft',partials:[[1,'sine',1]],attack:.018,decay:.62,sustain:.58,release:.46,brightness:3400,resonance:.9,space:.12,detune:0,stereo:.34},
   bell:{label:'Bell',partials:[[1,'sine',1],[2.01,'sine',.28]],attack:.004,decay:.78,sustain:.18,release:.66,brightness:7600,resonance:2.4,space:.28,detune:5,stereo:.62}
 };
+const SAMPLE_BASE='https://tonejs.github.io/audio/salamander/';
+const SAMPLE_ANCHORS=[
+  [21,'A0.mp3'],[24,'C1.mp3'],[27,'Ds1.mp3'],[30,'Fs1.mp3'],[33,'A1.mp3'],
+  [36,'C2.mp3'],[39,'Ds2.mp3'],[42,'Fs2.mp3'],[45,'A2.mp3'],[48,'C3.mp3'],
+  [51,'Ds3.mp3'],[54,'Fs3.mp3'],[57,'A3.mp3'],[60,'C4.mp3'],[63,'Ds4.mp3'],
+  [66,'Fs4.mp3'],[69,'A4.mp3'],[72,'C5.mp3'],[75,'Ds5.mp3'],[78,'Fs5.mp3'],
+  [81,'A5.mp3'],[84,'C6.mp3'],[87,'Ds6.mp3'],[90,'Fs6.mp3'],[93,'A6.mp3'],[96,'C7.mp3']
+].map(([midi,file])=>({midi,file}));
+const SAMPLE_PREFETCH=new Set([45,48,51,54,57,60,63,66,69,72,75]);
 const DEFAULTS={
   mode:'standard',quality:(globalThis.matchMedia?.('(pointer:coarse)')?.matches?'performance':'balanced'),keyWidth:54,keyHeight:330,blackHeight:61,labels:true,glide:true,
   attack:.006,decay:.34,sustain:.40,release:.26,brightness:6100,resonance:1.8,space:.18,detune:3,stereo:.5,velocity:.86,polyphony:12,
   refraction:1,chromatic:.72,depth:.82
 };
-let settings=loadSettings(),root=null,audio=null,preset='glass',octave=0,sustainPedal=false,volume=.72;
+let settings=loadSettings(),root=null,audio=null,preset='grand',octave=0,sustainPedal=false,volume=.72,sampleBank={raw:new Map(),buffers:new Map(),fetching:new Map(),decoding:new Map()};
 let voices=new Map(),voiceSeq=0,holders=new Map(),sourceState=new Map(),sustained=new Set(),pointerSources=new Map(),keysByMidi=new Map(),keydowns=new Set();
 let renderer=null,resizeObserver=null,scrollNode=null,boardHost=null,lastPlayed='—',pseudoFull=false;
 function loadSettings(){try{return normalizeSettings({...DEFAULTS,...JSON.parse(localStorage.getItem(STORAGE)||'{}')})}catch{return {...DEFAULTS}}}
@@ -53,31 +63,57 @@ function ensureAudio(){
   if(audio){if(audio.ctx.state!=='running')audio.ctx.resume().catch(()=>{});return true}
   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
   try{
-    const ctx=new AC({latencyHint:'interactive'}),master=ctx.createGain(),dry=ctx.createGain(),wet=ctx.createGain(),delay=ctx.createDelay(.65),feedback=ctx.createGain(),compressor=ctx.createDynamicsCompressor();
-    master.gain.value=volume;dry.gain.value=.94;compressor.threshold.value=-17;compressor.knee.value=14;compressor.ratio.value=3.2;compressor.attack.value=.003;compressor.release.value=.13;
-    dry.connect(master);delay.connect(wet);wet.connect(master);delay.connect(feedback);feedback.connect(delay);master.connect(compressor);compressor.connect(ctx.destination);
-    audio={ctx,master,dry,wet,delay,feedback,compressor};applyAudioSettings();ctx.resume().catch(()=>{});return true;
+    const ctx=new AC({latencyHint:'interactive'}),master=ctx.createGain(),dry=ctx.createGain(),wet=ctx.createGain(),delay=ctx.createDelay(.65),feedback=ctx.createGain(),bass=ctx.createBiquadFilter(),compressor=ctx.createDynamicsCompressor();
+    master.gain.value=volume;dry.gain.value=.96;bass.type='lowshelf';bass.frequency.value=210;bass.gain.value=5.25;compressor.threshold.value=-18;compressor.knee.value=16;compressor.ratio.value=3.4;compressor.attack.value=.003;compressor.release.value=.15;
+    dry.connect(master);delay.connect(wet);wet.connect(master);delay.connect(feedback);feedback.connect(delay);master.connect(bass);bass.connect(compressor);compressor.connect(ctx.destination);
+    audio={ctx,master,dry,wet,delay,feedback,bass,compressor};applyAudioSettings();ctx.resume().catch(()=>{});return true;
   }catch(e){console.error('[Liquid Piano] audio init',e);return false}
 }
 function applyAudioSettings(){
   if(!audio)return;const t=audio.ctx.currentTime,sp=settings.space;
   audio.wet.gain.setTargetAtTime(.015+sp*.42,t,.035);audio.delay.delayTime.setTargetAtTime(.075+sp*.28,t,.04);audio.feedback.gain.setTargetAtTime(.035+sp*.34,t,.04);
 }
-function prewarm(){ensureAudio()}
+function nearestSample(midi){let best=SAMPLE_ANCHORS[0],d=Infinity;for(const a of SAMPLE_ANCHORS){const x=Math.abs(a.midi-midi);if(x<d){best=a;d=x}}return best}
+function fetchSample(anchor){
+  if(sampleBank.buffers.has(anchor.midi)||sampleBank.raw.has(anchor.midi))return Promise.resolve(anchor);
+  if(sampleBank.fetching.has(anchor.midi))return sampleBank.fetching.get(anchor.midi);
+  const p=fetch(SAMPLE_BASE+anchor.file,{cache:'force-cache',mode:'cors'}).then(r=>{if(!r.ok)throw new Error(`sample ${r.status} ${anchor.file}`);return r.arrayBuffer()}).then(buf=>{sampleBank.raw.set(anchor.midi,buf);sampleBank.fetching.delete(anchor.midi);return anchor}).catch(e=>{sampleBank.fetching.delete(anchor.midi);console.warn('[Liquid Piano] sample fetch',anchor.file,e);return null});
+  sampleBank.fetching.set(anchor.midi,p);return p;
+}
+function decodeSample(anchor){
+  if(!anchor||!audio)return Promise.resolve(null);if(sampleBank.buffers.has(anchor.midi))return Promise.resolve(sampleBank.buffers.get(anchor.midi));if(sampleBank.decoding.has(anchor.midi))return sampleBank.decoding.get(anchor.midi);
+  const p=(sampleBank.raw.has(anchor.midi)?Promise.resolve(anchor):fetchSample(anchor)).then(a=>{if(!a||!sampleBank.raw.has(anchor.midi))return null;const raw=sampleBank.raw.get(anchor.midi).slice(0);return audio.ctx.decodeAudioData(raw)}).then(buf=>{if(buf)sampleBank.buffers.set(anchor.midi,buf);sampleBank.decoding.delete(anchor.midi);return buf}).catch(e=>{sampleBank.decoding.delete(anchor.midi);console.warn('[Liquid Piano] sample decode',anchor.file,e);return null});
+  sampleBank.decoding.set(anchor.midi,p);return p;
+}
+function prefetchSamples(){for(const a of SAMPLE_ANCHORS)if(SAMPLE_PREFETCH.has(a.midi))fetchSample(a)}
+function primeSampleDecodes(){if(!audio)return;for(const midi of [48,57,60,69,72])decodeSample(nearestSample(midi))}
+function installSampleCredit(){
+  if(!root||root.querySelector('[data-lp-sample-credit]'))return;const p=document.createElement('p');p.className='lp-sample-credit';p.dataset.lpSampleCredit='';p.innerHTML='Piano recordings: <strong>Salamander Grand Piano</strong> · Yamaha C5 · Alexander Holm · <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer">CC BY 3.0</a>. Synth fallback remains available while a sample is loading.';root.append(p);
+}
+function prewarm(){ensureAudio();primeSampleDecodes()}
+setTimeout(()=>{if(route()===R){prefetchSamples();installSampleCredit()}},0)
 function stealVoice(){while(voices.size>=effectivePoly()){let oldest=null;for(const [m,v] of voices)if(!oldest||v.seq<oldest[1].seq)oldest=[m,v];if(!oldest)break;stopVoice(oldest[0],true)}}
 function startVoice(midi,velocity=.8){
-  if(!ensureAudio()||!audio)return;stealVoice();const base=PRESETS[preset],c=audio.ctx,t=c.currentTime,f=midiHz(midi),gate=c.createGain(),filter=c.createBiquadFilter(),pan=c.createStereoPanner?c.createStereoPanner():null,oscs=[];
+  if(!ensureAudio()||!audio)return;stealVoice();const anchor=nearestSample(midi),sample=preset==='grand'?sampleBank.buffers.get(anchor.midi):null,c=audio.ctx,t=c.currentTime,vel=clamp(velocity*settings.velocity,.2,1),bassComp=midi<45?1.5:midi<52?1.34:midi<60?1.17:1;
+  if(sample){
+    const source=c.createBufferSource(),gate=c.createGain(),pan=c.createStereoPanner?c.createStereoPanner():null;
+    source.buffer=sample;source.playbackRate.setValueAtTime(Math.pow(2,(midi-anchor.midi)/12),t);gate.gain.setValueAtTime(.0001,t);gate.gain.exponentialRampToValueAtTime(Math.max(.018,.21*vel*bassComp),t+.006);
+    source.connect(gate);let out=gate;if(pan){gate.connect(pan);pan.pan.value=clamp(((midi-60)/24)*settings.stereo,-settings.stereo,settings.stereo);out=pan}out.connect(audio.dry);out.connect(audio.delay);source.start(t);
+    voices.set(midi,{gate,filter:null,pan,oscs:[],source,seq:++voiceSeq,sample:true});lastPlayed=noteName(midi);syncDisplay();renderer?.accent(midi);return;
+  }
+  if(preset==='grand')decodeSample(anchor);
+  const base=PRESETS[preset],f=midiHz(midi),gate=c.createGain(),filter=c.createBiquadFilter(),pan=c.createStereoPanner?c.createStereoPanner():null,oscs=[];
   filter.type='lowpass';filter.frequency.setValueAtTime(settings.brightness,t);filter.Q.value=settings.resonance;gate.gain.setValueAtTime(.0001,t);
-  const peak=Math.max(.008,.135*clamp(velocity*settings.velocity,.2,1));gate.gain.exponentialRampToValueAtTime(peak,t+settings.attack);gate.gain.exponentialRampToValueAtTime(Math.max(.0002,peak*settings.sustain),t+settings.attack+settings.decay);
+  const peak=Math.max(.008,.145*vel*bassComp);gate.gain.exponentialRampToValueAtTime(peak,t+settings.attack);gate.gain.exponentialRampToValueAtTime(Math.max(.0002,peak*settings.sustain),t+settings.attack+settings.decay);
   base.partials.forEach(([mul,type,level],i)=>{const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f*mul,t);o.detune.value=(i?1:-.35)*settings.detune;g.gain.value=level;o.connect(g);g.connect(filter);o.start(t);oscs.push(o)});
   filter.connect(gate);let out=gate;if(pan){gate.connect(pan);pan.pan.value=clamp(((midi-60)/24)*settings.stereo,-settings.stereo,settings.stereo);out=pan}out.connect(audio.dry);out.connect(audio.delay);
-  voices.set(midi,{gate,filter,pan,oscs,seq:++voiceSeq});lastPlayed=noteName(midi);syncDisplay();renderer?.accent(midi);
+  voices.set(midi,{gate,filter,pan,oscs,source:null,seq:++voiceSeq,sample:false});lastPlayed=noteName(midi);syncDisplay();renderer?.accent(midi);
 }
 function stopVoice(midi,fast=false){
   const v=voices.get(midi);if(!v||!audio)return;voices.delete(midi);const t=audio.ctx.currentTime,g=v.gate.gain,end=t+(fast?.035:settings.release);
   try{g.cancelScheduledValues(t);g.setValueAtTime(Math.max(.0001,g.value||.02),t);g.exponentialRampToValueAtTime(.0001,end)}catch{g.setTargetAtTime(0,t,.025)}
-  for(const o of v.oscs)try{o.stop(end+.035)}catch{}
-  setTimeout(()=>{try{v.gate.disconnect();v.filter.disconnect();v.pan?.disconnect()}catch{}},Math.max(70,(end-t+.05)*1000));
+  for(const o of v.oscs||[])try{o.stop(end+.035)}catch{};if(v.source)try{v.source.stop(end+.04)}catch{}
+  setTimeout(()=>{try{v.gate.disconnect();v.filter?.disconnect();v.pan?.disconnect();v.source?.disconnect()}catch{}},Math.max(70,(end-t+.05)*1000));
 }
 function keyVisual(baseMidi,on){keysByMidi.get(baseMidi)?.classList.toggle('is-down',on);renderer?.setPressed(baseMidi,on)}
 function sourceDown(source,baseMidi,velocity=.8){
