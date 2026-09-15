@@ -23,7 +23,7 @@ jobs:
           loader=Path('journal-route-loader.js').read_text()
           index=Path('index.html').read_text()
           manifest=Path('runtime-manifest.json').read_text()
-          must_js=['PIANO3-PRO-20260915-1408','compact:{','standard:{','wide:{','performance:{','mobilePx:260000','mobilePx:470000','mobilePx:760000','requestFullscreen','is-pseudo-fullscreen','data-lp-setting="attack"','data-lp-setting="brightness"','data-lp-setting="polyphony"','u_refraction','u_chromatic','u_depth','drawArraysInstanced','if(active)raf=requestAnimationFrame(frame);else lastFrame=0']
+          must_js=['PIANO3-PRO-20260915-1408','compact:{','standard:{','wide:{','performance:{','mobilePx:260000','mobilePx:470000','mobilePx:760000','requestFullscreen','is-pseudo-fullscreen',"range('attack'", "range('brightness'", "range('polyphony'",'u_refraction','u_chromatic','u_depth','drawArraysInstanced','if(active)raf=requestAnimationFrame(frame);else lastFrame=0']
           for token in must_js:
               assert token in js, token
           assert 'backdrop-filter' not in css
