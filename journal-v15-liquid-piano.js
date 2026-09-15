@@ -1,7 +1,7 @@
 /* Liquid Glass Piano v3 — single-surface WebGL2 refraction, pro controls, event-driven rendering. */
 (()=>{
 'use strict';
-const R='/lab/piano',BUILD='PIANO3-PRO-20260915-1408',MAX_KEYS=64;
+const R='/lab/piano',BUILD='PIANO3_1-MOBILEPERF-20260915-1428',MAX_KEYS=64;
 const app=document.querySelector('#app');if(!app)return;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const route=()=>((location.hash.slice(1)||'/').split('?')[0]);
@@ -27,7 +27,7 @@ const PRESETS={
   bell:{label:'Bell',partials:[[1,'sine',1],[2.01,'sine',.28]],attack:.004,decay:.78,sustain:.18,release:.66,brightness:7600,resonance:2.4,space:.28,detune:5,stereo:.62}
 };
 const DEFAULTS={
-  mode:'standard',quality:'balanced',keyWidth:54,keyHeight:330,blackHeight:61,labels:true,glide:true,
+  mode:'standard',quality:(globalThis.matchMedia?.('(pointer:coarse)')?.matches?'performance':'balanced'),keyWidth:54,keyHeight:330,blackHeight:61,labels:true,glide:true,
   attack:.006,decay:.34,sustain:.40,release:.26,brightness:6100,resonance:1.8,space:.18,detune:3,stereo:.5,velocity:.86,polyphony:12,
   refraction:1,chromatic:.72,depth:.82
 };
