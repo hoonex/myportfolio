@@ -1,0 +1,37 @@
+name: Temporary Liquid Piano v3 verify
+on:
+  push:
+    branches:
+      - feat/liquid-piano-v3-controls
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Liquid Piano v3
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check journal-v15-liquid-piano.js
+          python3 - <<'PY'
+          from pathlib import Path
+          js=Path('journal-v15-liquid-piano.js').read_text()
+          css=Path('journal-v15-liquid-piano.css').read_text()
+          loader=Path('journal-route-loader.js').read_text()
+          index=Path('index.html').read_text()
+          manifest=Path('runtime-manifest.json').read_text()
+          must_js=['PIANO3-PRO-20260915-1408','compact:{','standard:{','wide:{','performance:{','mobilePx:260000','mobilePx:470000','mobilePx:760000','requestFullscreen','is-pseudo-fullscreen','data-lp-setting="attack"','data-lp-setting="brightness"','data-lp-setting="polyphony"','u_refraction','u_chromatic','u_depth','drawArraysInstanced','if(active)raf=requestAnimationFrame(frame);else lastFrame=0']
+          for token in must_js:
+              assert token in js, token
+          assert 'backdrop-filter' not in css
+          assert '-webkit-backdrop-filter' not in css
+          for token in ['lp-settings','lp-stage:fullscreen','lp-pseudo-fullscreen','--lp-white-w','data-renderer="fallback"']:
+              assert token in css, token
+          assert 'SITE48-LIQUIDPIANO3-PRO-20260915-1408' in loader
+          assert 'SITE48-LIQUIDPIANO3-PRO-20260915-1408' in index
+          assert 'journal-v15-liquid-piano.css' in manifest and 'journal-v15-liquid-piano.js' in manifest and '/lab/piano' in manifest
+          print('Liquid Piano v3 static contracts: PASS')
+          PY
