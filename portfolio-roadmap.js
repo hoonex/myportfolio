@@ -1,4 +1,4 @@
-/* Portfolio roadmap — planned work stays separate from implemented/current work. */
+/* Portfolio roadmap — incubator work stays distinct from repository-backed current work. */
 (()=>{
 'use strict';
 const app=document.querySelector('#app');
@@ -17,15 +17,22 @@ function loadRoadmap(){
   return roadmapPromise;
 }
 function row(project,index){
-  return `<a class="build-row" href="${esc(project.href)}"><span class="build-index">${String(index+1).padStart(2,'0')}</span><span class="build-main"><span class="build-kicker">${esc(project.kicker)}</span><strong>${esc(project.title)}</strong><span class="build-description">${esc(project.desc)}</span><span class="build-snapshot-v18">PLANNED / NOT BUILT</span></span><span class="build-meta">${esc(project.meta)}</span><span class="build-arrow" aria-hidden="true">↗</span></a>`;
+  const playable=project.status==='playable';
+  const label=playable?'PLAYABLE MVP':'PLANNED / NOT BUILT';
+  return `<a class="build-row" href="${esc(project.href)}"><span class="build-index">${String(index+1).padStart(2,'0')}</span><span class="build-main"><span class="build-kicker">${esc(project.kicker)}</span><strong>${esc(project.title)}</strong><span class="build-description">${esc(project.desc)}</span><span class="build-snapshot-v18">${label}</span></span><span class="build-meta">${esc(project.meta)}</span><span class="build-arrow" aria-hidden="true">↗</span></a>`;
 }
 function mountHome(roadmap){
   const home=app.querySelector('.home-page'),hero=home?.querySelector('.hero');
   if(!home||!hero)return;
   home.querySelectorAll('[data-roadmap-v19]').forEach(node=>node.remove());
-  const projects=Object.values(roadmap.projects||{}).filter(project=>project.status==='planned');
+  const projects=Object.values(roadmap.projects||{}).filter(project=>project.status==='planned'||project.status==='playable');
   if(!projects.length)return;
-  const section=`<section class="selected-builds current-work-v18 current-work-v18--secondary roadmap-v19" data-roadmap-v19 aria-label="Next build"><div class="section-head section-head--builds"><h2>Next build</h2><span>${String(projects.length).padStart(2,'0')} planned</span></div><p class="builds-intro">아직 구현 전인 다음 제작 목표입니다. 실제 playable prototype과 검증 근거가 생기면 Current work로 승격합니다.</p><div class="build-list">${projects.map(row).join('')}</div></section>`;
+  const playable=projects.filter(project=>project.status==='playable');
+  const mode=playable.length?'playable':'planned';
+  const heading=playable.length?'Playable build':'Next build';
+  const countLabel=playable.length?`${String(playable.length).padStart(2,'0')} playable`:`${String(projects.length).padStart(2,'0')} planned`;
+  const intro=playable.length?'새로 만든 실험 빌드입니다. 브라우저에서 바로 실행할 수 있으며 실제 기능 범위와 미검증 경계를 함께 표시합니다.':'아직 구현 전인 다음 제작 목표입니다. 실제 playable prototype과 검증 근거가 생기면 playable 상태로 승격합니다.';
+  const section=`<section class="selected-builds current-work-v18 current-work-v18--secondary roadmap-v19" data-roadmap-v19 data-roadmap-mode="${mode}" aria-label="${heading}"><div class="section-head section-head--builds"><h2>${heading}</h2><span>${countLabel}</span></div><p class="builds-intro">${intro}</p><div class="build-list">${projects.map(row).join('')}</div></section>`;
   const currentSections=home.querySelectorAll('[data-current-work-v18]');
   const anchor=currentSections[currentSections.length-1]||hero;
   anchor.insertAdjacentHTML('afterend',section);
