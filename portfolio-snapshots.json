@@ -1,24 +1,24 @@
 {
   "schema": 1,
-  "generatedAt": "2026-09-16T11:37:02.799Z",
+  "generatedAt": "2026-09-16T16:58:28.732Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
       "ref": "fix/v240-custom-bugfix",
-      "sha": "6ed8c70a151c41c65d82a38f34d99c8a6540c2cc",
-      "shortSha": "6ed8c70",
-      "date": "2026-09-16T10:19:13Z",
-      "message": "Build r12 input-edge calibration runtime",
-      "url": "https://github.com/hoonex/adofai/commit/6ed8c70a151c41c65d82a38f34d99c8a6540c2cc"
+      "sha": "a73fea3e7656733be311c33ce1f182e8ff103d71",
+      "shortSha": "a73fea3",
+      "date": "2026-09-16T14:57:31Z",
+      "message": "Track r15 and r16 runtime overlays in CI",
+      "url": "https://github.com/hoonex/adofai/commit/a73fea3e7656733be311c33ce1f182e8ff103d71"
     },
     "aeroforge": {
       "repository": "hoonex/developer",
       "ref": "feat/aeroforge-foundation",
-      "sha": "f0fe3b05f10d9b4be3dddfa1cb33569e32204cf1",
-      "shortSha": "f0fe3b0",
-      "date": "2026-09-16T09:49:08Z",
-      "message": "test: probe coarse48 y0375 full merge",
-      "url": "https://github.com/hoonex/developer/commit/f0fe3b05f10d9b4be3dddfa1cb33569e32204cf1"
+      "sha": "4bbe644abfa5a813a9db17cab10aeb3cbad9bae1",
+      "shortSha": "4bbe644",
+      "date": "2026-09-16T12:29:29Z",
+      "message": "test: locate coarse48 y0375 residual hotspot",
+      "url": "https://github.com/hoonex/developer/commit/4bbe644abfa5a813a9db17cab10aeb3cbad9bae1"
     },
     "sloar": {
       "repository": "hoonex/sloar-chat-coder",
