@@ -1,24 +1,24 @@
 {
   "schema": 1,
-  "generatedAt": "2026-09-16T02:20:34.603Z",
+  "generatedAt": "2026-09-16T11:37:02.799Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
       "ref": "fix/v240-custom-bugfix",
-      "sha": "b834efbe626bf873b87d32d2d23274901719c37a",
-      "shortSha": "b834efb",
-      "date": "2026-09-16T02:12:15Z",
-      "message": "Self-fuse v2.4 SFB canary on bootstrap 1",
-      "url": "https://github.com/hoonex/adofai/commit/b834efbe626bf873b87d32d2d23274901719c37a"
+      "sha": "6ed8c70a151c41c65d82a38f34d99c8a6540c2cc",
+      "shortSha": "6ed8c70",
+      "date": "2026-09-16T10:19:13Z",
+      "message": "Build r12 input-edge calibration runtime",
+      "url": "https://github.com/hoonex/adofai/commit/6ed8c70a151c41c65d82a38f34d99c8a6540c2cc"
     },
     "aeroforge": {
       "repository": "hoonex/developer",
       "ref": "feat/aeroforge-foundation",
-      "sha": "d60773ad5ff561acd65d0b5fb1ae6993e998c288",
-      "shortSha": "d60773a",
-      "date": "2026-09-16T02:11:26Z",
-      "message": "test: probe coarse48 x-mid interface shift",
-      "url": "https://github.com/hoonex/developer/commit/d60773ad5ff561acd65d0b5fb1ae6993e998c288"
+      "sha": "f0fe3b05f10d9b4be3dddfa1cb33569e32204cf1",
+      "shortSha": "f0fe3b0",
+      "date": "2026-09-16T09:49:08Z",
+      "message": "test: probe coarse48 y0375 full merge",
+      "url": "https://github.com/hoonex/developer/commit/f0fe3b05f10d9b4be3dddfa1cb33569e32204cf1"
     },
     "sloar": {
       "repository": "hoonex/sloar-chat-coder",
