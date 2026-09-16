@@ -1,0 +1,70 @@
+name: Sync portfolio repository snapshots
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portfolio-snapshot-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout published portfolio
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+
+      - name: Use current gh-pages head
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin gh-pages
+          git reset --hard origin/gh-pages
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Refresh tracked repository facts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/sync-portfolio.mjs --write
+          node scripts/sync-portfolio.mjs --validate
+
+      - name: Detect snapshot changes
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- portfolio-snapshots.json; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo 'Portfolio snapshots are already current.'
+          else
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+            git diff --check -- portfolio-snapshots.json
+            git diff --stat -- portfolio-snapshots.json
+          fi
+
+      - name: Publish refreshed snapshot
+        if: steps.changes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add portfolio-snapshots.json
+          git commit -m 'chore: sync portfolio repository snapshots'
+          git push origin HEAD:gh-pages
