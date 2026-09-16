@@ -10,6 +10,7 @@ const KEY_TO_LANE=Object.freeze({KeyD:0,KeyF:1,KeyJ:2,KeyK:3});
 const LANE_KEYS=Object.freeze(['D','F','J','K']);
 const LANE_COLORS=Object.freeze(['#7ca0ff','#63d7c2','#ffad6b','#d996ff']);
 const TRAVEL_SECONDS=1.85;
+const NOTE_SPEED_MIN=.7,NOTE_SPEED_MAX=2,NOTE_SPEED_STEP=.1,NOTE_SPEED_DEFAULT=1;
 const SCORE_VALUE=Object.freeze({perfect:1000,great:760,good:420,miss:0});
 const Chart=globalThis.HJRhythmChartV29;
 const Audio=globalThis.HJRhythmAudioV29;
@@ -22,6 +23,9 @@ const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const route=()=>((location.hash.slice(1)||'/').split('?')[0]);
 const fmtScore=value=>Math.max(0,Math.round(value)).toLocaleString('en-US');
 const fmtOffset=value=>`${value>0?'+':''}${Math.round(value)} ms`;
+const fmtSpeed=value=>`${Number(value).toFixed(1)}×`;
+const loadNoteSpeed=()=>{try{return clamp(Number(localStorage.getItem('pulse-grid-note-speed'))||NOTE_SPEED_DEFAULT,NOTE_SPEED_MIN,NOTE_SPEED_MAX)}catch{return NOTE_SPEED_DEFAULT}};
+const saveNoteSpeed=value=>{try{localStorage.setItem('pulse-grid-note-speed',String(value))}catch{}};
 
 function template(){
   return `<div class="page rhythm-page-v29" data-rhythm-v29 tabindex="-1">
@@ -63,6 +67,11 @@ function template(){
           <div class="rhythm-controls-v29">
             <button type="button" class="rhythm-start-v29" data-rhythm-start>Start run</button>
             <label class="rhythm-offset-v29">
+              <span><b>Note speed</b><output data-rhythm-speed-value>1.0×</output></span>
+              <input data-rhythm-speed type="range" min="${NOTE_SPEED_MIN}" max="${NOTE_SPEED_MAX}" step="${NOTE_SPEED_STEP}" value="${NOTE_SPEED_DEFAULT}" />
+              <small>노트가 내려오는 시각 속도만 바뀝니다. 음악과 판정 타이밍은 그대로입니다.</small>
+            </label>
+            <label class="rhythm-offset-v29">
               <span><b>Timing offset</b><output data-rhythm-offset-value>0 ms</output></span>
               <input data-rhythm-offset type="range" min="-150" max="150" step="5" value="0" />
               <small>+ 값은 노트와 판정 타이밍을 더 늦춥니다. 플레이 중에는 고정됩니다.</small>
@@ -88,16 +97,24 @@ function createState(root){
   const ctx=canvas.getContext('2d',{alpha:false});
   const state={
     root,canvas,ctx,phase:'idle',notes:[],score:0,combo:0,maxCombo:0,
-    counts:{perfect:0,great:0,good:0,miss:0},offsetMs:0,raf:0,resizeObserver:null,
+    counts:{perfect:0,great:0,good:0,miss:0},offsetMs:0,noteSpeed:loadNoteSpeed(),raf:0,resizeObserver:null,
     laneFlash:[0,0,0,0],judgeTimer:0,lastFrame:performance.now(),destroyed:false,
     elements:{
       score:root.querySelector('[data-rhythm-score]'),combo:root.querySelector('[data-rhythm-combo]'),accuracy:root.querySelector('[data-rhythm-accuracy]'),
       judge:root.querySelector('[data-rhythm-judge]'),delta:root.querySelector('[data-rhythm-delta]'),progress:root.querySelector('[data-rhythm-progress]'),
-      start:root.querySelector('[data-rhythm-start]'),offset:root.querySelector('[data-rhythm-offset]'),offsetValue:root.querySelector('[data-rhythm-offset-value]'),
+      start:root.querySelector('[data-rhythm-start]'),speed:root.querySelector('[data-rhythm-speed]'),speedValue:root.querySelector('[data-rhythm-speed-value]'),offset:root.querySelector('[data-rhythm-offset]'),offsetValue:root.querySelector('[data-rhythm-offset-value]'),
       result:root.querySelector('[data-rhythm-result]'),grade:root.querySelector('[data-result-grade]'),resultCopy:root.querySelector('[data-result-copy]'),
       countPerfect:root.querySelector('[data-count-perfect]'),countGreat:root.querySelector('[data-count-great]'),countGood:root.querySelector('[data-count-good]'),countMiss:root.querySelector('[data-count-miss]')
     }
   };
+  state.elements.speed.value=String(state.noteSpeed);
+  state.elements.speedValue.textContent=fmtSpeed(state.noteSpeed);
+  state.elements.speed.addEventListener('input',()=>{
+    state.noteSpeed=clamp(Number(state.elements.speed.value)||NOTE_SPEED_DEFAULT,NOTE_SPEED_MIN,NOTE_SPEED_MAX);
+    state.elements.speedValue.textContent=fmtSpeed(state.noteSpeed);
+    saveNoteSpeed(state.noteSpeed);
+    draw(state,state.phase==='playing'?audio.songTime():0);
+  });
   state.elements.offset.addEventListener('input',()=>{
     if(state.phase==='playing') return;
     state.offsetMs=Number(state.elements.offset.value)||0;
@@ -278,7 +295,7 @@ function draw(state,now){
   const dark=document.documentElement.dataset.theme==='dark';
   ctx.clearRect(0,0,w,h);
   ctx.fillStyle=dark?'#0d0f13':'#e9e8e3';ctx.fillRect(0,0,w,h);
-  const laneW=w/4,hitY=h-56,spawnY=18,offset=state.offsetMs/1000;
+  const laneW=w/4,hitY=h-56,spawnY=18,offset=state.offsetMs/1000,travel=TRAVEL_SECONDS/state.noteSpeed;
   for(let lane=0;lane<4;lane++){
     const x=lane*laneW;
     ctx.fillStyle=state.laneFlash[lane]>0?(dark?`rgba(255,255,255,${.025+state.laneFlash[lane]*.07})`:`rgba(20,20,20,${.018+state.laneFlash[lane]*.05})`):(lane%2?(dark?'#101217':'#f0efea'):(dark?'#0d0f13':'#e9e8e3'));
@@ -286,12 +303,12 @@ function draw(state,now){
     if(lane){ctx.fillStyle=dark?'rgba(255,255,255,.08)':'rgba(18,19,21,.10)';ctx.fillRect(x-.5,0,1,h);}
   }
   const beat=chart.beatSeconds;
-  const firstBeat=Math.floor((now-TRAVEL_SECONDS)/beat)-1;
-  const lastBeat=Math.ceil((now+TRAVEL_SECONDS*.25)/beat)+2;
+  const firstBeat=Math.floor((now-travel)/beat)-1;
+  const lastBeat=Math.ceil((now+travel*.25)/beat)+2;
   for(let b=firstBeat;b<=lastBeat;b++){
     if(b<0)continue;
     const target=b*beat+offset;
-    const t=(target-now)/TRAVEL_SECONDS;
+    const t=(target-now)/travel;
     const y=hitY-t*(hitY-spawnY);
     if(y<0||y>hitY+8)continue;
     ctx.fillStyle=b%4===0?(dark?'rgba(255,255,255,.15)':'rgba(18,19,21,.16)'):(dark?'rgba(255,255,255,.055)':'rgba(18,19,21,.055)');
@@ -301,8 +318,8 @@ function draw(state,now){
     if(note.status&&note.status!=='pending')continue;
     const target=note.time+offset;
     const until=target-now;
-    if(until>TRAVEL_SECONDS+.12||until<-Chart.WINDOWS.miss-.08)continue;
-    const t=until/TRAVEL_SECONDS;
+    if(until>travel+.12||until<-Chart.WINDOWS.miss-.08)continue;
+    const t=until/travel;
     const y=hitY-t*(hitY-spawnY);
     const x=note.lane*laneW+laneW*.16,nw=laneW*.68,nh=clamp(laneW*.17,14,24);
     const color=LANE_COLORS[note.lane];
@@ -354,6 +371,6 @@ function onKeydown(event){
 }
 addEventListener('hashchange',sync);
 addEventListener('keydown',onKeydown,{passive:false});
-globalThis.HJRhythmGameV29=Object.freeze({installed:true,build:'RHYTHM29-GAME-20260916',sync,get phase(){return current?.phase||'off'}});
+globalThis.HJRhythmGameV29=Object.freeze({installed:true,build:'RHYTHM29-GAME-SPEED-20260916',sync,get phase(){return current?.phase||'off'}});
 queueMicrotask(sync);
 })();
