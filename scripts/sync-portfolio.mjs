@@ -39,7 +39,7 @@ function projectComparable(projects) {
 async function fetchRef({repository, ref}, token) {
   const headers = {'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'hj-portfolio-sync'};
   if (token) headers.Authorization = `Bearer ${token}`;
-  const encodedRef = ref.split('/').map(encodeURIComponent).join('/');
+  const encodedRef = encodeURIComponent(ref);
   const branchUrl = `https://api.github.com/repos/${repository}/branches/${encodedRef}`;
   let response = await fetch(branchUrl, {headers});
   let payload;

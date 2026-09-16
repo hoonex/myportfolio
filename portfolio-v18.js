@@ -43,6 +43,7 @@ function enhanceHome(snapshots){
   const intro=home.querySelector('.hero-intro');if(intro)intro.textContent=content.home.intro;
   const note=home.querySelector('.hero-note');if(note)note.textContent=content.home.note;
   const principle=home.querySelector('.manifesto-copy');if(principle)principle.textContent=content.home.principle;
+  home.querySelectorAll('[data-current-work-v18]').forEach(node=>node.remove());
   const primary=listSection({heading:content.home.primaryHeading,count:content.home.primaryCount,intro:content.home.primaryIntro,keys:content.primary},snapshots);
   const secondary=listSection({heading:content.home.secondaryHeading,count:content.home.secondaryCount,intro:content.home.secondaryIntro,keys:content.secondary,secondary:true},snapshots);
   hero.insertAdjacentHTML('afterend',primary+secondary);
@@ -60,6 +61,7 @@ function projectTemplate(project,snapshots,key){
 }
 function mountProject(key,snapshots){
   const project=content.projects[key];if(!project?.deck)return false;
+  const current=app.querySelector('[data-project-page-v18]');if(current?.dataset.projectPageV18===key)return true;
   document.querySelectorAll('[data-nav]').forEach(n=>{n.classList.remove('active');n.removeAttribute('aria-current')});
   document.title=`${project.title} — HJ`;
   app.innerHTML=projectTemplate(project,snapshots,key);
