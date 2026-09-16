@@ -1,0 +1,60 @@
+name: Liquid Piano verify
+
+on:
+  push:
+    branches:
+      - perf/liquid-piano-active-v23
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          set -euo pipefail
+          for file in \
+            journal-v28-piano-audio.js \
+            journal-v28-piano-ui.js \
+            journal-v28-piano-state.js \
+            journal-v28-piano-renderer.js \
+            journal-v28-piano-input.js \
+            journal-v28-piano-keyboard.js \
+            journal-v28-liquid-piano.js; do
+            node --check "$file"
+          done
+      - name: Check piano route manifest contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path('runtime-manifest.json').read_text())
+          group = next(g for g in manifest['routes'] if g['id'] == 'liquid-piano')
+          expected = [
+              'journal-v28-piano-audio.js',
+              'journal-v28-piano-ui.js',
+              'journal-v28-piano-state.js',
+              'journal-v28-piano-renderer.js',
+              'journal-v28-piano-input.js',
+              'journal-v28-piano-keyboard.js',
+              'journal-v28-liquid-piano.js',
+          ]
+          assert group['paths'] == ['/lab/piano'], group['paths']
+          assert group['scripts'] == expected, group['scripts']
+          assert 'journal-v15-liquid-piano.js' not in group['scripts']
+          for path in expected:
+              assert Path(path).is_file(), path
+          print('manifest contract ok')
+          PY
+      - name: Check performance invariants
+        run: |
+          set -euo pipefail
+          ! grep -n "backdrop-filter" journal-v15-liquid-piano.css
+          grep -q "requestAnimationFrame" journal-v28-piano-renderer.js
+          grep -q "if(!raf&&!destroyed)" journal-v28-piano-renderer.js
+          grep -q "if(baseDirty)renderBase" journal-v28-piano-renderer.js
+          grep -q "for(const \[m,a\] of active)" journal-v28-piano-renderer.js
+          grep -q "u_cssResolution" journal-v28-piano-renderer.js
+          grep -q "audio.noteOn(midi,velocity);keyVisual" journal-v28-piano-state.js
+          echo "performance invariants ok"
