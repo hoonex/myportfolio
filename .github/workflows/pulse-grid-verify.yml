@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -54,6 +56,8 @@ jobs:
           for(const needle of ['AudioContext.currentTime','KeyD:0','KeyF:1','KeyJ:2','KeyK:3','pointerdown','audio.songTime()']) if(!game.includes(needle)) throw new Error(`missing ${needle}`);
           const loader=fs.readFileSync('journal-route-loader.js','utf8');
           if(!loader.includes('SITE56-PULSEGRID-MVP-20260916')) throw new Error('cache revision not bumped');
+          const index=fs.readFileSync('index.html','utf8');
+          for(const needle of ['portfolio-roadmap.css?v=SITE56-PULSEGRID-MVP-20260916','portfolio-roadmap.js?v=SITE56-PULSEGRID-MVP-20260916','journal-route-loader.js?v=SITE56-PULSEGRID-MVP-20260916']) if(!index.includes(needle)) throw new Error(`stale index asset ${needle}`);
           NODE
       - name: Patch hygiene
-        run: git diff --check HEAD~1..HEAD
+        run: git diff --check 7ea5c94abb3d25d4978be524919cbd156eb90cc8..HEAD
