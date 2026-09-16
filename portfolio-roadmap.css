@@ -1,0 +1,8 @@
+/* Portfolio roadmap — planned work is intentionally distinct from shipped/current work. */
+.roadmap-v19{margin-top:-52px}
+.roadmap-v19 .build-list{border-top-style:dashed}
+.roadmap-v19 .build-row{border-bottom-style:dashed}
+.roadmap-v19 .build-snapshot-v18{letter-spacing:.09em}
+.project-roadmap-v19 .project-roadmap-system-v19{border-style:dashed}
+.project-roadmap-v19 .project-roadmap-system-v19 .system-top-v16 b{letter-spacing:.06em}
+@media(max-width:560px){.roadmap-v19{margin-top:-28px}}
