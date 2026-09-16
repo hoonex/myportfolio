@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-09-16",
+  "projects": {
+    "rhythm-game": {
+      "status": "planned",
+      "href": "#/project/rhythm-game",
+      "kicker": "Rhythm game / next build",
+      "title": "Rhythm Game Prototype",
+      "desc": "프레임률이 아니라 audio clock을 기준으로 판정하고, chart format·latency calibration·모바일/PC 입력을 같은 timing model에서 검증하려는 다음 게임 프로토타입.",
+      "meta": "Timing · chart format · latency",
+      "deck": "보이는 이펙트보다 먼저 ‘언제 눌렀는가’를 정확히 다루는 timing core부터 만드는 리듬게임 프로토타입 계획.",
+      "intro": "현재는 설계 단계입니다. 첫 목표는 화려한 노트 연출이 아니라 song clock, judgement window, chart timeline, calibration이 서로 같은 시간 기준을 사용하게 만드는 것입니다.",
+      "goals": [
+        ["Audio-clock timing", "render delta나 화면 FPS가 아니라 실제 오디오 재생 시간을 authoritative song clock으로 두는 구조를 목표로 합니다."],
+        ["Judgement model", "Perfect/Great/Miss 같은 판정과 early/late 오차를 한 timing model에서 계산하고, 이후 hold·slide 같은 입력을 같은 규칙 위에 확장할 계획입니다."],
+        ["Chart timeline", "BPM 변화와 offset을 표현할 수 있는 단순한 chart format부터 정의하고, 장기적으로는 timeline editor와 검증 도구를 붙이는 방향입니다."],
+        ["Latency calibration", "입력·오디오·화면 지연을 하나의 임의 offset으로 뭉개기보다 측정/보정 경계를 분리해 실제 기기별 calibration을 가능하게 할 계획입니다."],
+        ["Shared scoring core", "모바일 touch와 PC keyboard가 서로 다른 입력 장치여도 scoring과 replay가 같은 deterministic timing core를 공유하도록 설계할 계획입니다."]
+      ],
+      "decisions": [
+        ["Clock before graphics", "노트 애니메이션과 판정 기준을 분리하고, 시각 효과가 느려져도 scoring clock이 흔들리지 않게 합니다."],
+        ["Calibration is a feature", "지연 보정을 숨은 상수로 처리하지 않고 실제 플레이 품질의 핵심 기능으로 봅니다."],
+        ["Own game identity", "ADOFAI를 포함한 기존 리듬게임의 proprietary asset, chart, UI를 복제하지 않고 별도 규칙·비주얼·콘텐츠로 만듭니다."],
+        ["One model across devices", "모바일과 PC에서 UI는 달라도 같은 판정식과 chart semantics를 사용하도록 합니다."]
+      ],
+      "boundaries": [
+        "현재 playable build와 전용 repository는 아직 없습니다. 포트폴리오에는 구현 완료가 아니라 다음 제작 계획으로만 표시합니다.",
+        "엔진, 렌더링 방식, 아트 스타일, 최종 조작 체계는 프로토타입 검증 전까지 확정하지 않습니다.",
+        "low-latency 또는 정확한 판정 품질은 실제 Android/PC 기기에서 audio/input timing을 측정하기 전에는 주장하지 않습니다.",
+        "사용할 음악은 직접 제작하거나 적절한 라이선스를 확보한 콘텐츠로 제한할 계획입니다."
+      ]
+    }
+  }
+}
