@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "projects": {
+    "adofai": {"repository": "hoonex/adofai", "ref": "fix/v240-custom-bugfix"},
+    "aeroforge": {"repository": "hoonex/developer", "ref": "feat/aeroforge-foundation"},
+    "sloar": {"repository": "hoonex/sloar-chat-coder", "ref": "main"},
+    "daily-tech": {"repository": "hoonex/daily-tech-magazine", "ref": "main"},
+    "esp32-car": {"repository": "hoonex/esp32-car", "ref": "main"},
+    "nightshift": {"repository": "hoonex/solarnet", "ref": "main"}
+  }
+}

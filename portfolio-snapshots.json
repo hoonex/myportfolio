@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-09-16T02:20:34.603Z",
+  "projects": {
+    "adofai": {
+      "repository": "hoonex/adofai",
+      "ref": "fix/v240-custom-bugfix",
+      "sha": "b834efbe626bf873b87d32d2d23274901719c37a",
+      "shortSha": "b834efb",
+      "date": "2026-09-16T02:12:15Z",
+      "message": "Self-fuse v2.4 SFB canary on bootstrap 1",
+      "url": "https://github.com/hoonex/adofai/commit/b834efbe626bf873b87d32d2d23274901719c37a"
+    },
+    "aeroforge": {
+      "repository": "hoonex/developer",
+      "ref": "feat/aeroforge-foundation",
+      "sha": "d60773ad5ff561acd65d0b5fb1ae6993e998c288",
+      "shortSha": "d60773a",
+      "date": "2026-09-16T02:11:26Z",
+      "message": "test: probe coarse48 x-mid interface shift",
+      "url": "https://github.com/hoonex/developer/commit/d60773ad5ff561acd65d0b5fb1ae6993e998c288"
+    },
+    "sloar": {
+      "repository": "hoonex/sloar-chat-coder",
+      "ref": "main",
+      "sha": "d17208cd20d7dfa4101e55f84c41e082972ea961",
+      "shortSha": "d17208c",
+      "date": "2026-09-13T16:55:05Z",
+      "message": "release: Sloar 0.10.3 evidence independence",
+      "url": "https://github.com/hoonex/sloar-chat-coder/commit/d17208cd20d7dfa4101e55f84c41e082972ea961"
+    },
+    "daily-tech": {
+      "repository": "hoonex/daily-tech-magazine",
+      "ref": "main",
+      "sha": "1e0ea6cc5288f3e310db8e06f92c7769fda424da",
+      "shortSha": "1e0ea6c",
+      "date": "2026-09-15T22:01:42Z",
+      "message": "render: carousel 2026-09-16",
+      "url": "https://github.com/hoonex/daily-tech-magazine/commit/1e0ea6cc5288f3e310db8e06f92c7769fda424da"
+    },
+    "esp32-car": {
+      "repository": "hoonex/esp32-car",
+      "ref": "main",
+      "sha": "d5a21d4128be7700df7c1899dc1ace26188b4da7",
+      "shortSha": "d5a21d4",
+      "date": "2026-09-12T10:06:49Z",
+      "message": "Merge pull request #47 from hoonex/fix/arduino-full-flash-recovery-20260912",
+      "url": "https://github.com/hoonex/esp32-car/commit/d5a21d4128be7700df7c1899dc1ace26188b4da7"
+    },
+    "nightshift": {
+      "repository": "hoonex/solarnet",
+      "ref": "main",
+      "sha": "32243fc3233fdf04aeb2e52345d246842a1f8786",
+      "shortSha": "32243fc",
+      "date": "2026-09-10T15:58:24Z",
+      "message": "Ship Nightshift 0.5.0 game-feel pass (#37)",
+      "url": "https://github.com/hoonex/solarnet/commit/32243fc3233fdf04aeb2e52345d246842a1f8786"
+    }
+  }
+}
