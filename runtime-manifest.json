@@ -15,7 +15,7 @@
     {"id":"article-labs","paths":["/post/sloar","/post/motion"],"styles":[],"scripts":["journal-v5-experiments.js"]},
     {"id":"spatial","paths":["/post/spatial"],"styles":[],"scripts":["journal-v8-spatial.js"]},
     {"id":"vision","paths":["/lab/vision"],"styles":["journal-v14-vision.css"],"scripts":["journal-v14-vision.js"]},
-    {"id":"liquid-piano","paths":["/lab/piano"],"styles":["journal-v15-liquid-piano.css"],"scripts":["journal-v15-liquid-piano.js"]},
+    {"id":"liquid-piano","paths":["/lab/piano"],"styles":["journal-v15-liquid-piano.css"],"scripts":["journal-v28-piano-audio.js","journal-v28-piano-ui.js","journal-v28-piano-state.js","journal-v28-piano-renderer.js","journal-v28-piano-input.js","journal-v28-piano-keyboard.js","journal-v28-liquid-piano.js"]},
     {"id":"article-polish","paths":["/post/glass","/post/sloar","/post/motion","/post/spatial"],"styles":[],"scripts":["journal-v10-editorial-naturalize.js"]}
   ]
 }
