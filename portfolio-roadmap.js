@@ -4,7 +4,7 @@
 const app=document.querySelector('#app');
 if(!app)return;
 const route=()=>((location.hash.slice(1)||'/').split('?')[0]);
-const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[ch]));
+const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 let roadmapPromise=null,lastRoute='';
 
 function loadRoadmap(){
