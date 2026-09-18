@@ -1,24 +1,24 @@
 {
   "schema": 1,
-  "generatedAt": "2026-09-16T02:20:34.603Z",
+  "generatedAt": "2026-09-18T04:45:46.106Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
       "ref": "fix/v240-custom-bugfix",
-      "sha": "b834efbe626bf873b87d32d2d23274901719c37a",
-      "shortSha": "b834efb",
-      "date": "2026-09-16T02:12:15Z",
-      "message": "Self-fuse v2.4 SFB canary on bootstrap 1",
-      "url": "https://github.com/hoonex/adofai/commit/b834efbe626bf873b87d32d2d23274901719c37a"
+      "sha": "a73fea3e7656733be311c33ce1f182e8ff103d71",
+      "shortSha": "a73fea3",
+      "date": "2026-09-16T14:57:31Z",
+      "message": "Track r15 and r16 runtime overlays in CI",
+      "url": "https://github.com/hoonex/adofai/commit/a73fea3e7656733be311c33ce1f182e8ff103d71"
     },
     "aeroforge": {
       "repository": "hoonex/developer",
       "ref": "feat/aeroforge-foundation",
-      "sha": "d60773ad5ff561acd65d0b5fb1ae6993e998c288",
-      "shortSha": "d60773a",
-      "date": "2026-09-16T02:11:26Z",
-      "message": "test: probe coarse48 x-mid interface shift",
-      "url": "https://github.com/hoonex/developer/commit/d60773ad5ff561acd65d0b5fb1ae6993e998c288"
+      "sha": "5461821380dc9ac58b9e0d4bddc2dddfe54fd868",
+      "shortSha": "5461821",
+      "date": "2026-09-16T12:41:19Z",
+      "message": "test: attribute coarse48 y-margin quality owners",
+      "url": "https://github.com/hoonex/developer/commit/5461821380dc9ac58b9e0d4bddc2dddfe54fd868"
     },
     "sloar": {
       "repository": "hoonex/sloar-chat-coder",
@@ -32,11 +32,11 @@
     "daily-tech": {
       "repository": "hoonex/daily-tech-magazine",
       "ref": "main",
-      "sha": "1e0ea6cc5288f3e310db8e06f92c7769fda424da",
-      "shortSha": "1e0ea6c",
-      "date": "2026-09-15T22:01:42Z",
-      "message": "render: carousel 2026-09-16",
-      "url": "https://github.com/hoonex/daily-tech-magazine/commit/1e0ea6cc5288f3e310db8e06f92c7769fda424da"
+      "sha": "2ae31e173e2ff97223d2d23a531e22c530886358",
+      "shortSha": "2ae31e1",
+      "date": "2026-09-17T22:02:45Z",
+      "message": "render: carousel 2026-09-18",
+      "url": "https://github.com/hoonex/daily-tech-magazine/commit/2ae31e173e2ff97223d2d23a531e22c530886358"
     },
     "esp32-car": {
       "repository": "hoonex/esp32-car",
