@@ -1,34 +1,34 @@
 {
   "schema": 1,
-  "updatedAt": "2026-09-16",
+  "updatedAt": "2026-09-18",
   "projects": {
     "rhythm-game": {
       "status": "playable",
       "href": "#/lab/rhythm",
-      "kicker": "Rhythm game / playable MVP",
+      "kicker": "Rhythm game / configurable playable",
       "title": "Pulse Grid",
-      "desc": "Web Audio song clock을 기준으로 판정하는 4-lane 리듬게임 MVP. 132 BPM 오리지널 합성곡, 148-note chart, D/F/J/K·touch 입력, early/late 판정과 timing offset을 제공합니다.",
-      "meta": "Web Audio · Canvas · touch / keyboard",
-      "deck": "화면 프레임과 scoring clock을 분리하고 브라우저에서 바로 플레이할 수 있게 만든 첫 리듬게임 빌드.",
-      "intro": "현재 브라우저 playable MVP가 구현되어 있습니다. 노트 위치와 판정은 같은 AudioContext song clock을 사용하며, 곡은 외부 음원 없이 런타임에서 합성합니다.",
+      "desc": "Web Audio song clock을 기준으로 차트·음악·판정을 동기화하는 4-lane rhythm lab. BPM, note speed, chart density, judgement window, timing offset, visual FX와 mix를 직접 조절하고 프리셋으로 즉시 전환할 수 있습니다.",
+      "meta": "Web Audio · Canvas · configurable chart / presets",
+      "deck": "프레임 속도와 scoring clock을 분리한 리듬게임 코어 위에 실제 BPM·밀도·판정 설정과 플레이 프리셋을 연결한 브라우저 playable.",
+      "intro": "현재 브라우저에서 바로 플레이 가능한 v30이 구현되어 있습니다. 설정한 BPM을 같은 source of truth로 차트 시간과 procedural audio scheduler에 적용하며, Easy / Standard / Rush / Precision 프리셋과 세부 조절을 제공합니다.",
       "goals": [
-        ["Audio-clock timing", "render delta가 아니라 AudioContext.currentTime 기반 song clock으로 노트 위치와 판정 시점을 계산합니다."],
-        ["Judgement model", "Perfect / Great / Good / Miss와 EARLY / LATE 오차(ms), combo, score, accuracy를 같은 timing model에서 계산합니다."],
-        ["Playable chart", "132 BPM, 4-beat count-in, 148 notes의 약 33초 chart를 제공하며 후반으로 갈수록 16분음표 패턴까지 밀도가 증가합니다."],
+        ["Shared timing authority", "render delta가 아니라 AudioContext.currentTime 기반 song clock으로 노트 위치와 판정 시점을 계산하고, BPM 변경도 차트와 음악에 같은 값으로 적용합니다."],
+        ["Configurable play", "90~200 BPM, note speed, chart density, Relaxed / Standard / Tight judgement, timing offset, visual FX, energy, volume을 조절할 수 있습니다."],
+        ["Presets", "Easy / Standard / Rush / Precision이 BPM·밀도·판정·시각 속도·mix를 일관된 세트로 전환합니다."],
         ["Input parity", "PC의 D/F/J/K와 모바일 4개 touch pad가 같은 lane judgement 함수를 사용합니다."],
-        ["Timing offset", "-150~+150 ms 범위에서 노트 표시와 판정 타이밍을 함께 이동시키는 수동 calibration을 제공합니다."]
+        ["High-density feedback", "Canvas에서 lane glow, note trail, hit ring, particle burst, beat pulse를 렌더하되 reduced-motion과 FX 단계로 제어합니다."]
       ],
       "decisions": [
-        ["Clock before graphics", "Canvas 렌더 FPS가 흔들려도 판정 기준은 audio clock에 남도록 분리했습니다."],
-        ["Original runtime audio", "외부 저작권 음원 없이 kick/snare/hat/bass/pad/pluck를 Web Audio로 직접 합성합니다."],
-        ["One input path", "keyboard와 touch가 별도 점수 로직을 갖지 않고 동일한 judgeLane 경로로 들어갑니다."],
-        ["Route-scoped runtime", "게임 CSS/JS는 /lab/rhythm에서만 runtime manifest가 로드해 홈과 다른 lab의 초기 비용을 늘리지 않습니다."]
+        ["Clock before graphics", "Canvas FPS가 흔들려도 판정 기준은 audio clock에 남도록 분리했습니다."],
+        ["Config drives chart + audio", "BPM UI를 장식 값으로 두지 않고 chart generator와 audio scheduler가 같은 설정을 소비합니다."],
+        ["Preset + custom", "프리셋은 빠른 시작점이고 슬라이더를 바꾸면 Custom 상태로 전환되어 마지막 설정을 브라우저에 저장합니다."],
+        ["Route-scoped runtime", "게임 v30 CSS/JS는 /lab/rhythm에서만 runtime manifest가 로드해 홈과 다른 lab의 초기 비용을 늘리지 않습니다."]
       ],
       "boundaries": [
-        "현재는 tap-note 기반 4-lane MVP이며 hold/slide, chart editor, replay는 아직 없습니다.",
+        "현재는 tap-note 기반 4-lane이며 hold/slide, chart editor, replay는 아직 없습니다.",
         "브라우저/기기별 실제 audio output 및 touch latency는 각 기기에서 측정하기 전에는 정확하다고 주장하지 않습니다.",
-        "현재 timing offset은 수동 보정이며 자동 calibration 측정기는 아직 없습니다.",
-        "이 환경의 Chromium 정책이 localhost/file 렌더를 차단해 소스 수준 검증 외의 브라우저 시각 검증은 배포본에서 추가 확인이 필요합니다."
+        "timing offset은 수동 보정이며 자동 calibration 측정기는 아직 없습니다.",
+        "이 환경에서는 실제 기기 렌더/터치 손맛을 직접 검증할 수 없어 배포본에서의 시각·체감 평가는 별도입니다."
       ]
     }
   }
