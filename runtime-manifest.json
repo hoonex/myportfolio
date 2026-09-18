@@ -16,7 +16,7 @@
     {"id":"spatial","paths":["/post/spatial"],"styles":[],"scripts":["journal-v8-spatial.js"]},
     {"id":"vision","paths":["/lab/vision"],"styles":["journal-v14-vision.css"],"scripts":["journal-v14-vision.js"]},
     {"id":"liquid-piano","paths":["/lab/piano"],"styles":["journal-v15-liquid-piano.css"],"scripts":["journal-v28-piano-audio.js","journal-v28-piano-ui.js","journal-v28-piano-state.js","journal-v28-piano-renderer.js","journal-v28-piano-input.js","journal-v28-piano-keyboard.js","journal-v28-liquid-piano.js"]},
-    {"id":"pulse-grid","paths":["/lab/rhythm"],"styles":["journal-v29-rhythm.css"],"scripts":["journal-v29-rhythm-chart.js","journal-v29-rhythm-audio.js","journal-v29-rhythm-game.js"]},
+    {"id":"pulse-grid","paths":["/lab/rhythm"],"styles":["journal-v30-rhythm.css"],"scripts":["journal-v30-rhythm-chart.js","journal-v30-rhythm-audio.js","journal-v30-rhythm-game.js"]},
     {"id":"article-polish","paths":["/post/glass","/post/sloar","/post/motion","/post/spatial"],"styles":[],"scripts":["journal-v10-editorial-naturalize.js"]}
   ]
 }
