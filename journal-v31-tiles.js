@@ -52,7 +52,7 @@ function finish(s,won,reason){
  if(s.mode==='classic'&&won&&(!s.classicBest||elapsed<s.classicBest))s.classicBest=elapsed;
  if(s.mode==='combo'&&s.score>s.comboBest)s.comboBest=s.score;
  save(s);hud(s);s.$('phase').textContent=won?'COMPLETE':'GAME OVER';s.$('banner').textContent=won?'40타일 완주!':reason;
- s.$('detail').textContent=won?elapsed.toFixed(2)+'초':s.combo+' combo · '+s.score.toLocaleString()+' points';draw(s,s.ended);
+ s.$('detail').textContent=won?elapsed.toFixed(2)+'초 · '+s.score.toLocaleString()+' points':s.combo+' combo · '+s.score.toLocaleString()+' points';draw(s,s.ended);
 }
 function hit(s,lane){
  const now=performance.now(),index=s.idx;
