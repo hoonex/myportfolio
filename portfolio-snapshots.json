@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "generatedAt": "2026-09-19T04:39:41.910Z",
+  "generatedAt": "2026-09-19T20:42:14.339Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
       "ref": "fix/v240-custom-bugfix",
-      "sha": "a73fea3e7656733be311c33ce1f182e8ff103d71",
-      "shortSha": "a73fea3",
-      "date": "2026-09-16T14:57:31Z",
-      "message": "Track r15 and r16 runtime overlays in CI",
-      "url": "https://github.com/hoonex/adofai/commit/a73fea3e7656733be311c33ce1f182e8ff103d71"
+      "sha": "e2a518dc154d7c8bb21d68479c48287322c6b1cd",
+      "shortSha": "e2a518d",
+      "date": "2026-09-19T16:19:10Z",
+      "message": "Synchronize transient editor colliders before v2.4 tile raycasts",
+      "url": "https://github.com/hoonex/adofai/commit/e2a518dc154d7c8bb21d68479c48287322c6b1cd"
     },
     "aeroforge": {
       "repository": "hoonex/developer",
