@@ -64,6 +64,7 @@ function template(settings,chart){
           <div class="rhythm-kicker-v30">RHYTHM LAB / LIVE CONFIG</div>
           <h1>Pulse Grid</h1>
           <p>한 개의 audio clock을 기준으로 차트·음악·판정을 동기화하고, 플레이 스타일을 실시간으로 튜닝하는 4-lane rhythm lab.</p>
+          <a class="rhythm-tiles-link-v30" href="#/lab/tiles">▶ 4-LANE TILES <span>클래식 · 콤보 모드 플레이 ↗</span></a>
         </div>
         <div class="rhythm-live-meta-v30" aria-label="Current configuration">
           <div><span>BPM</span><b data-meta-bpm>${chart.bpm}</b></div>
