@@ -1,0 +1,26 @@
+/* Pulse Grid Tiles v32 speedrun: focused portrait layout / four-field HUD. */
+.tiles-speedrun-v32 .tiles-hud-v32{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tiles-speedrun-v32 .tiles-hud-v32>div{padding:12px 10px;gap:4px}
+.tiles-speedrun-v32 .tiles-hud-v32 strong{font-size:clamp(.9rem,2.7vw,1.4rem);font-variant-numeric:tabular-nums}
+.tiles-speedrun-v32 .tiles-hud-v32>div:nth-child(3){background:#d3eaff;color:#125c95}
+.tiles-speedrun-v32 .tiles-hud-v32>div:nth-child(3) small{color:#356f9b}
+.tiles-speedrun-v32 .tiles-stage-bottom{font-size:.82rem}
+.tiles-speedrun-v32 .tiles-stage-banner{max-width:min(88%,330px)}
+.tiles-speedrun-controls{display:grid;gap:14px;padding:20px;background:#eaf7ff;color:#173b57}
+.tiles-speedrun-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.tiles-speedrun-head>span{font-size:.7rem;font-weight:850;letter-spacing:.13em;color:#346486}
+.tiles-speedrun-head>strong{font-size:.72rem;font-weight:700;color:#22688c}
+.tiles-speedrun-controls .tiles-start{min-height:52px}
+.tiles-speedrun-controls .tiles-instructions{line-height:1.6}
+.tiles-audio-credit{margin:0;border-top:1px solid #c6dce8;padding-top:12px;font-size:.68rem;line-height:1.6;color:#54778b}
+.tiles-audio-credit a{color:#1e6096;text-underline-offset:3px}
+.tiles-speedrun-v32 .tiles-top .tiles-song p{color:#e3f5ff}
+@media(max-width:570px){
+ .tiles-speedrun-v32 .tiles-hud-v32>div{padding:10px 5px}
+ .tiles-speedrun-v32 .tiles-hud-v32 small{font-size:.61rem}
+ .tiles-speedrun-v32 .tiles-hud-v32 strong{font-size:clamp(.86rem,3.2vw,1.05rem);letter-spacing:-.05em}
+ .tiles-speedrun-v32 .tiles-top{min-height:104px}
+ .tiles-speedrun-v32 .tiles-stage{height:clamp(440px,64dvh,640px)}
+ .tiles-speedrun-controls{padding:14px}
+ .tiles-speedrun-head{gap:4px}
+}
