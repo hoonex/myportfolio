@@ -133,11 +133,12 @@
       ],
       "styles": [
         "journal-v31-tiles.css",
-        "journal-v32-tiles.css"
+        "journal-v32-tiles.css",
+        "journal-v33-tiles.css"
       ],
       "scripts": [
         "journal-v32-tiles-audio.js",
-        "journal-v32-tiles-game.js"
+        "journal-v33-tiles-game.js"
       ]
     },
     {

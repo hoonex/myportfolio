@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "updatedAt": "2026-09-20",
+  "updatedAt": "2026-09-21",
   "projects": {
     "rhythm-game": {
       "status": "playable",
       "href": "#/lab/rhythm",
       "kicker": "Rhythm game / configurable playable",
       "title": "Pulse Grid",
-      "desc": "4레인 Rhythm Studio에서 BPM·노트 속도·밀도·판정·프리셋을 설정할 수 있으며, Tiles에서는 40타일 무사망 스피드런과 실시간 정확도·기록에 도전합니다. Tiles 음색에는 Salamander 그랜드 피아노 녹음 샘플을 사용하고 로딩 전에는 합성 피아노로 대체합니다.",
+      "desc": "4레인 Rhythm Studio에서는 BPM·노트 속도·밀도·판정·프리셋을 설정할 수 있습니다. Tiles에는 100·300·1000타일 스피드런과 무한 모드, 3곡 선택, 곡·길이별 기록, 실시간 정확도와 Salamander 그랜드 피아노 샘플이 있습니다.",
       "meta": "Web Audio · Canvas · configurable chart / presets",
       "deck": "프레임 속도와 scoring clock을 분리한 리듬게임 코어 위에 실제 BPM·밀도·판정 설정과 플레이 프리셋을 연결한 브라우저 playable.",
       "intro": "현재 브라우저에서 바로 플레이 가능한 v30이 구현되어 있습니다. 설정한 BPM을 같은 source of truth로 차트 시간과 procedural audio scheduler에 적용하며, Easy / Standard / Rush / Precision 프리셋과 세부 조절을 제공합니다.",
@@ -34,7 +34,7 @@
         ],
         [
           "Tiles speedrun",
-          "틀린 타일을 눌러도 종료되지 않는 40타일 스피드런. 정답 횟수/전체 입력 횟수로 실시간 정확도를 계산하고 최고 완주 시간과 오입력을 보여줍니다."
+          "오입력해도 종료되지 않는 100·300·1000타일 스피드런 및 무한 모드. 영국 전래 선율·베토벤 환희의 송가·프랑스 전래 동요 3곡을 선택하고, 곡·길이별 기록과 입력 정확도를 별도 관리합니다."
         ]
       ],
       "decisions": [
@@ -64,7 +64,7 @@
         "브라우저/기기별 실제 audio output 및 touch latency는 각 기기에서 측정하기 전에는 정확하다고 주장하지 않습니다.",
         "timing offset은 수동 보정이며 자동 calibration 측정기는 아직 없습니다.",
         "이 환경에서는 실제 기기 렌더/터치 손맛을 직접 검증할 수 없어 배포본에서의 시각·체감 평가는 별도입니다.",
-        "Tiles는 40타일 순차 스피드런이며 Studio의 타이밍 판정과 별개입니다. 타일을 잘못 눌러도 게임 종료 없이 정확도와 연속 콤보만 감소합니다."
+        "Tiles는 순차 입력형 게임으로 Studio의 타이밍 판정과는 별도입니다. 100·300·1000타일과 무한 모드에서 선율은 반복되며, 무한 모드 기록은 최다 진행 타일 수로 저장합니다."
       ]
     }
   }
