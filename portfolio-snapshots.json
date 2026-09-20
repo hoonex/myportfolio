@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": "2026-09-20T16:08:29.255Z",
+  "generatedAt": "2026-09-20T20:50:32.764Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
@@ -23,11 +23,11 @@
     "sloar": {
       "repository": "hoonex/sloar-chat-coder",
       "ref": "main",
-      "sha": "289708024b899879957ca7f8a84230676677cf1a",
-      "shortSha": "2897080",
-      "date": "2026-09-20T15:29:49Z",
-      "message": "feat(design): add 22 reference-backed implementable styles",
-      "url": "https://github.com/hoonex/sloar-chat-coder/commit/289708024b899879957ca7f8a84230676677cf1a"
+      "sha": "19b24df0b819f4843d059a985c1e2df84fc294ee",
+      "shortSha": "19b24df",
+      "date": "2026-09-20T16:30:57Z",
+      "message": "fix(design): require inspected implementation references and asset feasibility",
+      "url": "https://github.com/hoonex/sloar-chat-coder/commit/19b24df0b819f4843d059a985c1e2df84fc294ee"
     },
     "daily-tech": {
       "repository": "hoonex/daily-tech-magazine",
