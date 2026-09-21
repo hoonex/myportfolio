@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": "2026-09-20T20:50:32.764Z",
+  "generatedAt": "2026-09-21T04:58:01.213Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
@@ -14,11 +14,11 @@
     "aeroforge": {
       "repository": "hoonex/developer",
       "ref": "feat/aeroforge-foundation",
-      "sha": "c8b3b507f0f68d9b8e1940a85ea14eab0f877a9b",
-      "shortSha": "c8b3b50",
-      "date": "2026-09-18T06:23:59Z",
-      "message": "test: isolate coarse48 y0375 z-min inward",
-      "url": "https://github.com/hoonex/developer/commit/c8b3b507f0f68d9b8e1940a85ea14eab0f877a9b"
+      "sha": "dac385f33adcf9255c2a257ff2700e79564f6b57",
+      "shortSha": "dac385f",
+      "date": "2026-09-21T01:33:17Z",
+      "message": "chore: upgrade Sloar to 0.10.3",
+      "url": "https://github.com/hoonex/developer/commit/dac385f33adcf9255c2a257ff2700e79564f6b57"
     },
     "sloar": {
       "repository": "hoonex/sloar-chat-coder",
@@ -32,11 +32,11 @@
     "daily-tech": {
       "repository": "hoonex/daily-tech-magazine",
       "ref": "main",
-      "sha": "8c889e2d61fcc7114aaa83a85fbedb203ef5db98",
-      "shortSha": "8c889e2",
-      "date": "2026-09-19T22:05:19Z",
-      "message": "render: carousel 2026-09-20",
-      "url": "https://github.com/hoonex/daily-tech-magazine/commit/8c889e2d61fcc7114aaa83a85fbedb203ef5db98"
+      "sha": "696324fc9a14dc5aada413fffff15c348461bf74",
+      "shortSha": "696324f",
+      "date": "2026-09-20T22:03:47Z",
+      "message": "render: carousel 2026-09-21",
+      "url": "https://github.com/hoonex/daily-tech-magazine/commit/696324fc9a14dc5aada413fffff15c348461bf74"
     },
     "esp32-car": {
       "repository": "hoonex/esp32-car",
