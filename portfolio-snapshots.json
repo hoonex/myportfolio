@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": "2026-09-26T04:59:49.547Z",
+  "generatedAt": "2026-09-26T11:27:07.101Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
@@ -23,11 +23,11 @@
     "sloar": {
       "repository": "hoonex/sloar-chat-coder",
       "ref": "main",
-      "sha": "19b24df0b819f4843d059a985c1e2df84fc294ee",
-      "shortSha": "19b24df",
-      "date": "2026-09-20T16:30:57Z",
-      "message": "fix(design): require inspected implementation references and asset feasibility",
-      "url": "https://github.com/hoonex/sloar-chat-coder/commit/19b24df0b819f4843d059a985c1e2df84fc294ee"
+      "sha": "bcd4244de0468965fd5f3cffaab86ccc227fb402",
+      "shortSha": "bcd4244",
+      "date": "2026-09-26T10:32:10Z",
+      "message": "feat(continuity): add long-running execution contract",
+      "url": "https://github.com/hoonex/sloar-chat-coder/commit/bcd4244de0468965fd5f3cffaab86ccc227fb402"
     },
     "daily-tech": {
       "repository": "hoonex/daily-tech-magazine",
