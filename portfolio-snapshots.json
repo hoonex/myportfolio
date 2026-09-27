@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "generatedAt": "2026-09-26T11:27:07.101Z",
+  "generatedAt": "2026-09-27T12:04:57.987Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
       "ref": "fix/v240-custom-bugfix",
-      "sha": "e2a518dc154d7c8bb21d68479c48287322c6b1cd",
-      "shortSha": "e2a518d",
-      "date": "2026-09-19T16:19:10Z",
-      "message": "Synchronize transient editor colliders before v2.4 tile raycasts",
-      "url": "https://github.com/hoonex/adofai/commit/e2a518dc154d7c8bb21d68479c48287322c6b1cd"
+      "sha": "0ca7ff67190bc7516da1be349d2a12464e072d3d",
+      "shortSha": "0ca7ff6",
+      "date": "2026-09-27T10:37:38Z",
+      "message": "Use PlayerPrefsJson for exact v2.4 calibration repair",
+      "url": "https://github.com/hoonex/adofai/commit/0ca7ff67190bc7516da1be349d2a12464e072d3d"
     },
     "aeroforge": {
       "repository": "hoonex/developer",
