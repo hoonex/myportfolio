@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "generatedAt": "2026-09-27T12:04:57.987Z",
+  "generatedAt": "2026-09-27T16:59:29.079Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
       "ref": "fix/v240-custom-bugfix",
-      "sha": "0ca7ff67190bc7516da1be349d2a12464e072d3d",
-      "shortSha": "0ca7ff6",
-      "date": "2026-09-27T10:37:38Z",
-      "message": "Use PlayerPrefsJson for exact v2.4 calibration repair",
-      "url": "https://github.com/hoonex/adofai/commit/0ca7ff67190bc7516da1be349d2a12464e072d3d"
+      "sha": "5e70462906889ca47fc9773643278ba5e281b83d",
+      "shortSha": "5e70462",
+      "date": "2026-09-27T16:22:11Z",
+      "message": "Align r21 build assertions with active tile policy",
+      "url": "https://github.com/hoonex/adofai/commit/5e70462906889ca47fc9773643278ba5e281b83d"
     },
     "aeroforge": {
       "repository": "hoonex/developer",
