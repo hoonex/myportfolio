@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedAt": "2026-09-21",
+  "updatedAt": "2026-09-28",
   "projects": {
     "rhythm-game": {
       "status": "playable",
@@ -65,6 +65,58 @@
         "timing offset은 수동 보정이며 자동 calibration 측정기는 아직 없습니다.",
         "이 환경에서는 실제 기기 렌더/터치 손맛을 직접 검증할 수 없어 배포본에서의 시각·체감 평가는 별도입니다.",
         "Tiles는 순차 입력형 게임으로 Studio의 타이밍 판정과는 별도입니다. 100·300·1000타일과 무한 모드에서 선율은 반복되며, 무한 모드 기록은 최다 진행 타일 수로 저장합니다."
+      ]
+    },
+    "head-coupled-display": {
+      "status": "playable",
+      "href": "#/lab/depth",
+      "kicker": "Camera interaction / view-dependent display",
+      "title": "Head-Coupled Display",
+      "desc": "전면 카메라로 두 눈의 중간점과 눈 사이 거리를 추적해 화면 속 깊이와 시점 보정을 만드는 브라우저 실험입니다. DEPTH와 FACE ME 두 렌더링 모드를 제공합니다.",
+      "meta": "MediaPipe Face Landmarker · CSS 3D · front camera",
+      "deck": "평면 디스플레이를 고정된 그림이 아니라 관찰자의 위치에 반응하는 창처럼 만드는 head-coupled rendering 실험.",
+      "intro": "카메라를 켜면 얼굴 영상 자체를 저장하지 않고 브라우저에서 랜드마크를 계산합니다. 양쪽 눈의 중간점은 X/Y, 눈 사이 간격 변화는 상대 Z로 사용하며, 카메라 없이도 포인터로 렌더링 반응을 미리 확인할 수 있습니다.",
+      "goals": [
+        [
+          "Head translation",
+          "얼굴 회전값보다 화면에 대한 실제 눈 위치 이동을 우선해 좌우·상하 시점을 추정합니다."
+        ],
+        [
+          "Relative depth",
+          "눈 사이 거리의 초기 보정값 대비 변화로 화면과 얼굴 사이의 상대 거리를 추정합니다."
+        ],
+        [
+          "Depth window",
+          "배경·물체·전경·그림자를 서로 다른 시차로 이동시켜 화면 뒤쪽에 공간이 있는 듯한 단안 깊이 단서를 만듭니다."
+        ],
+        [
+          "View compensation",
+          "FACE ME 모드는 관측 위치의 반대 방향으로 콘텐츠 평면을 사전 왜곡해 정면 인상을 유지하도록 보정합니다."
+        ]
+      ],
+      "decisions": [
+        [
+          "Route-scoped model",
+          "MediaPipe 런타임·모델·실험 CSS/JS는 /lab/depth 진입 시에만 불러와 홈 초기 비용에 포함하지 않습니다."
+        ],
+        [
+          "Explicit camera start",
+          "카메라는 자동 시작하지 않고 사용자가 버튼을 눌러 권한을 허용한 뒤에만 활성화합니다."
+        ],
+        [
+          "Pointer fallback",
+          "권한 거부·데스크톱 검증 상황에서도 렌더링 자체를 확인할 수 있도록 포인터 입력이 같은 pose 경로를 사용합니다."
+        ],
+        [
+          "Recenter instead of fixed calibration",
+          "기기마다 카메라 위치와 화면 크기가 다르므로 현재 얼굴 위치를 기준점으로 다시 잡는 Recenter 동작을 제공합니다."
+        ]
+      ],
+      "boundaries": [
+        "일반 전면 카메라 한 대만 사용하므로 절대 거리(cm)를 측정하는 시스템이 아니라 눈 사이 크기 변화에 기반한 상대 거리 추정입니다.",
+        "FACE ME는 웹 데모용 근사 보정입니다. 물리적으로 정확한 off-axis projection에는 실제 디스플레이 크기, 카메라 광학 중심과 화면 좌표계 보정이 추가로 필요합니다.",
+        "모델과 MediaPipe 런타임은 외부 CDN/Google 저장소에서 내려받으므로 네트워크가 끊기면 최초 모델 시작이 실패할 수 있습니다.",
+        "실제 휴대폰 전면 카메라의 체감 지연·발열·배터리 소모는 해당 기기에서 측정하기 전에는 수치로 주장하지 않습니다."
       ]
     }
   }

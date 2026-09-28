@@ -153,6 +153,18 @@
       "scripts": [
         "journal-v10-editorial-naturalize.js"
       ]
+    },
+    {
+      "id": "head-coupled-display",
+      "paths": [
+        "/lab/depth"
+      ],
+      "styles": [
+        "journal-v34-head-coupled.css"
+      ],
+      "scripts": [
+        "journal-v34-head-coupled.js"
+      ]
     }
   ]
 }
