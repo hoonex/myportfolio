@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": "2026-09-27T21:22:29.349Z",
+  "generatedAt": "2026-09-28T13:58:17.017Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
@@ -23,11 +23,11 @@
     "sloar": {
       "repository": "hoonex/sloar-chat-coder",
       "ref": "main",
-      "sha": "bcd4244de0468965fd5f3cffaab86ccc227fb402",
-      "shortSha": "bcd4244",
-      "date": "2026-09-26T10:32:10Z",
-      "message": "feat(continuity): add long-running execution contract",
-      "url": "https://github.com/hoonex/sloar-chat-coder/commit/bcd4244de0468965fd5f3cffaab86ccc227fb402"
+      "sha": "5c885d956dcb0ba58e3896dc011c73b888e49a7f",
+      "shortSha": "5c885d9",
+      "date": "2026-09-28T09:22:44Z",
+      "message": "release: Sloar 0.10.4 visual intelligence",
+      "url": "https://github.com/hoonex/sloar-chat-coder/commit/5c885d956dcb0ba58e3896dc011c73b888e49a7f"
     },
     "daily-tech": {
       "repository": "hoonex/daily-tech-magazine",
