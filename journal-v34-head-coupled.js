@@ -3,6 +3,7 @@
 'use strict';
 const R='/lab/depth';
 const BUILD='HEAD34-20260928';
+const PAGE_TITLE='Head-Coupled Display — HJ';
 const MPV='1.0.1';
 const MODS=[
   `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MPV}/vision_bundle.mjs`,
@@ -232,6 +233,7 @@ function infer(now){
   if(now-fpsAt>=1000){fps=Math.round(frameCount*1000/(now-fpsAt));frameCount=0;fpsAt=now;setSource('CAMERA',`${fps} fps · ${Math.round(inferMs)} ms`)}
 }
 function loop(now){
+  if(route()===R&&document.title!==PAGE_TITLE)document.title=PAGE_TITLE;
   infer(now);applyPose(now);raf=requestAnimationFrame(loop);
 }
 function startLoop(){if(!raf)raf=requestAnimationFrame(loop)}
@@ -315,10 +317,10 @@ function bind(){
 }
 function mount(){
   if(route()!==R){if(running)stop({reset:false});stopLoop();return}
-  if(root&&document.contains(root)){startLoop();return}
+  if(root&&document.contains(root)){document.title=PAGE_TITLE;startLoop();return}
   stopLoop();
   app.innerHTML=markup();root=app.querySelector('[data-hc-root]');video=q('[data-hc-video]');
-  nav();bind();setMode(mode);document.title='Head-Coupled Display — HJ';
+  nav();bind();setMode(mode);document.title=PAGE_TITLE;
   target={x:0,y:0,z:0};smooth={x:0,y:0,z:0};calibration.ready=false;source='pointer';
   startLoop();requestAnimationFrame(()=>app.focus({preventScroll:true}));
 }
