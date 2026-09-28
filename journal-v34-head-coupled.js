@@ -2,7 +2,7 @@
 (()=>{
 'use strict';
 const R='/lab/depth';
-const BUILD='HEAD34-20260928';
+const BUILD='HEAD35-20260928';
 const PAGE_TITLE='Head-Coupled Display — HJ';
 const MPV='1.0.1';
 const MODS=[
@@ -26,7 +26,8 @@ let root=null,video=null,stream=null,faceTask=null,mp=null,fileset=null,modelPro
 let running=false,raf=0,lastInfer=0,lastVideoTime=-1,lastFaceAt=0,lastFace=null;
 let mode='depth',source='pointer';
 let target={x:0,y:0,z:0},smooth={x:0,y:0,z:0};
-let calibration={cx:.5,cy:.5,eye:.18,ready:false};
+let calibration={cx:.5,cy:.5,scale:.3,ready:false};
+let calibrationSamples=[],poseHistory=[],filteredFace=null;
 let inferMs=0,fps=0,frameCount=0,fpsAt=performance.now();
 
 function markup(){
@@ -36,7 +37,7 @@ function markup(){
       <div class="hc-hero-grid">
         <h1>Move your head.<br><em>Not your phone.</em></h1>
         <div class="hc-hero-copy">
-          <p>전면 카메라가 눈의 위치와 눈 사이 거리를 추적합니다. 화면은 그 위치를 가상 시점으로 사용해 평면 디스플레이 안쪽에 공간이 있는 것처럼 반응합니다.</p>
+          <p>전면 카메라가 홍채 중심과 얼굴 크기를 함께 추적합니다. 화면은 그 위치를 가상 시점으로 사용해 평면 디스플레이 안쪽에 공간이 있는 것처럼 반응합니다.</p>
           <span>영상은 화면에 저장하지 않습니다. 얼굴 랜드마크 계산은 브라우저에서 실행되며 MediaPipe 런타임과 모델은 외부에서 내려받습니다.</span>
         </div>
       </div>
@@ -57,9 +58,8 @@ function markup(){
       </div>
 
       <div class="hc-stage" data-hc-stage tabindex="0" aria-label="Head tracked 3D scene. Move your head after starting the camera, or move the pointer for a preview.">
-        <video data-hc-video muted playsinline aria-hidden="true"></video>
         <div class="hc-camera-chip" aria-hidden="true">
-          <div class="hc-camera-preview"><span class="hc-face-bracket"></span></div>
+          <div class="hc-camera-preview"><video data-hc-video muted playsinline></video><span class="hc-face-bracket"></span></div>
           <div><b data-hc-source>POINTER</b><span data-hc-fps>preview</span></div>
         </div>
 
@@ -106,7 +106,7 @@ function markup(){
 
       <div class="hc-explain">
         <article><span>01 / TRANSLATION</span><h3>눈의 중간점</h3><p>양쪽 눈의 중간 위치를 화면 기준 X·Y 시점으로 사용합니다. 고개를 돌리는 각도보다 실제 머리 이동량을 우선합니다.</p></article>
-        <article><span>02 / DISTANCE</span><h3>눈 사이 거리</h3><p>카메라 영상에서 두 눈 사이 간격이 커지면 화면에 가까워진 것으로 추정해 Z축 깊이와 그림자 간격에 반영합니다.</p></article>
+        <article><span>02 / DISTANCE</span><h3>얼굴 크기</h3><p>얼굴 높이를 주축으로 두 눈 사이 거리도 함께 사용해 상대적인 앞뒤 거리를 추정합니다. 고개 회전 때문에 Z축이 튀는 현상을 줄였습니다.</p></article>
         <article><span>03 / COMPENSATION</span><h3>역방향 왜곡</h3><p>FACE ME는 관측 위치에 따라 평면을 역회전해 정면 인상을 보정합니다. 정밀한 실물 보정에는 화면 크기·카메라 위치 보정값이 추가로 필요합니다.</p></article>
       </div>
     </section>
@@ -191,7 +191,7 @@ async function ensureModel(){
       }
       if(!fileset)throw last||new Error('MediaPipe WASM unavailable');
     }
-    const base={baseOptions:{modelAssetPath:FM},runningMode:'VIDEO',numFaces:1,minFaceDetectionConfidence:.45,minFacePresenceConfidence:.45,minTrackingConfidence:.45,outputFacialTransformationMatrixes:false,outputFaceBlendshapes:false};
+    const base={baseOptions:{modelAssetPath:FM},runningMode:'VIDEO',numFaces:1,minFaceDetectionConfidence:.50,minFacePresenceConfidence:.50,minTrackingConfidence:.50,outputFacialTransformationMatrixes:false,outputFaceBlendshapes:false};
     try{faceTask=await mod.FaceLandmarker.createFromOptions(fileset,{...base,baseOptions:{...base.baseOptions,delegate:'GPU'}})}
     catch(error){console.warn('[Head34] GPU init failed; CPU fallback',error);faceTask=await mod.FaceLandmarker.createFromOptions(fileset,base)}
     return faceTask;
@@ -199,28 +199,93 @@ async function ensureModel(){
   return modelPromise;
 }
 
-function eyePose(landmarks){
-  if(!landmarks||landmarks.length<264)return null;
-  const a=landmarks[33],b=landmarks[263];
-  if(!a||!b)return null;
-  const mx=(a.x+b.x)*.5,my=(a.y+b.y)*.5;
-  const eye=Math.hypot(a.x-b.x,a.y-b.y);
-  if(!Number.isFinite(eye)||eye<.035)return null;
-  return {mx,my,eye};
+const median=values=>{
+  const sorted=values.filter(Number.isFinite).sort((a,b)=>a-b);
+  if(!sorted.length)return 0;
+  const mid=Math.floor(sorted.length/2);
+  return sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])*.5;
+};
+const deadzone=(value,size)=>Math.abs(value)<size?0:Math.sign(value)*(Math.abs(value)-size);
+function meanPoint(landmarks,indices){
+  let x=0,y=0,n=0;
+  for(const index of indices){
+    const point=landmarks[index];
+    if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))continue;
+    x+=point.x;y+=point.y;n++;
+  }
+  return n?{x:x/n,y:y/n}:null;
+}
+function facePose(landmarks){
+  if(!landmarks||landmarks.length<468)return null;
+  // 468/473 are iris centres when the 478-landmark model is available.
+  const irisReady=!!(landmarks.length>=478&&landmarks[468]&&landmarks[473]);
+  const left=irisReady?landmarks[468]:meanPoint(landmarks,[33,133,159,145]);
+  const right=irisReady?landmarks[473]:meanPoint(landmarks,[263,362,386,374]);
+  const forehead=landmarks[10],chin=landmarks[152];
+  if(!left||!right||!forehead||!chin)return null;
+  const mx=(left.x+right.x)*.5,my=(left.y+right.y)*.5;
+  const eye=Math.hypot(left.x-right.x,left.y-right.y);
+  const faceHeight=Math.hypot(forehead.x-chin.x,forehead.y-chin.y);
+  if(!Number.isFinite(eye)||!Number.isFinite(faceHeight)||eye<.025||faceHeight<.12)return null;
+  // Face height is much less sensitive to yaw than eye distance. Eye spacing still adds a small cue.
+  const scale=faceHeight*.78+eye*1.15*.22;
+  return {mx,my,eye,faceHeight,scale,iris:irisReady};
+}
+function stabilizePose(pose){
+  if(!filteredFace){filteredFace={...pose};return filteredFace}
+  const maxXY=.045,maxScale=Math.max(.012,filteredFace.scale*.075);
+  const dx=clamp(pose.mx-filteredFace.mx,-maxXY,maxXY);
+  const dy=clamp(pose.my-filteredFace.my,-maxXY,maxXY);
+  const ds=clamp(pose.scale-filteredFace.scale,-maxScale,maxScale);
+  filteredFace={
+    ...pose,
+    mx:lerp(filteredFace.mx,filteredFace.mx+dx,.52),
+    my:lerp(filteredFace.my,filteredFace.my+dy,.52),
+    scale:lerp(filteredFace.scale,filteredFace.scale+ds,.42)
+  };
+  return filteredFace;
+}
+function calibrateFrom(samples){
+  if(!samples.length)return false;
+  calibration={
+    cx:median(samples.map(p=>p.mx)),
+    cy:median(samples.map(p=>p.my)),
+    scale:median(samples.map(p=>p.scale)),
+    ready:true
+  };
+  calibrationSamples=[];
+  return calibration.scale>.05;
 }
 function consumeFace(result,now){
-  const pose=eyePose(result?.faceLandmarks?.[0]);
-  if(!pose)return;
+  const raw=facePose(result?.faceLandmarks?.[0]);
+  if(!raw)return;
+  const pose=stabilizePose(raw);
   lastFace=pose;lastFaceAt=now;
+  poseHistory.push({...pose});
+  if(poseHistory.length>10)poseHistory.shift();
+
   if(!calibration.ready){
-    calibration={cx:pose.mx,cy:pose.my,eye:pose.eye,ready:true};
+    calibrationSamples.push({...pose});
+    if(calibrationSamples.length>12)calibrationSamples.shift();
+    const progress=Math.round(calibrationSamples.length/12*100);
+    if(calibrationSamples.length<12){
+      source='camera';
+      setStatus(`중앙 시점 보정 중… ${progress}% · 잠깐 정면을 보세요.`,'search');
+      return;
+    }
+    calibrateFrom(calibrationSamples);
+    target={x:0,y:0,z:0};
   }
+
   // Front-camera pixels are intentionally mirrored for an intuitive physical direction.
-  target.x=clamp((calibration.cx-pose.mx)*3.8,-1.15,1.15);
-  target.y=clamp((calibration.cy-pose.my)*3.4,-1.05,1.05);
-  target.z=clamp((pose.eye/calibration.eye-1)*3.0,-1,1);
+  const dx=deadzone(calibration.cx-pose.mx,.0045);
+  const dy=deadzone(calibration.cy-pose.my,.0045);
+  const dz=deadzone(pose.scale/calibration.scale-1,.012);
+  target.x=clamp(dx*3.25,-1.08,1.08);
+  target.y=clamp(dy*3.05,-1.0,1.0);
+  target.z=clamp(dz*2.35,-.9,.9);
   source='camera';
-  setStatus('얼굴 추적 중 · 움직여 보세요.','live');
+  setStatus(`얼굴 추적 중 · ${pose.iris?'홍채':'눈'} + 얼굴 크기 안정화`,'live');
 }
 function infer(now){
   if(!running||!faceTask||!video||video.readyState<2)return;
@@ -254,7 +319,7 @@ async function start(){
     stream=media;video=q('[data-hc-video]');
     if(!video)throw new Error('video surface unavailable');
     video.srcObject=stream;await video.play();
-    running=true;source='camera';calibration.ready=false;lastFaceAt=performance.now();
+    running=true;source='camera';calibration.ready=false;calibrationSamples=[];poseHistory=[];filteredFace=null;lastFace=null;lastFaceAt=performance.now();
     q('[data-hc-stop]')?.removeAttribute('disabled');
     root?.classList.add('is-camera');
     setSource('CAMERA','searching');
@@ -276,12 +341,14 @@ function stop({reset=true}={}){
   running=false;stopStream();source='pointer';root?.classList.remove('is-camera');
   q('[data-hc-start]')?.removeAttribute('disabled');q('[data-hc-stop]')?.setAttribute('disabled','');
   setSource('POINTER','preview');setStatus('카메라 꺼짐 · 포인터로 미리보기','idle');
-  if(reset){target={x:0,y:0,z:0};calibration.ready=false}
+  if(reset){target={x:0,y:0,z:0};calibration.ready=false;calibrationSamples=[];poseHistory=[];filteredFace=null;lastFace=null}
 }
 function recenter(){
   if(running&&lastFace){
-    calibration={cx:lastFace.mx,cy:lastFace.my,eye:lastFace.eye,ready:true};
-    target={x:0,y:0,z:0};setStatus('현재 위치를 정면으로 다시 맞춤.','live');
+    const samples=poseHistory.length?poseHistory:[lastFace];
+    calibrateFrom(samples);
+    target={x:0,y:0,z:0};smooth={x:0,y:0,z:0};
+    setStatus('최근 여러 프레임 기준으로 정면을 다시 맞춤.','live');
   }else{
     target={x:0,y:0,z:0};smooth={x:0,y:0,z:0};applyPose(performance.now());
     setStatus('포인터 시점을 중앙으로 초기화함.','idle');
@@ -321,7 +388,7 @@ function mount(){
   stopLoop();
   app.innerHTML=markup();root=app.querySelector('[data-hc-root]');video=q('[data-hc-video]');
   nav();bind();setMode(mode);document.title=PAGE_TITLE;
-  target={x:0,y:0,z:0};smooth={x:0,y:0,z:0};calibration.ready=false;source='pointer';
+  target={x:0,y:0,z:0};smooth={x:0,y:0,z:0};calibration.ready=false;calibrationSamples=[];poseHistory=[];filteredFace=null;source='pointer';
   startLoop();requestAnimationFrame(()=>app.focus({preventScroll:true}));
 }
 function routeChange(){if(route()===R)mount();else if(root){stop({reset:false});stopLoop();root=null;video=null}}
@@ -335,7 +402,7 @@ window.__HJHeadCoupledDebug={
   setPose(x=0,y=0,z=0){target={x:clamp(+x||0,-1.2,1.2),y:clamp(+y||0,-1.2,1.2),z:clamp(+z||0,-1,1)};source='pointer';startLoop()},
   setMode,
   recenter,
-  state:()=>({route:route(),mode,running,source,target:{...target},smooth:{...smooth},calibration:{...calibration}})
+  state:()=>({route:route(),mode,running,source,target:{...target},smooth:{...smooth},calibration:{...calibration},lastFace:lastFace?{...lastFace}:null})
 };
 queueMicrotask(mount);
 })();
