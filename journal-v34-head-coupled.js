@@ -2,7 +2,7 @@
 (()=>{
 'use strict';
 const R='/lab/depth';
-const BUILD='HEAD35-20260928';
+const BUILD='HEAD36-20260928';
 const PAGE_TITLE='Head-Coupled Display — HJ';
 const MPV='1.0.1';
 const MODS=[
@@ -24,6 +24,7 @@ const qa=s=>[...(root?.querySelectorAll(s)||[])];
 
 let root=null,video=null,stream=null,faceTask=null,mp=null,fileset=null,modelPromise=null;
 let running=false,raf=0,lastInfer=0,lastVideoTime=-1,lastFaceAt=0,lastFace=null;
+let missStreak=0,errorStreak=0;
 let mode='depth',source='pointer';
 let target={x:0,y:0,z:0},smooth={x:0,y:0,z:0};
 let calibration={cx:.5,cy:.5,scale:.3,ready:false};
@@ -145,10 +146,10 @@ function setMode(next){
 function fmt(v){return `${v>=0?'+':''}${v.toFixed(2)}`}
 
 function applyPose(now){
-  const speed=source==='camera'?.16:.22;
+  const speed=source==='camera'?.095:.22;
   smooth.x=lerp(smooth.x,target.x,speed);
   smooth.y=lerp(smooth.y,target.y,speed);
-  smooth.z=lerp(smooth.z,target.z,.12);
+  smooth.z=lerp(smooth.z,target.z,source==='camera'?.075:.12);
   if(!root)return;
   root.style.setProperty('--hc-x',smooth.x.toFixed(4));
   root.style.setProperty('--hc-y',smooth.y.toFixed(4));
@@ -164,10 +165,6 @@ function applyPose(now){
   if(x)x.textContent=fmt(smooth.x);if(y)y.textContent=fmt(smooth.y);if(z)z.textContent=fmt(smooth.z);
   const viewport=q('[data-hc-viewport]');
   if(viewport)viewport.style.perspectiveOrigin=`${50+smooth.x*11}% ${50-smooth.y*9}%`;
-  if(running&&now-lastFaceAt>700){
-    target.x*=.93;target.y*=.93;target.z*=.93;
-    setStatus('얼굴을 찾는 중… 화면 중앙을 바라보세요.','search');
-  }
 }
 
 async function importRuntime(){
@@ -216,32 +213,43 @@ function meanPoint(landmarks,indices){
   return n?{x:x/n,y:y/n}:null;
 }
 function facePose(landmarks){
-  if(!landmarks||landmarks.length<468)return null;
-  // 468/473 are iris centres when the 478-landmark model is available.
-  const irisReady=!!(landmarks.length>=478&&landmarks[468]&&landmarks[473]);
-  const left=irisReady?landmarks[468]:meanPoint(landmarks,[33,133,159,145]);
-  const right=irisReady?landmarks[473]:meanPoint(landmarks,[263,362,386,374]);
+  if(!landmarks||landmarks.length<455)return null;
+  // Use rigid face anchors instead of iris positions. Iris landmarks are excellent
+  // for gaze, but too noisy for a head-coupled camera when amplified into parallax.
   const forehead=landmarks[10],chin=landmarks[152];
-  if(!left||!right||!forehead||!chin)return null;
-  const mx=(left.x+right.x)*.5,my=(left.y+right.y)*.5;
-  const eye=Math.hypot(left.x-right.x,left.y-right.y);
+  const leftCheek=landmarks[234],rightCheek=landmarks[454];
+  const noseBridge=meanPoint(landmarks,[6,168,197,195]);
+  if(!forehead||!chin||!leftCheek||!rightCheek||!noseBridge)return null;
+
+  const vertical={x:(forehead.x+chin.x)*.5,y:(forehead.y+chin.y)*.5};
+  const horizontal={x:(leftCheek.x+rightCheek.x)*.5,y:(leftCheek.y+rightCheek.y)*.5};
+  // Cheek midpoint is stable under translation; vertical midpoint resists yaw.
+  // A small nose-bridge contribution keeps the centre responsive without following the eyes.
+  const mx=horizontal.x*.48+vertical.x*.42+noseBridge.x*.10;
+  const my=horizontal.y*.34+vertical.y*.56+noseBridge.y*.10;
   const faceHeight=Math.hypot(forehead.x-chin.x,forehead.y-chin.y);
-  if(!Number.isFinite(eye)||!Number.isFinite(faceHeight)||eye<.025||faceHeight<.12)return null;
-  // Face height is much less sensitive to yaw than eye distance. Eye spacing still adds a small cue.
-  const scale=faceHeight*.78+eye*1.15*.22;
-  return {mx,my,eye,faceHeight,scale,iris:irisReady};
+  const faceWidth=Math.hypot(leftCheek.x-rightCheek.x,leftCheek.y-rightCheek.y);
+  if(!Number.isFinite(faceHeight)||!Number.isFinite(faceWidth)||faceHeight<.11||faceWidth<.10)return null;
+  // Height carries most of Z because yaw compresses apparent face width strongly.
+  const scale=faceHeight*.88+faceWidth*.12;
+  return {mx,my,faceHeight,faceWidth,scale};
+}
+function adaptiveLerp(previous,next,quietBand,slow=.10,fast=.34){
+  const delta=Math.abs(next-previous);
+  const alpha=delta<=quietBand?slow:clamp(slow+(delta-quietBand)*9,slow,fast);
+  return lerp(previous,next,alpha);
 }
 function stabilizePose(pose){
   if(!filteredFace){filteredFace={...pose};return filteredFace}
-  const maxXY=.045,maxScale=Math.max(.012,filteredFace.scale*.075);
-  const dx=clamp(pose.mx-filteredFace.mx,-maxXY,maxXY);
-  const dy=clamp(pose.my-filteredFace.my,-maxXY,maxXY);
-  const ds=clamp(pose.scale-filteredFace.scale,-maxScale,maxScale);
+  const maxXY=.032,maxScale=Math.max(.009,filteredFace.scale*.055);
+  const mx=filteredFace.mx+clamp(pose.mx-filteredFace.mx,-maxXY,maxXY);
+  const my=filteredFace.my+clamp(pose.my-filteredFace.my,-maxXY,maxXY);
+  const scale=filteredFace.scale+clamp(pose.scale-filteredFace.scale,-maxScale,maxScale);
   filteredFace={
     ...pose,
-    mx:lerp(filteredFace.mx,filteredFace.mx+dx,.52),
-    my:lerp(filteredFace.my,filteredFace.my+dy,.52),
-    scale:lerp(filteredFace.scale,filteredFace.scale+ds,.42)
+    mx:adaptiveLerp(filteredFace.mx,mx,.0035,.07,.30),
+    my:adaptiveLerp(filteredFace.my,my,.0035,.07,.30),
+    scale:adaptiveLerp(filteredFace.scale,scale,.0028,.06,.24)
   };
   return filteredFace;
 }
@@ -256,44 +264,68 @@ function calibrateFrom(samples){
   calibrationSamples=[];
   return calibration.scale>.05;
 }
+function holdOnMiss(now){
+  missStreak++;
+  // A few missing detections are normal on phones. Keep the last valid viewpoint
+  // instead of snapping back to centre or declaring tracking lost immediately.
+  const age=now-lastFaceAt;
+  if(lastFace&&age<2200){
+    if(missStreak===5)setStatus('추적 유지 중 · 잠깐 검출이 빠졌어요.','live');
+    return;
+  }
+  if(age<5000){
+    if(missStreak%10===0)setStatus('얼굴 다시 찾는 중 · 마지막 시점을 유지합니다.','search');
+    return;
+  }
+  if(missStreak%15===0)setStatus('얼굴을 찾는 중 · 카메라 미리보기에서 위치를 확인하세요.','search');
+}
 function consumeFace(result,now){
   const raw=facePose(result?.faceLandmarks?.[0]);
-  if(!raw)return;
+  if(!raw){holdOnMiss(now);return false}
   const pose=stabilizePose(raw);
-  lastFace=pose;lastFaceAt=now;
+  lastFace=pose;lastFaceAt=now;missStreak=0;errorStreak=0;
   poseHistory.push({...pose});
-  if(poseHistory.length>10)poseHistory.shift();
+  if(poseHistory.length>14)poseHistory.shift();
 
   if(!calibration.ready){
     calibrationSamples.push({...pose});
-    if(calibrationSamples.length>12)calibrationSamples.shift();
-    const progress=Math.round(calibrationSamples.length/12*100);
-    if(calibrationSamples.length<12){
+    if(calibrationSamples.length>10)calibrationSamples.shift();
+    const progress=Math.round(calibrationSamples.length/10*100);
+    if(calibrationSamples.length<10){
       source='camera';
       setStatus(`중앙 시점 보정 중… ${progress}% · 잠깐 정면을 보세요.`,'search');
-      return;
+      return true;
     }
     calibrateFrom(calibrationSamples);
     target={x:0,y:0,z:0};
   }
 
-  // Front-camera pixels are intentionally mirrored for an intuitive physical direction.
-  const dx=deadzone(calibration.cx-pose.mx,.0045);
-  const dy=deadzone(calibration.cy-pose.my,.0045);
-  const dz=deadzone(pose.scale/calibration.scale-1,.012);
-  target.x=clamp(dx*3.25,-1.08,1.08);
-  target.y=clamp(dy*3.05,-1.0,1.0);
-  target.z=clamp(dz*2.35,-.9,.9);
+  // Front-camera pixels are mirrored so physical left/right movement feels direct.
+  const dx=deadzone(calibration.cx-pose.mx,.0065);
+  const dy=deadzone(calibration.cy-pose.my,.0065);
+  const dz=deadzone(pose.scale/calibration.scale-1,.018);
+  target.x=clamp(dx*2.85,-1.0,1.0);
+  target.y=clamp(dy*2.65,-.92,.92);
+  target.z=clamp(dz*1.90,-.78,.78);
   source='camera';
-  setStatus(`얼굴 추적 중 · ${pose.iris?'홍채':'눈'} + 얼굴 크기 안정화`,'live');
+  setStatus('얼굴 추적 중 · 안정화 모드','live');
+  return true;
 }
 function infer(now){
   if(!running||!faceTask||!video||video.readyState<2)return;
-  if(now-lastInfer<34||video.currentTime===lastVideoTime)return;
+  const cadence=inferMs>48?66:50;
+  if(now-lastInfer<cadence||video.currentTime===lastVideoTime)return;
   lastInfer=now;lastVideoTime=video.currentTime;
   const start=performance.now();
-  try{consumeFace(faceTask.detectForVideo(video,now),now);inferMs=performance.now()-start}
-  catch(error){console.warn('[Head34] inference failed',error);setStatus('추적이 잠시 끊겼습니다. 다시 찾는 중…','search')}
+  try{
+    consumeFace(faceTask.detectForVideo(video,now),now);
+    inferMs=performance.now()-start;
+  }catch(error){
+    inferMs=performance.now()-start;
+    errorStreak++;
+    console.warn('[Head36] inference failed',error);
+    if(errorStreak>=4)holdOnMiss(now);
+  }
   frameCount++;
   if(now-fpsAt>=1000){fps=Math.round(frameCount*1000/(now-fpsAt));frameCount=0;fpsAt=now;setSource('CAMERA',`${fps} fps · ${Math.round(inferMs)} ms`)}
 }
@@ -312,14 +344,14 @@ async function start(){
   try{
     const [_,media]=await Promise.all([
       ensureModel(),
-      navigator.mediaDevices?.getUserMedia?.({video:{facingMode:'user',width:{ideal:960},height:{ideal:720},frameRate:{ideal:30,max:30}},audio:false})
+      navigator.mediaDevices?.getUserMedia?.({video:{facingMode:'user',width:{ideal:640},height:{ideal:480},frameRate:{ideal:24,max:30}},audio:false})
         ?? Promise.reject(new Error('getUserMedia unavailable'))
     ]);
     if(route()!==R){media.getTracks().forEach(track=>track.stop());return}
     stream=media;video=q('[data-hc-video]');
     if(!video)throw new Error('video surface unavailable');
     video.srcObject=stream;await video.play();
-    running=true;source='camera';calibration.ready=false;calibrationSamples=[];poseHistory=[];filteredFace=null;lastFace=null;lastFaceAt=performance.now();
+    running=true;source='camera';calibration.ready=false;calibrationSamples=[];poseHistory=[];filteredFace=null;lastFace=null;missStreak=0;errorStreak=0;lastFaceAt=performance.now();
     q('[data-hc-stop]')?.removeAttribute('disabled');
     root?.classList.add('is-camera');
     setSource('CAMERA','searching');
@@ -341,7 +373,7 @@ function stop({reset=true}={}){
   running=false;stopStream();source='pointer';root?.classList.remove('is-camera');
   q('[data-hc-start]')?.removeAttribute('disabled');q('[data-hc-stop]')?.setAttribute('disabled','');
   setSource('POINTER','preview');setStatus('카메라 꺼짐 · 포인터로 미리보기','idle');
-  if(reset){target={x:0,y:0,z:0};calibration.ready=false;calibrationSamples=[];poseHistory=[];filteredFace=null;lastFace=null}
+  if(reset){target={x:0,y:0,z:0};calibration.ready=false;calibrationSamples=[];poseHistory=[];filteredFace=null;lastFace=null;missStreak=0;errorStreak=0}
 }
 function recenter(){
   if(running&&lastFace){
