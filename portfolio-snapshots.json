@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "generatedAt": "2026-09-28T13:58:17.017Z",
+  "generatedAt": "2026-09-29T22:16:58.779Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
       "ref": "fix/v240-custom-bugfix",
-      "sha": "5c675d7fe5931d0adfd7776999b567a48f0fe9f8",
-      "shortSha": "5c675d7",
-      "date": "2026-09-27T18:27:56Z",
-      "message": "Fix r23 build wiring and advance historical contracts",
-      "url": "https://github.com/hoonex/adofai/commit/5c675d7fe5931d0adfd7776999b567a48f0fe9f8"
+      "sha": "f1834a522d5b503aab168116cdc1939d91af3c37",
+      "shortSha": "f1834a5",
+      "date": "2026-09-29T20:49:34Z",
+      "message": "Fix signing toolkit smoke check",
+      "url": "https://github.com/hoonex/adofai/commit/f1834a522d5b503aab168116cdc1939d91af3c37"
     },
     "aeroforge": {
       "repository": "hoonex/developer",
