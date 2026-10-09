@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": "2026-10-07T06:02:33.331Z",
+  "generatedAt": "2026-10-09T22:40:08.689Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
@@ -23,11 +23,11 @@
     "sloar": {
       "repository": "hoonex/sloar-chat-coder",
       "ref": "main",
-      "sha": "5c885d956dcb0ba58e3896dc011c73b888e49a7f",
-      "shortSha": "5c885d9",
-      "date": "2026-09-28T09:22:44Z",
-      "message": "release: Sloar 0.10.4 visual intelligence",
-      "url": "https://github.com/hoonex/sloar-chat-coder/commit/5c885d956dcb0ba58e3896dc011c73b888e49a7f"
+      "sha": "924948bb63f154fd06dc3afe1ad26e7ab5e15d29",
+      "shortSha": "924948b",
+      "date": "2026-10-09T15:23:51Z",
+      "message": "release: Sloar 0.10.6 environment-independent REA integration",
+      "url": "https://github.com/hoonex/sloar-chat-coder/commit/924948bb63f154fd06dc3afe1ad26e7ab5e15d29"
     },
     "daily-tech": {
       "repository": "hoonex/daily-tech-magazine",
