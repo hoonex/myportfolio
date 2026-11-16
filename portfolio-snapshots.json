@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": "2026-11-14T22:26:02.022Z",
+  "generatedAt": "2026-11-16T06:32:30.052Z",
   "projects": {
     "adofai": {
       "repository": "hoonex/adofai",
@@ -32,11 +32,11 @@
     "daily-tech": {
       "repository": "hoonex/daily-tech-magazine",
       "ref": "main",
-      "sha": "4cfc7169e05f3c3678d8ac57ca28c949b129314d",
-      "shortSha": "4cfc716",
-      "date": "2026-11-14T21:58:21Z",
-      "message": "render: carousel 2026-11-15",
-      "url": "https://github.com/hoonex/daily-tech-magazine/commit/4cfc7169e05f3c3678d8ac57ca28c949b129314d"
+      "sha": "2c76710ab6c44ba92cd0be3c66aa7bc46cca1d16",
+      "shortSha": "2c76710",
+      "date": "2026-11-15T22:04:55Z",
+      "message": "render: carousel 2026-11-16",
+      "url": "https://github.com/hoonex/daily-tech-magazine/commit/2c76710ab6c44ba92cd0be3c66aa7bc46cca1d16"
     },
     "esp32-car": {
       "repository": "hoonex/esp32-car",
